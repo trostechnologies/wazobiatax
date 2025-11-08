@@ -14,7 +14,259 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      businesses: {
+        Row: {
+          address: string | null
+          annual_turnover: number | null
+          business_type: string | null
+          created_at: string | null
+          id: string
+          name: string
+          tin: string | null
+          updated_at: string | null
+          user_id: string | null
+        }
+        Insert: {
+          address?: string | null
+          annual_turnover?: number | null
+          business_type?: string | null
+          created_at?: string | null
+          id?: string
+          name: string
+          tin?: string | null
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          address?: string | null
+          annual_turnover?: number | null
+          business_type?: string | null
+          created_at?: string | null
+          id?: string
+          name?: string
+          tin?: string | null
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "businesses_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      compliance_alerts: {
+        Row: {
+          created_at: string | null
+          due_date: string | null
+          id: string
+          is_read: boolean | null
+          message: string
+          severity: string | null
+          title: string
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          due_date?: string | null
+          id?: string
+          is_read?: boolean | null
+          message: string
+          severity?: string | null
+          title: string
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          due_date?: string | null
+          id?: string
+          is_read?: boolean | null
+          message?: string
+          severity?: string | null
+          title?: string
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "compliance_alerts_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      profiles: {
+        Row: {
+          annual_turnover: number | null
+          business_name: string | null
+          business_type: string | null
+          bvn: string | null
+          compliance_score: number | null
+          created_at: string | null
+          full_name: string | null
+          id: string
+          is_premium: boolean | null
+          phone: string | null
+          tin: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          annual_turnover?: number | null
+          business_name?: string | null
+          business_type?: string | null
+          bvn?: string | null
+          compliance_score?: number | null
+          created_at?: string | null
+          full_name?: string | null
+          id: string
+          is_premium?: boolean | null
+          phone?: string | null
+          tin?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          annual_turnover?: number | null
+          business_name?: string | null
+          business_type?: string | null
+          bvn?: string | null
+          compliance_score?: number | null
+          created_at?: string | null
+          full_name?: string | null
+          id?: string
+          is_premium?: boolean | null
+          phone?: string | null
+          tin?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      tax_returns: {
+        Row: {
+          business_id: string | null
+          created_at: string | null
+          gross_income: number | null
+          id: string
+          period_end: string
+          period_start: string
+          return_type: string
+          status: string | null
+          submitted_at: string | null
+          tax_due: number | null
+          updated_at: string | null
+          user_id: string | null
+          vat_collected: number | null
+          wht_deducted: number | null
+        }
+        Insert: {
+          business_id?: string | null
+          created_at?: string | null
+          gross_income?: number | null
+          id?: string
+          period_end: string
+          period_start: string
+          return_type: string
+          status?: string | null
+          submitted_at?: string | null
+          tax_due?: number | null
+          updated_at?: string | null
+          user_id?: string | null
+          vat_collected?: number | null
+          wht_deducted?: number | null
+        }
+        Update: {
+          business_id?: string | null
+          created_at?: string | null
+          gross_income?: number | null
+          id?: string
+          period_end?: string
+          period_start?: string
+          return_type?: string
+          status?: string | null
+          submitted_at?: string | null
+          tax_due?: number | null
+          updated_at?: string | null
+          user_id?: string | null
+          vat_collected?: number | null
+          wht_deducted?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tax_returns_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tax_returns_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      transactions: {
+        Row: {
+          amount: number
+          business_id: string | null
+          category: string | null
+          created_at: string | null
+          date: string
+          description: string | null
+          id: string
+          receipt_url: string | null
+          type: string
+          updated_at: string | null
+          user_id: string | null
+        }
+        Insert: {
+          amount: number
+          business_id?: string | null
+          category?: string | null
+          created_at?: string | null
+          date: string
+          description?: string | null
+          id?: string
+          receipt_url?: string | null
+          type: string
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          amount?: number
+          business_id?: string | null
+          category?: string | null
+          created_at?: string | null
+          date?: string
+          description?: string | null
+          id?: string
+          receipt_url?: string | null
+          type?: string
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "transactions_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "transactions_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
