@@ -1,0 +1,19 @@
+{
+  "title": "Wazobia Tax Ledger",
+  "add_expense": "Add Moni Wey Dem Spend",
+  "amount": "How Much (₦)",
+  "date": "Date",
+  "category": "For Wetin",
+  "vendor": "Who You Buy From",
+  "manual_add": "Add Manual",
+  "scan_receipt": "Scan Receipt",
+  "scan_receipt_description": "Scan Your Receipt",
+  "voice_entry_description": "Talk Wetin You Want So You Go Fill The Form Fast. For Example:",
+  "choose_image_take_photo": "Select Picture Or Snap Am",
+  "voice_add": "Add With Your Voice",
+  "clear_all": "Clear All",
+  "voice_entry_example": "Add Moni wey dem spend five thousand naira for food.",
+  "listening_status": "Talk Something",
+  "processing_receipt": "We Dey Check The Receipt",
+  "ocr_progress_info": "Abeg wait..."
+}

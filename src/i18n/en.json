@@ -1,0 +1,21 @@
+{
+  "title": "Wazobia Tax Ledger",
+  "add_expense": "Add Expense",
+  "amount": "Amount (₦)",
+  "date": "Date",
+  "category": "Category",
+  "vendor": "Vendor",
+  "manual_add": "Manual Add",
+  "scan_receipt": "Scan Receipt",
+  "scan_receipt_title": "Scan Receipt",
+  "scan_receipt_description": "Scan Your Receipt",
+  "voice_entry_description": "Say What You Want To Automatically Fill The Form. For Example:",
+  "voice_entry_title": "Voice Entry",
+  "choose_image_take_photo": "Choose Image Or Take Photo",
+  "voice_add": "Voice Add",
+  "clear_all": "Clear All",
+  "voice_entry_example": "Add expense five thousand naira for food.",
+  "listening_status": "Say Something",
+  "processing_receipt": "Processing Receipt",
+  "ocr_progress_info": "Please wait..."
+}

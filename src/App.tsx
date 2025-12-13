@@ -11,6 +11,7 @@ import Pay from "./pages/Pay";
 import Ledger from "./pages/Ledger";
 import Profile from "./pages/Profile";
 import NotFound from "./pages/NotFound";
+import ExpenseEntry from "./pages/ExpenseEntry";
 
 const queryClient = new QueryClient();
 
@@ -27,6 +28,7 @@ const App = () => (
           <Route path="/file" element={<File />} />
           <Route path="/pay" element={<Pay />} />
           <Route path="/ledger" element={<Ledger />} />
+          <Route path="/expense-entry" element={<ExpenseEntry />} />
           <Route path="/profile" element={<Profile />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
