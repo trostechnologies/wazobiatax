@@ -1,6 +1,144 @@
 import { motion, AnimatePresence } from 'motion/react';
 import { ArrowLeft, CreditCard, Building2, QrCode, CheckCircle2, Loader2, Download } from 'lucide-react';
 import { useState } from 'react';
+import { useLanguage } from "@/context/LanguageContext";
+
+const translations = {
+  english: {
+    paystack: "Paystack",
+    paystackDesc: "Card payment",
+
+    flutterwave: "Flutterwave",
+    flutterwaveDesc: "Card/Bank payment",
+
+    bankTransfer: "Bank Transfer",
+    bankTransferDesc: "Manual transfer",
+    payTax: "Pay Tax",
+    totalAmountDue: "Total Amount Due",
+    tax: "Tax:",
+    penalty: "Penalty:",
+    paymentBreakdown: "Payment Breakdown",
+    incomeTax: "Income Tax (2025)",
+    latePaymentPenalty: "Late Payment Penalty",
+    total: "Total",
+    scanQrCode: "Scan QR code to pay via your banking app",
+    selectPaymentMethod: "Select Payment Method",
+    securePayment: "✓ Secure payment via",
+    cardNumber: "Card Number",
+    expiryDate: "Expiry Date",
+    cvv: "CVV",
+    amountToPay: "Amount to Pay",
+    payBtn: "Pay",
+  },
+
+  pidgin: {
+    paystack: "Paystack",
+    paystackDesc: "Card payment",
+
+    flutterwave: "Flutterwave",
+    flutterwaveDesc: "Card/Bank payment",
+
+    bankTransfer: "Bank Transfer",
+    bankTransferDesc: "Manual transfer",
+    payTax: "Pay Tax",
+    totalAmountDue: "Total Amount Wey You Suppose Pay",
+    tax: "Tax:",
+    penalty: "Penalty:",
+    paymentBreakdown: "How Payment Dey",
+    incomeTax: "Income Tax (2025)",
+    latePaymentPenalty: "Late Payment Penalty",
+    total: "Total",
+    scanQrCode: "Scan QR code make you pay with your banking app",
+    selectPaymentMethod: "Choose Payment Method",
+    securePayment: "✓ Payment dey secure via",
+    cardNumber: "Card Number",
+    expiryDate: "Expiry Date",
+    cvv: "CVV",
+    amountToPay: "Amount Wey You Wan Pay",
+    payBtn: "Pay",
+  },
+
+  hausa: {
+    paystack: "Paystack",
+    paystackDesc: "Biya ta kati",
+
+    flutterwave: "Flutterwave",
+    flutterwaveDesc: "Biya ta kati ko banki",
+
+    bankTransfer: "Canja Kuɗi ta Banki",
+    bankTransferDesc: "Canja kuɗi da hannu",
+    payTax: "Biya Haraji",
+    totalAmountDue: "Jimillar Kuɗi da Ake Bukata",
+    tax: "Haraji:",
+    penalty: "Laifi:",
+    paymentBreakdown: "Bayani kan Biyan Kuɗi",
+    incomeTax: "Harajin Kuɗin Shiga (2025)",
+    latePaymentPenalty: "Laifi na Jinkiri",
+    total: "Jimilla",
+    scanQrCode: "Duba QR code domin biyan ta app ɗin bankinka",
+    selectPaymentMethod: "Zaɓi Hanyar Biyan Kuɗi",
+    securePayment: "✓ Biyan kuɗi lafiya ta hanyar",
+    cardNumber: "Lambar Kati",
+    expiryDate: "Ranar Ƙarewa",
+    cvv: "CVV",
+    amountToPay: "Adadin Kuɗin da za a biya",
+    payBtn: "Biya",
+  },
+
+  yoruba: {
+    paystack: "Paystack",
+    paystackDesc: "Sisan kaadi",
+
+    flutterwave: "Flutterwave",
+    flutterwaveDesc: "Sisan kaadi/tabi banki",
+
+    bankTransfer: "Gbigbe Banki",
+    bankTransferDesc: "Gbigbe ọwọ́",
+    payTax: "San Owó-ori",
+    totalAmountDue: "Lapapọ Owo-ori Tó Lẹ̀tọ́ Láti San",
+    tax: "Owó-ori:",
+    penalty: "Ìtìlẹyìn:",
+    paymentBreakdown: "Àtúmọ̀ Ìsanwó",
+    incomeTax: "Owo-ori Owo-wiwọle (2025)",
+    latePaymentPenalty: "Ìtìlẹyìn Sisan Pẹ́",
+    total: "Lapapọ",
+    scanQrCode: "Ṣàyẹ̀wò QR code láti san pẹ̀lú app banki rẹ",
+    selectPaymentMethod: "Yan Ìlànà Sisan",
+    securePayment: "✓ Sisan to ni aabo nípasẹ̀",
+    cardNumber: "Nọ́mbà Kaadi",
+    expiryDate: "Ọjọ́ Ìparí",
+    cvv: "CVV",
+    amountToPay: "Owó Tó Lẹ̀tọ́ Láti San",
+    payBtn: "San",
+  },
+
+  igbo: {
+    paystack: "Paystack",
+    paystackDesc: "Ụkwụ ụgwọ kaadị",
+
+    flutterwave: "Flutterwave",
+    flutterwaveDesc: "Ụkwụ ụgwọ kaadị/ụgwọ banki",
+
+    bankTransfer: "Nyefe Ego Banki",
+    bankTransferDesc: "Nyefe aka",
+    payTax: "Kwụọ Ụtụ",
+    totalAmountDue: "Ụtụ Ekwesịrị Ikwụ",
+    tax: "Ụtụ:",
+    penalty: "Ntaramahụhụ:",
+    paymentBreakdown: "Nkowa Ụkwụ Ụtụ",
+    incomeTax: "Ụtụ Ego (2025)",
+    latePaymentPenalty: "Ntaramahụhụ Nkwụsị oge",
+    total: "Ọnụ Ọgụgụ",
+    scanQrCode: "Lelee QR code ka ị kwụọ site na ngwa banki gị",
+    selectPaymentMethod: "Họrọ Ụzọ Ịkwụ Ụtụ",
+    securePayment: "✓ Ụkwụ Ụtụ dị nchebe site na",
+    cardNumber: "Nọmba Kaadị",
+    expiryDate: "Ụbọchị Ọgwụgwụ",
+    cvv: "CVV",
+    amountToPay: "Ego I Kwesịrị Ịkwụ",
+    payBtn: "Kwụọ",
+  },
+};
 
 interface PayTaxProps {
   onNavigate: (screen: string) => void;
@@ -15,10 +153,31 @@ export function PayTax({ onNavigate }: PayTaxProps) {
   const penalty = 0;
   const total = taxDue + penalty;
 
+  const { language } = useLanguage();
+  const t = translations[language];
+
   const paymentMethods = [
-    { id: 'paystack', name: 'Paystack', desc: 'Card payment', icon: CreditCard, color: 'bg-blue-50 border-blue-200 text-blue-600' },
-    { id: 'flutterwave', name: 'Flutterwave', desc: 'Card/Bank payment', icon: CreditCard, color: 'bg-purple-50 border-purple-200 text-purple-600' },
-    { id: 'transfer', name: 'Bank Transfer', desc: 'Manual transfer', icon: Building2, color: 'bg-emerald-50 border-emerald-200 text-emerald-600' },
+    {
+      id: 'paystack',
+      nameKey: 'paystack',
+      descKey: 'paystackDesc',
+      icon: CreditCard,
+      color: 'bg-blue-50 border-blue-200 text-blue-600',
+    },
+    {
+      id: 'flutterwave',
+      nameKey: 'flutterwave',
+      descKey: 'flutterwaveDesc',
+      icon: CreditCard,
+      color: 'bg-purple-50 border-purple-200 text-purple-600',
+    },
+    {
+      id: 'transfer',
+      nameKey: 'bankTransfer',
+      descKey: 'bankTransferDesc',
+      icon: Building2,
+      color: 'bg-emerald-50 border-emerald-200 text-emerald-600',
+    },
   ];
 
   const handlePaymentSelect = (methodId: string) => {
@@ -48,13 +207,13 @@ export function PayTax({ onNavigate }: PayTaxProps) {
 
       {/* Header */}
       <div className="bg-white px-6 py-4 flex items-center gap-4 border-b border-gray-200">
-        <button 
+        <button
           onClick={() => onNavigate('dashboard')}
           className="p-2 hover:bg-gray-100 rounded-lg transition-all -ml-2"
         >
           <ArrowLeft className="w-6 h-6 text-gray-700" />
         </button>
-        <h1 className="text-lg">Pay Tax</h1>
+        <h1 className="text-lg">{translations[language].payTax}</h1>
       </div>
 
       {/* Content */}
@@ -70,15 +229,15 @@ export function PayTax({ onNavigate }: PayTaxProps) {
           >
             {/* Amount Card */}
             <div className="bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-2xl p-6 text-white shadow-2xl">
-              <p className="text-emerald-100 text-sm mb-2">Total Amount Due</p>
+              <p className="text-emerald-100 text-sm mb-2">{translations[language].totalAmountDue}</p>
               <p className="text-4xl mb-4">₦{total.toLocaleString()}</p>
               <div className="flex gap-2">
                 <span className="px-3 py-1 bg-white/20 rounded-full text-xs">
-                  Tax: ₦{taxDue.toLocaleString()}
+                  {translations[language].tax} ₦{taxDue.toLocaleString()}
                 </span>
                 {penalty > 0 && (
                   <span className="px-3 py-1 bg-red-400/30 rounded-full text-xs">
-                    Penalty: ₦{penalty.toLocaleString()}
+                    {translations[language].penalty} ₦{penalty.toLocaleString()}
                   </span>
                 )}
               </div>
@@ -86,18 +245,18 @@ export function PayTax({ onNavigate }: PayTaxProps) {
 
             {/* Breakdown */}
             <div className="bg-white rounded-xl p-4 border border-gray-200 space-y-3">
-              <h3 className="text-sm mb-3">Payment Breakdown</h3>
+              <h3 className="text-sm mb-3">{translations[language].paymentBreakdown}</h3>
               <div className="flex justify-between text-sm">
-                <span className="text-gray-600">Income Tax (2025)</span>
+                <span className="text-gray-600">{translations[language].incomeTax}</span>
                 <span>₦{taxDue.toLocaleString()}</span>
               </div>
               <div className="flex justify-between text-sm">
-                <span className="text-gray-600">Late Payment Penalty</span>
+                <span className="text-gray-600">{translations[language].latePaymentPenalty}</span>
                 <span>₦{penalty.toLocaleString()}</span>
               </div>
               <div className="h-px bg-gray-200 my-2" />
               <div className="flex justify-between">
-                <span>Total</span>
+                <span>{translations[language].total}</span>
                 <span className="text-emerald-600">₦{total.toLocaleString()}</span>
               </div>
             </div>
@@ -105,12 +264,12 @@ export function PayTax({ onNavigate }: PayTaxProps) {
             {/* QR Code for Bank Transfer */}
             <div className="bg-gray-50 rounded-xl p-6 border border-gray-200 text-center">
               <QrCode className="w-24 h-24 mx-auto mb-3 text-gray-400" />
-              <p className="text-sm text-gray-600">Scan QR code to pay via your banking app</p>
+              <p className="text-sm text-gray-600">{translations[language].scanQrCode}</p>
             </div>
 
             {/* Payment Methods */}
             <div>
-              <h3 className="text-sm mb-3">Select Payment Method</h3>
+              <h3 className="text-sm mb-3">{translations[language].selectPaymentMethod}</h3>
               <div className="space-y-3">
                 {paymentMethods.map((method, index) => (
                   <motion.button
@@ -126,8 +285,8 @@ export function PayTax({ onNavigate }: PayTaxProps) {
                         <method.icon className="w-6 h-6" />
                       </div>
                       <div className="flex-1">
-                        <h3 className="text-sm mb-1">{method.name}</h3>
-                        <p className="text-xs opacity-75">{method.desc}</p>
+                        <h3 className="text-sm mb-1">{translations[language][method.nameKey]}</h3>
+                        <p className="text-xs opacity-75">{translations[language][method.descKey]}</p>
                       </div>
                       <div className="text-2xl">›</div>
                     </div>
@@ -149,14 +308,14 @@ export function PayTax({ onNavigate }: PayTaxProps) {
           >
             <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-4">
               <p className="text-sm text-emerald-900">
-                ✓ Secure payment via {paymentMethods.find(m => m.id === selectedMethod)?.name}
+              {translations[language].securePayment} {paymentMethods.find(m => m.id === selectedMethod)?.nameKey}
               </p>
             </div>
 
             {/* Payment Form */}
             <div className="space-y-4">
               <div>
-                <label className="block mb-2 text-gray-700 text-sm">Card Number</label>
+                <label className="block mb-2 text-gray-700 text-sm">{translations[language].cardNumber}</label>
                 <input
                   type="text"
                   placeholder="1234 5678 9012 3456"
@@ -165,7 +324,7 @@ export function PayTax({ onNavigate }: PayTaxProps) {
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block mb-2 text-gray-700 text-sm">Expiry Date</label>
+                  <label className="block mb-2 text-gray-700 text-sm">{translations[language].expiryDate}</label>
                   <input
                     type="text"
                     placeholder="MM/YY"
@@ -173,7 +332,7 @@ export function PayTax({ onNavigate }: PayTaxProps) {
                   />
                 </div>
                 <div>
-                  <label className="block mb-2 text-gray-700 text-sm">CVV</label>
+                  <label className="block mb-2 text-gray-700 text-sm">{translations[language].cvv}</label>
                   <input
                     type="text"
                     placeholder="123"
@@ -186,7 +345,7 @@ export function PayTax({ onNavigate }: PayTaxProps) {
             {/* Amount Summary */}
             <div className="bg-white rounded-xl p-4 border border-gray-200">
               <div className="flex justify-between mb-2">
-                <span className="text-gray-600">Amount to Pay</span>
+                <span className="text-gray-600">{translations[language].amountToPay}</span>
                 <span className="text-lg">₦{total.toLocaleString()}</span>
               </div>
             </div>
@@ -196,7 +355,7 @@ export function PayTax({ onNavigate }: PayTaxProps) {
               disabled={isProcessing}
               className="w-full py-4 bg-gradient-to-r from-emerald-600 to-emerald-700 text-white rounded-xl hover:shadow-lg transition-all"
             >
-              Pay ₦{total.toLocaleString()}
+              {translations[language].payBtn} ₦{total.toLocaleString()}
             </button>
           </motion.div>
         )}

@@ -1,6 +1,70 @@
-import { motion } from 'motion/react';
+import { motion, AnimatePresence } from 'motion/react';
 import { Mic, Volume2 } from 'lucide-react';
 import { useState } from 'react';
+import { useLanguage } from "@/context/LanguageContext";
+
+const headers: Record<string, string> = {
+  english: "Voice Commands",
+  pidgin: "Voice Commands",
+  hausa: "Umarnin Murya",
+  yoruba: "Awọn aṣẹ Ohùn",
+  igbo: "Iwu olu",
+};
+
+const subtitles: Record<string, string> = {
+  english: "Enable voice features for easier navigation",
+  pidgin: "Turn on voice make e easy to waka around",
+  hausa: "Bada izinin murya don sauƙin amfani",
+  yoruba: "Ṣii awọn ẹya ohùn fun lilọ kiri rọọrun",
+  igbo: "Gbanyụọ olu maka mfe navigation",
+};
+
+const toggleTitles: Record<string, string> = {
+  english: "Enable Voice Commands?",
+  pidgin: "Make Voice Work?",
+  hausa: "Bada umarnin murya?",
+  yoruba: "Ṣii awọn aṣẹ ohùn?",
+  igbo: "Gbanyụọ iwu olu?",
+};
+
+const toggleSubtitles: Record<string, string> = {
+  english: "Perfect for hands-free use",
+  pidgin: "E perfect for hands-free use",
+  hausa: "Ya dace da amfani ba tare da hannu ba",
+  yoruba: "Pipe fun lilo laisi ọwọ",
+  igbo: "Dabara maka iji aka efu",
+};
+
+const nextButtonText: Record<string, string> = {
+  english: "Continue",
+  pidgin: "Continue",
+  hausa: "Ci gaba",
+  yoruba: "Tẹ̀síwájú",
+  igbo: "Gaa n’ihu",
+};
+
+const voiceStatusText: Record<string, { enabled: string; disabled: string }> = {
+  english: {
+    enabled: "✓ Voice commands enabled. You can speak to add transactions and navigate.",
+    disabled: "Enable to use voice for adding entries and navigation.",
+  },
+  pidgin: {
+    enabled: "✓ Voice commands don dey enabled. You fit talk to add transactions and waka around.",
+    disabled: "Enable am to use voice for adding entries and waka around.",
+  },
+  hausa: {
+    enabled: "✓ Umarnin murya an kunna. Za ka iya amfani da murya don ƙara ma'amaloli da kewaya.",
+    disabled: "Kunna don amfani da murya wajen ƙara ma'amaloli da kewaya.",
+  },
+  yoruba: {
+    enabled: "✓ Awọn aṣẹ ohùn ti muu ṣiṣẹ. O le sọ lati fi awọn iṣẹ kun ati lilọ kiri.",
+    disabled: "Ṣii lati lo ohùn fun fifi awọn iṣẹ kun ati lilọ kiri.",
+  },
+  igbo: {
+    enabled: "✓ Iwu olu agbakwunyere. Ị nwere ike ikwu iji tinye azụmahịa na ịnyagharịa.",
+    disabled: "Gbanyụọ iji jiri olu tinye ihe na ịnyagharịa.",
+  },
+};
 
 interface VoiceModeToggleProps {
   onSelect: (enabled: boolean) => void;
@@ -9,6 +73,7 @@ interface VoiceModeToggleProps {
 export function VoiceModeToggle({ onSelect }: VoiceModeToggleProps) {
   const [enabled, setEnabled] = useState(false);
   const [isAnimating, setIsAnimating] = useState(false);
+  const { language, setLanguage } = useLanguage();
 
   const handleToggle = () => {
     setEnabled(!enabled);
@@ -34,9 +99,32 @@ export function VoiceModeToggle({ onSelect }: VoiceModeToggleProps) {
 
       {/* Header */}
       <div className="bg-gradient-to-r from-emerald-500 to-emerald-600 px-6 py-8">
-        <h1 className="text-white text-2xl mb-2">Voice Commands</h1>
-        <p className="text-emerald-100">Enable voice features for easier navigation</p>
-      </div>
+  <AnimatePresence mode="wait">
+    <motion.h1
+      key={language}
+      initial={{ opacity: 0, y: 8 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, y: -8 }}
+      transition={{ duration: 0.25, ease: "easeOut" }}
+      className="text-white text-2xl mb-2"
+    >
+      {headers[language]}
+    </motion.h1>
+  </AnimatePresence>
+
+  <AnimatePresence mode="wait">
+    <motion.p
+      key={language}
+      initial={{ opacity: 0, y: 6 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, y: -6 }}
+      transition={{ duration: 0.2 }}
+      className="text-emerald-100"
+    >
+      {subtitles[language]}
+    </motion.p>
+  </AnimatePresence>
+</div>
 
       {/* Progress Dots */}
       <div className="flex items-center justify-center gap-2 py-6">
@@ -86,13 +174,36 @@ export function VoiceModeToggle({ onSelect }: VoiceModeToggleProps) {
         {/* Toggle Card */}
         <div className="w-full bg-white rounded-2xl border border-gray-200 p-6 shadow-lg">
           <div className="flex items-center justify-between mb-4">
-            <div className="flex items-center gap-3">
-              <Volume2 className="w-6 h-6 text-emerald-600" />
-              <div>
-                <h3 className="text-lg">Enable Voice Commands?</h3>
-                <p className="text-sm text-gray-600">Perfect for hands-free use</p>
-              </div>
-            </div>
+          <div className="flex items-center gap-3">
+  <Volume2 className="w-6 h-6 text-emerald-600" />
+  <div>
+    <AnimatePresence mode="wait">
+      <motion.h3
+        key={language}
+        initial={{ opacity: 0, y: 4 }}
+        animate={{ opacity: 1, y: 0 }}
+        exit={{ opacity: 0, y: -4 }}
+        transition={{ duration: 0.25 }}
+        className="text-lg"
+      >
+        {toggleTitles[language]}
+      </motion.h3>
+    </AnimatePresence>
+
+    <AnimatePresence mode="wait">
+      <motion.p
+        key={language}
+        initial={{ opacity: 0, y: 3 }}
+        animate={{ opacity: 1, y: 0 }}
+        exit={{ opacity: 0, y: -3 }}
+        transition={{ duration: 0.2 }}
+        className="text-sm text-gray-600"
+      >
+        {toggleSubtitles[language]}
+      </motion.p>
+    </AnimatePresence>
+  </div>
+</div>
             <button
               onClick={handleToggle}
               className={`w-14 h-8 rounded-full transition-all duration-300 relative ${
@@ -108,25 +219,44 @@ export function VoiceModeToggle({ onSelect }: VoiceModeToggleProps) {
           </div>
           
           <div className="bg-emerald-50 rounded-lg p-4 border border-emerald-100">
-            <p className="text-sm text-gray-700">
-              {enabled 
-                ? '✓ Voice commands enabled. You can speak to add transactions and navigate.'
-                : 'Enable to use voice for adding entries and navigation.'
-              }
-            </p>
-          </div>
+  <AnimatePresence mode="wait">
+    <motion.p
+      key={enabled + language} // re-animates when either changes
+      initial={{ opacity: 0, y: 4 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, y: -4 }}
+      transition={{ duration: 0.25 }}
+      className="text-sm text-gray-700"
+    >
+      {enabled
+        ? voiceStatusText[language].enabled
+        : voiceStatusText[language].disabled}
+    </motion.p>
+  </AnimatePresence>
+</div>
         </div>
       </div>
 
       {/* Next Button */}
       <div className="absolute bottom-0 left-0 right-0 p-6 bg-white border-t border-gray-200">
-        <button
-          onClick={handleNext}
-          className="w-full py-4 rounded-xl bg-emerald-600 text-white shadow-lg hover:bg-emerald-700 transition-all duration-300"
-        >
-          Continue
-        </button>
-      </div>
+  <button
+    onClick={handleNext}
+    className="w-full py-4 rounded-xl bg-emerald-600 text-white shadow-lg hover:bg-emerald-700 transition-all duration-300"
+  >
+    <AnimatePresence mode="wait">
+      <motion.span
+        key={language}
+        initial={{ opacity: 0, y: 4 }}
+        animate={{ opacity: 1, y: 0 }}
+        exit={{ opacity: 0, y: -4 }}
+        transition={{ duration: 0.25 }}
+        className="inline-block"
+      >
+        {nextButtonText[language]}
+      </motion.span>
+    </AnimatePresence>
+  </button>
+</div>
     </div>
   );
 }
