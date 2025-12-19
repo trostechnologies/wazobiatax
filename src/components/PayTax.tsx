@@ -29,6 +29,15 @@ const translations = {
     cvv: "CVV",
     amountToPay: "Amount to Pay",
     payBtn: "Pay",
+    processingPayment: "Processing payment...",
+    paymentSuccessful: "Payment Successful! 🎉",
+    paymentProcessed: "Your tax payment has been processed",
+    amountPaid: "Amount Paid",
+    transactionId: "Transaction ID",
+    date: "Date",
+    downloadReceipt: "Download Receipt",
+    backToDashboard: "Back to Dashboard",
+    ledgerUpdated: "💡 Your ledger has been automatically updated with this payment",
   },
 
   pidgin: {
@@ -56,6 +65,15 @@ const translations = {
     cvv: "CVV",
     amountToPay: "Amount Wey You Wan Pay",
     payBtn: "Pay",
+    processingPayment: "Payment dey process...",
+    paymentSuccessful: "Payment Don Succeed! 🎉",
+    paymentProcessed: "Your tax payment don process",
+    amountPaid: "Amount Wey You Pay",
+    transactionId: "Transaction ID",
+    date: "Date",
+    downloadReceipt: "Download Receipt",
+    backToDashboard: "Back to Dashboard",
+    ledgerUpdated: "💡 Your ledger don update automatically with this payment",
   },
 
   hausa: {
@@ -83,6 +101,15 @@ const translations = {
     cvv: "CVV",
     amountToPay: "Adadin Kuɗin da za a biya",
     payBtn: "Biya",
+    processingPayment: "Ana sarrafa biyan kuɗi...",
+    paymentSuccessful: "An Yi Nasarar Biya! 🎉",
+    paymentProcessed: "An sarrafa biyan harajinka",
+    amountPaid: "Kuɗin da Aka Biya",
+    transactionId: "Lambar Ma'amala",
+    date: "Rana",
+    downloadReceipt: "Sauke Rasiti",
+    backToDashboard: "Komawa Dashboard",
+    ledgerUpdated: "💡 An sabunta littafin ma'amalarka ta atomatik da wannan biyan",
   },
 
   yoruba: {
@@ -110,6 +137,15 @@ const translations = {
     cvv: "CVV",
     amountToPay: "Owó Tó Lẹ̀tọ́ Láti San",
     payBtn: "San",
+    processingPayment: "Ṣíṣe sísan lọ́wọ́...",
+    paymentSuccessful: "Sisan Ṣeé Ṣe! 🎉",
+    paymentProcessed: "A ti ṣiṣẹ́ sisan owó-ori rẹ",
+    amountPaid: "Owó Tí a San",
+    transactionId: "ID Ìsanwó",
+    date: "Ọjọ́",
+    downloadReceipt: "Gba Rẹ́sítì",
+    backToDashboard: "Padà sí Dashboard",
+    ledgerUpdated: "💡 A ti ṣe imudojuiwọn ledger rẹ laifọwọyi pẹ̀lú sisan yìí",
   },
 
   igbo: {
@@ -137,6 +173,15 @@ const translations = {
     cvv: "CVV",
     amountToPay: "Ego I Kwesịrị Ịkwụ",
     payBtn: "Kwụọ",
+    processingPayment: "Na-ahazi ịkwụ ụgwọ...",
+    paymentSuccessful: "Ịkwụ Ụgwọ Gara Nke Ọma! 🎉",
+    paymentProcessed: "E mechaala ịkwụ ụtụ isi gị",
+    amountPaid: "Ego A Kwụrụ",
+    transactionId: "ID Azụmahịa",
+    date: "Ụbọchị",
+    downloadReceipt: "Budata Rẹsịtụ",
+    backToDashboard: "Laghachị na Dashboard",
+    ledgerUpdated: "💡 Emelitela ledger gị na-akpaghị aka site na ịkwụ a",
   },
 };
 
@@ -370,7 +415,7 @@ export function PayTax({ onNavigate }: PayTaxProps) {
           >
             <div className="text-center">
               <Loader2 className="w-16 h-16 animate-spin mx-auto mb-4 text-emerald-600" />
-              <p className="text-gray-600">Processing payment...</p>
+              <p className="text-gray-600">{translations[language].processingPayment}</p>
             </div>
           </motion.div>
         )}
@@ -405,20 +450,20 @@ export function PayTax({ onNavigate }: PayTaxProps) {
               <CheckCircle2 className="w-12 h-12 text-emerald-600" />
             </motion.div>
 
-            <h2 className="text-2xl mb-2">Payment Successful! 🎉</h2>
-            <p className="text-gray-600 mb-8">Your tax payment has been processed</p>
+            <h2 className="text-2xl mb-2">{translations[language].paymentSuccessful}</h2>
+            <p className="text-gray-600 mb-8">{translations[language].paymentProcessed}</p>
 
             <div className="bg-white rounded-xl p-4 border border-gray-200 mb-6 text-left space-y-3">
               <div className="flex justify-between text-sm">
-                <span className="text-gray-600">Amount Paid</span>
+                <span className="text-gray-600">{translations[language].amountPaid}</span>
                 <span>₦{total.toLocaleString()}</span>
               </div>
               <div className="flex justify-between text-sm">
-                <span className="text-gray-600">Transaction ID</span>
+                <span className="text-gray-600">{translations[language].transactionId}</span>
                 <span>TXN-{Math.floor(Math.random() * 100000)}</span>
               </div>
               <div className="flex justify-between text-sm">
-                <span className="text-gray-600">Date</span>
+                <span className="text-gray-600">{translations[language].date}</span>
                 <span>Dec 13, 2025</span>
               </div>
             </div>
@@ -426,19 +471,19 @@ export function PayTax({ onNavigate }: PayTaxProps) {
             <div className="space-y-3">
               <button className="w-full py-4 bg-emerald-600 text-white rounded-xl hover:bg-emerald-700 shadow-lg transition-all flex items-center justify-center gap-2">
                 <Download className="w-5 h-5" />
-                Download Receipt
+                {translations[language].downloadReceipt}
               </button>
               <button
                 onClick={() => onNavigate('dashboard')}
                 className="w-full py-4 bg-gray-100 text-gray-700 rounded-xl hover:bg-gray-200 transition-all"
               >
-                Back to Dashboard
+                {translations[language].backToDashboard}
               </button>
             </div>
 
             <div className="mt-6 p-4 bg-blue-50 border border-blue-200 rounded-xl">
               <p className="text-sm text-blue-900">
-                💡 Your ledger has been automatically updated with this payment
+                {translations[language].ledgerUpdated}
               </p>
             </div>
           </motion.div>
