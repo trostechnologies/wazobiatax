@@ -1,6 +1,229 @@
 import { motion, AnimatePresence } from 'motion/react';
 import { ArrowLeft, Search, Filter, Plus, Camera, Mic, Download, TrendingUp, TrendingDown, Zap } from 'lucide-react';
 import { useState } from 'react';
+import { useLanguage } from "@/context/LanguageContext";
+
+const translations = {
+  english: {
+    income: "Income",
+    expense: "Expense",
+
+    synced: "Synced",
+    pending: "Pending",
+    exempt: "Tax Exempt",
+
+    salesRevenue: "Sales Revenue",
+    foodSupplies: "Food Supplies",
+    equipment: "Equipment",
+    serviceIncome: "Service Income",
+    transportation: "Transportation",
+
+    isExempt: "Exempt",
+    pendingSync: "Pending sync",
+    downloadCsvReport: "Download CSV Report",
+
+    digitalLedger: "Digital Ledger",
+    searchTransactions: "Search transactions...",
+    pendingSyncInfo: "3 entries pending sync - Will sync when online",
+
+    filterAll: "All",
+    filterIncome: "Income",
+    filterExpense: "Expense",
+
+    addEntry: "Add Entry",
+    manualEntry: "Manual Entry",
+    manualEntryDesc: "Enter details manually",
+    scanReceipt: "Scan Receipt",
+    scanReceiptDesc: "Use camera to scan",
+    voiceEntry: "Voice Entry",
+
+    speakToAdd: "Speak to add entry",
+    type: "Type",
+    amount: "Amount",
+    category: "Category",
+    selectCategory: "Select category",
+    date: "Date",
+    notesOptional: "Notes (Optional)",
+    addNotes: "Add notes...",
+    saveEntry: "Save Entry",
+  },
+
+  pidgin: {
+    income: "Income",
+    expense: "Expense",
+
+    synced: "Don Sync",
+    pending: "Still Dey Wait",
+    exempt: "No Tax",
+
+    salesRevenue: "Sales Money",
+    foodSupplies: "Food Stuff",
+    equipment: "Equipment",
+    serviceIncome: "Service Money",
+    transportation: "Transport",
+
+    isExempt: "No Tax",
+    pendingSync: "Never Sync",
+    downloadCsvReport: "Download CSV Report",
+
+    digitalLedger: "Digital Ledger",
+    searchTransactions: "Search transactions...",
+    pendingSyncInfo: "3 entries never sync - E go sync when network dey",
+
+    filterAll: "All",
+    filterIncome: "Income",
+    filterExpense: "Expense",
+
+    addEntry: "Add Entry",
+    manualEntry: "Manual Entry",
+    manualEntryDesc: "Enter details by yourself",
+    scanReceipt: "Scan Receipt",
+    scanReceiptDesc: "Use camera scan am",
+    voiceEntry: "Voice Entry",
+
+    speakToAdd: "Talk to add entry",
+    type: "Type",
+    amount: "Amount",
+    category: "Category",
+    selectCategory: "Choose category",
+    date: "Date",
+    notesOptional: "Notes (Optional)",
+    addNotes: "Add notes...",
+    saveEntry: "Save Entry",
+  },
+
+  hausa: {
+    income: "Kuɗin Shiga",
+    expense: "Kuɗin Fita",
+
+    synced: "An Daidaita",
+    pending: "Ana Jira",
+    exempt: "Ba a Caji Haraji",
+
+    salesRevenue: "Kuɗin Talla",
+    foodSupplies: "Kayan Abinci",
+    equipment: "Kayan Aiki",
+    serviceIncome: "Kuɗin Sabis",
+    transportation: "Sufuri",
+
+    isExempt: "No Tax",
+    pendingSync: "Never Sync",
+    downloadCsvReport: "Sauke Rahoton CSV",
+
+    digitalLedger: "Littafin Dijital",
+    searchTransactions: "Nemo ma'amaloli...",
+    pendingSyncInfo: "Akwai bayanai 3 da ba su daidaita ba – Za su daidaita idan an samu intanet",
+
+    filterAll: "Duka",
+    filterIncome: "Kuɗin Shiga",
+    filterExpense: "Kuɗin Fita",
+
+    addEntry: "Ƙara Shigarwa",
+    manualEntry: "Shigarwa da Hannu",
+    manualEntryDesc: "Shigar da bayanai da hannu",
+    scanReceipt: "Duba Rasiti",
+    scanReceiptDesc: "Yi amfani da kyamara don dubawa",
+    voiceEntry: "Shigar da Murya",
+
+    speakToAdd: "Yi magana don ƙara shigarwa",
+    type: "Nau'i",
+    amount: "Adadi",
+    category: "Rukuni",
+    selectCategory: "Zaɓi rukuni",
+    date: "Kwanan Wata",
+    notesOptional: "Bayani (Na zaɓi)",
+    addNotes: "Ƙara bayani...",
+    saveEntry: "Ajiye Shigarwa",
+  },
+
+  yoruba: {
+    income: "Ìní",
+    expense: "Ìnáwọ́",
+
+    synced: "Ti Darapọ̀",
+    pending: "Ń Dúró",
+    exempt: "Kò Ní Owó-ori",
+
+    salesRevenue: "Owó Títà",
+    foodSupplies: "Ohun Èlò Oúnjẹ",
+    equipment: "Ẹ̀rọ Iṣẹ́",
+    serviceIncome: "Owó Iṣẹ́",
+    transportation: "Gbigbe",
+
+    isExempt: "Kò Ní Owó-ori",
+    pendingSync: "Ń Dúró Fún ìṣọ̀kan",
+    downloadCsvReport: "Gba Iroyin CSV",
+
+    digitalLedger: "Ledger Ayelujara",
+    searchTransactions: "Wa awọn ìṣúná...",
+    pendingSyncInfo: "Àwọn ìforúkọsílẹ̀ 3 ń dúró fún ìṣọ̀kan – Yóò darapọ̀ nígbà tí intanẹẹti bá wà",
+
+    filterAll: "Gbogbo",
+    filterIncome: "Ìní",
+    filterExpense: "Ìnáwọ́",
+
+    addEntry: "Fikun-un Ìforúkọsílẹ̀",
+    manualEntry: "Ìforúkọsílẹ̀ Ọwọ́",
+    manualEntryDesc: "Tẹ̀síwájú kí o tẹ̀ alaye lọ́wọ́",
+    scanReceipt: "Ṣàyẹ̀wò Rẹ́sítì",
+    scanReceiptDesc: "Lo kaamera láti ṣàyẹ̀wò",
+    voiceEntry: "Ìforúkọsílẹ̀ Ohùn",
+
+    speakToAdd: "Sọ láti fikun ìforúkọsílẹ̀",
+    type: "Iru",
+    amount: "Iye",
+    category: "Ẹ̀ka",
+    selectCategory: "Yan ẹ̀ka",
+    date: "Ọjọ́",
+    notesOptional: "Àkọsílẹ̀ (Kíkọ̀ọ́)",
+    addNotes: "Ṣàfikún àkọsílẹ̀...",
+    saveEntry: "Fipamọ́ Ìforúkọsílẹ̀",
+  },
+
+  igbo: {
+    income: "Ego Mbata",
+    expense: "Mmefu Ego",
+
+    synced: "Ejikọtala",
+    pending: "Na-echere",
+    exempt: "Enweghị Ụtụ",
+
+    salesRevenue: "Ego Ahịa",
+    foodSupplies: "Ngwa Oriri",
+    equipment: "Ngwa Ọrụ",
+    serviceIncome: "Ego Ọrụ",
+    transportation: "Njem",
+
+    isExempt: "Enweghị Ụtụ",
+    pendingSync: "Na-echere Njikọ",
+    downloadCsvReport: "Budata Akụkọ CSV",
+
+    digitalLedger: "Ledger Dijitalụ",
+    searchTransactions: "Chọọ azụmahịa...",
+    pendingSyncInfo: "Enwere ndekọ 3 na-echere njikọ – Ha ga-ejikọ mgbe ịntanetị dị",
+
+    filterAll: "Niile",
+    filterIncome: "Ego Mbata",
+    filterExpense: "Mmefu Ego",
+
+    addEntry: "Tinye Ndekọ",
+    manualEntry: "Ntinye Aka",
+    manualEntryDesc: "Tinye nkọwa n'aka gi",
+    scanReceipt: "Lelee Rẹsịtụ",
+    scanReceiptDesc: "Jiri kamera lelee",
+    voiceEntry: "Ntinye Olu",
+
+    speakToAdd: "Kwuo ka itinye ndekọ",
+    type: "Ụdị",
+    amount: "Ego",
+    category: "Ngalaba",
+    selectCategory: "Họrọ ngalaba",
+    date: "Ụbọchị",
+    notesOptional: "Nkọwa (M'Ichọọ)",
+    addNotes: "Tinye nkọwa...",
+    saveEntry: "Chekwaa Ndekọ",
+  },
+};
 
 interface LedgerProps {
   onNavigate: (screen: string) => void;
@@ -12,13 +235,16 @@ export function Ledger({ onNavigate }: LedgerProps) {
   const [searchQuery, setSearchQuery] = useState('');
   const [filterType, setFilterType] = useState('all');
 
+  const { language } = useLanguage();
+  const t = translations[language];
+
   const entries = [
-    { id: 1, date: 'Dec 13, 2025', amount: 25000, category: 'Sales Revenue', type: 'income', status: 'synced' },
-    { id: 2, date: 'Dec 12, 2025', amount: 5000, category: 'Food Supplies', type: 'expense', status: 'synced' },
-    { id: 3, date: 'Dec 11, 2025', amount: 15000, category: 'Equipment', type: 'expense', status: 'pending' },
-    { id: 4, date: 'Dec 10, 2025', amount: 30000, category: 'Service Income', type: 'income', status: 'synced' },
-    { id: 5, date: 'Dec 9, 2025', amount: 8000, category: 'Transportation', type: 'expense', status: 'synced' },
-    { id: 6, date: 'Dec 8, 2025', amount: 20000, category: 'Sales Revenue', type: 'income', status: 'synced', exempt: true },
+    { id: 1, date: 'Dec 13, 2025', amount: 25000, categoryKey: 'salesRevenue', type: 'income', status: 'synced' },
+    { id: 2, date: 'Dec 12, 2025', amount: 5000, categoryKey: 'foodSupplies', type: 'expense', status: 'synced' },
+    { id: 3, date: 'Dec 11, 2025', amount: 15000, categoryKey: 'equipment', type: 'expense', status: 'pending' },
+    { id: 4, date: 'Dec 10, 2025', amount: 30000, categoryKey: 'serviceIncome', type: 'income', status: 'synced' },
+    { id: 5, date: 'Dec 9, 2025', amount: 8000, categoryKey: 'transportation', type: 'expense', status: 'synced' },
+    { id: 6, date: 'Dec 8, 2025', amount: 20000, categoryKey: 'salesRevenue', type: 'income', status: 'synced', exempt: true },
   ];
 
   const handleAddClick = (mode: string) => {
@@ -40,7 +266,7 @@ export function Ledger({ onNavigate }: LedgerProps) {
       {/* Header */}
       <div className="bg-white px-6 py-4 border-b border-gray-200">
         <div className="flex items-center gap-4 mb-4">
-          <h1 className="text-lg">Digital Ledger</h1>
+          <h1 className="text-lg">{translations[language].digitalLedger}</h1>
         </div>
 
         {/* Search & Filter */}
@@ -49,7 +275,7 @@ export function Ledger({ onNavigate }: LedgerProps) {
             <Search className="w-5 h-5 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
             <input
               type="text"
-              placeholder="Search transactions..."
+              placeholder={translations[language].searchTransactions}
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none text-sm"
@@ -66,13 +292,18 @@ export function Ledger({ onNavigate }: LedgerProps) {
             <button
               key={type}
               onClick={() => setFilterType(type)}
-              className={`px-4 py-1.5 rounded-full text-sm whitespace-nowrap transition-all ${
-                filterType === type
+              className={`px-4 py-1.5 rounded-full text-sm whitespace-nowrap transition-all ${filterType === type
                   ? 'bg-emerald-600 text-white'
                   : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-              }`}
+                }`}
             >
-              {type.charAt(0).toUpperCase() + type.slice(1)}
+              {translations[language][
+                type === 'all'
+                  ? 'filterAll'
+                  : type === 'income'
+                    ? 'filterIncome'
+                    : 'filterExpense'
+              ]}
             </button>
           ))}
         </div>
@@ -81,7 +312,7 @@ export function Ledger({ onNavigate }: LedgerProps) {
       {/* Offline Sync Banner */}
       <div className="bg-amber-50 border-b border-amber-200 px-6 py-3 flex items-center gap-2 text-sm text-amber-900">
         <Zap className="w-4 h-4" />
-        <span>3 entries pending sync - Will sync when online</span>
+        <span>{translations[language].pendingSyncInfo}</span>
       </div>
 
       {/* Ledger Entries */}
@@ -96,9 +327,8 @@ export function Ledger({ onNavigate }: LedgerProps) {
           >
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
-                <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${
-                  entry.type === 'income' ? 'bg-emerald-50' : 'bg-red-50'
-                }`}>
+                <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${entry.type === 'income' ? 'bg-emerald-50' : 'bg-red-50'
+                  }`}>
                   {entry.type === 'income' ? (
                     <TrendingUp className="w-5 h-5 text-emerald-600" />
                   ) : (
@@ -106,26 +336,25 @@ export function Ledger({ onNavigate }: LedgerProps) {
                   )}
                 </div>
                 <div>
-                  <p className="text-sm mb-0.5">{entry.category}</p>
+                  <p className="text-sm mb-0.5">{translations[language][entry.categoryKey]}</p>
                   <div className="flex items-center gap-2">
                     <p className="text-xs text-gray-500">{entry.date}</p>
                     {entry.exempt && (
                       <span className="px-2 py-0.5 bg-blue-50 text-blue-600 rounded text-xs">
-                        Exempt
+                        {translations[language].isExempt}
                       </span>
                     )}
                     {entry.status === 'pending' && (
                       <span className="px-2 py-0.5 bg-amber-50 text-amber-600 rounded text-xs">
-                        Pending sync
+                        {translations[language].pendingSync}
                       </span>
                     )}
                   </div>
                 </div>
               </div>
               <div className="text-right">
-                <p className={`text-sm ${
-                  entry.type === 'income' ? 'text-emerald-600' : 'text-gray-900'
-                }`}>
+                <p className={`text-sm ${entry.type === 'income' ? 'text-emerald-600' : 'text-gray-900'
+                  }`}>
                   {entry.type === 'income' ? '+' : '-'}₦{entry.amount.toLocaleString()}
                 </p>
               </div>
@@ -138,7 +367,7 @@ export function Ledger({ onNavigate }: LedgerProps) {
       <div className="px-6 pb-6">
         <button className="w-full py-3 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-all flex items-center justify-center gap-2">
           <Download className="w-5 h-5" />
-          Download CSV Report
+          {translations[language].downloadCsvReport}
         </button>
       </div>
 
@@ -173,9 +402,9 @@ export function Ledger({ onNavigate }: LedgerProps) {
               className="bg-white rounded-t-3xl w-full max-w-[390px] mx-auto p-6"
             >
               <div className="w-12 h-1 bg-gray-300 rounded-full mx-auto mb-6" />
-              
-              <h3 className="text-lg mb-4">Add Entry</h3>
-              
+
+              <h3 className="text-lg mb-4">{translations[language].addEntry}</h3>
+
               <div className="space-y-3">
                 <button
                   onClick={() => handleAddClick('manual')}
@@ -185,8 +414,8 @@ export function Ledger({ onNavigate }: LedgerProps) {
                     <Plus className="w-6 h-6 text-emerald-600" />
                   </div>
                   <div>
-                    <p className="text-sm">Manual Entry</p>
-                    <p className="text-xs text-gray-600">Enter details manually</p>
+                    <p className="text-sm">{translations[language].manualEntry}</p>
+                    <p className="text-xs text-gray-600">{translations[language].manualEntryDesc}</p>
                   </div>
                 </button>
 
@@ -198,8 +427,8 @@ export function Ledger({ onNavigate }: LedgerProps) {
                     <Camera className="w-6 h-6 text-purple-600" />
                   </div>
                   <div>
-                    <p className="text-sm">Scan Receipt</p>
-                    <p className="text-xs text-gray-600">Use camera to scan</p>
+                    <p className="text-sm">{translations[language].scanReceipt}</p>
+                    <p className="text-xs text-gray-600">{translations[language].scanReceiptDesc}</p>
                   </div>
                 </button>
 
@@ -211,8 +440,8 @@ export function Ledger({ onNavigate }: LedgerProps) {
                     <Mic className="w-6 h-6 text-blue-600" />
                   </div>
                   <div>
-                    <p className="text-sm">Voice Entry</p>
-                    <p className="text-xs text-gray-600">Speak to add entry</p>
+                    <p className="text-sm">{translations[language].voiceEntry}</p>
+                    <p className="text-xs text-gray-600">{translations[language].speakToAdd}</p>
                   </div>
                 </button>
               </div>
@@ -240,24 +469,24 @@ export function Ledger({ onNavigate }: LedgerProps) {
               className="bg-white rounded-t-3xl w-full max-w-[390px] mx-auto p-6 max-h-[80vh] overflow-y-auto"
             >
               <div className="w-12 h-1 bg-gray-300 rounded-full mx-auto mb-6" />
-              
-              <h3 className="text-lg mb-4">Manual Entry</h3>
-              
+
+              <h3 className="text-lg mb-4">{translations[language].manualEntry}</h3>
+
               <div className="space-y-4">
                 <div>
-                  <label className="block mb-2 text-sm text-gray-700">Type</label>
+                  <label className="block mb-2 text-sm text-gray-700">{translations[language].type}</label>
                   <div className="grid grid-cols-2 gap-2">
                     <button className="py-2 px-4 bg-emerald-50 text-emerald-600 border-2 border-emerald-600 rounded-lg text-sm">
-                      Income
+                    {translations[language].income}
                     </button>
                     <button className="py-2 px-4 bg-gray-100 text-gray-600 border-2 border-transparent rounded-lg text-sm">
-                      Expense
+                    {translations[language].expense}
                     </button>
                   </div>
                 </div>
 
                 <div>
-                  <label className="block mb-2 text-sm text-gray-700">Amount</label>
+                  <label className="block mb-2 text-sm text-gray-700">{translations[language].amount}</label>
                   <div className="relative">
                     <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500">₦</span>
                     <input
@@ -269,19 +498,19 @@ export function Ledger({ onNavigate }: LedgerProps) {
                 </div>
 
                 <div>
-                  <label className="block mb-2 text-sm text-gray-700">Category</label>
+                  <label className="block mb-2 text-sm text-gray-700">{translations[language].category}</label>
                   <select className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none">
-                    <option>Select category</option>
-                    <option>Sales Revenue</option>
-                    <option>Service Income</option>
-                    <option>Food Supplies</option>
-                    <option>Equipment</option>
-                    <option>Transportation</option>
+                    <option>{translations[language].selectCategory}</option>
+                    <option>{translations[language].salesRevenue}</option>
+                    <option>{translations[language].serviceIncome}</option>
+                    <option>{translations[language].foodSupplies}</option>
+                    <option>{translations[language].equipment}</option>
+                    <option>{translations[language].transportation}</option>
                   </select>
                 </div>
 
                 <div>
-                  <label className="block mb-2 text-sm text-gray-700">Date</label>
+                  <label className="block mb-2 text-sm text-gray-700">{translations[language].date}</label>
                   <input
                     type="date"
                     className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none"
@@ -289,16 +518,16 @@ export function Ledger({ onNavigate }: LedgerProps) {
                 </div>
 
                 <div>
-                  <label className="block mb-2 text-sm text-gray-700">Notes (Optional)</label>
+                  <label className="block mb-2 text-sm text-gray-700">{translations[language].notesOptional}</label>
                   <textarea
                     rows={3}
-                    placeholder="Add notes..."
+                    placeholder={translations[language].addNotes}
                     className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none resize-none"
                   />
                 </div>
 
                 <button className="w-full py-4 bg-emerald-600 text-white rounded-xl hover:bg-emerald-700 shadow-lg transition-all">
-                  Save Entry
+                {translations[language].saveEntry}
                 </button>
               </div>
             </motion.div>

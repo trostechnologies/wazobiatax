@@ -1,17 +1,135 @@
 import { motion } from 'motion/react';
-import { 
-  User, 
-  Copy, 
-  ChevronRight, 
-  Globe, 
-  Bell, 
-  Shield, 
-  FileText, 
+import {
+  User,
+  Copy,
+  ChevronRight,
+  Globe,
+  Bell,
+  Shield,
+  FileText,
   LogOut,
   Crown,
   Sparkles
 } from 'lucide-react';
 import { useState } from 'react';
+import { useLanguage } from "@/context/LanguageContext";
+
+const translations = {
+  english: {
+    account: "Account",
+    taxServices: "Tax Services",
+    settings: "Settings",
+
+    personalInformation: "Personal Information",
+    languageAndVoice: "Language & Voice",
+    notifications: "Notifications",
+
+    requestTaxClearance: "Request Tax Clearance",
+    taxEducation: "Tax Education",
+
+    upgradeToPremium: "Upgrade to Premium",
+    securityAndPrivacy: "Security & Privacy",
+
+    profile: "Profile",
+    basicPlan: "Basic Plan",
+    premium: "Premium",
+    taxIdentificationNumber: "Tax Identification Number",
+    copied: "Copied!",
+    logOut: "Log Out",
+  },
+
+  pidgin: {
+    account: "Account",
+    taxServices: "Tax Services",
+    settings: "Settings",
+
+    personalInformation: "Personal Information",
+    languageAndVoice: "Language & Voice",
+    notifications: "Notifications",
+
+    requestTaxClearance: "Request Tax Clearance",
+    taxEducation: "Tax Education",
+
+    upgradeToPremium: "Upgrade to Premium",
+    securityAndPrivacy: "Security & Privacy",
+
+    profile: "Profile",
+    basicPlan: "Basic Plan",
+    premium: "Premium",
+    taxIdentificationNumber: "Tax Identification Number",
+    copied: "Copied!",
+    logOut: "Log Out",
+  },
+
+  hausa: {
+    account: "Asusu",
+    taxServices: "Ayyukan Haraji",
+    settings: "Saituna",
+
+    personalInformation: "Bayanan Kai",
+    languageAndVoice: "Harshe & Murya",
+    notifications: "Sanarwa",
+
+    requestTaxClearance: "Nemi Takardar Haraji",
+    taxEducation: "Ilimin Haraji",
+
+    upgradeToPremium: "Haɓaka zuwa Premium",
+    securityAndPrivacy: "Tsaro & Sirri",
+
+    profile: "Bayanin Asusu",
+    basicPlan: "Tsarin Asali",
+    premium: "Premium",
+    taxIdentificationNumber: "Lambar Shaidar Haraji",
+    copied: "An Kwafa!",
+    logOut: "Fita",
+  },
+
+  yoruba: {
+    account: "Akọọlẹ",
+    taxServices: "Awọn Iṣẹ́ Owo-ori",
+    settings: "Àtúnṣe",
+
+    personalInformation: "Alaye Ara ẹni",
+    languageAndVoice: "Èdè & Ohùn",
+    notifications: "Ìkìlọ̀",
+
+    requestTaxClearance: "Bẹ̀rẹ̀ Ìtúsílẹ̀ Owo-ori",
+    taxEducation: "Ẹ̀kọ́ Owo-ori",
+
+    upgradeToPremium: "Gbe Soke sí Premium",
+    securityAndPrivacy: "Ààbò & Aṣírí",
+
+    profile: "Profaili",
+    basicPlan: "Eto Ipilẹ̀",
+    premium: "Premium",
+    taxIdentificationNumber: "Nọ́mbà Idanimọ Owo-ori",
+    copied: "Ti Daakọ!",
+    logOut: "Jáde",
+  },
+
+  igbo: {
+    account: "Akaụntụ",
+    taxServices: "Ọrụ Ụtụ Isi",
+    settings: "Ntọala",
+
+    personalInformation: "Ozi Onwe",
+    languageAndVoice: "Asụsụ & Olu",
+    notifications: "Ọkwa",
+
+    requestTaxClearance: "Rịọ Asambodo Ụtụ Isi",
+    taxEducation: "Mmụta Ụtụ Isi",
+
+    upgradeToPremium: "Bulie gaa Premium",
+    securityAndPrivacy: "Nchedo & Nzuzo",
+
+    profile: "Profaịlụ",
+    basicPlan: "Atụmatụ Nkịtị",
+    premium: "Premium",
+    taxIdentificationNumber: "Nọmba NJirimara Ụtụ Isi",
+    copied: "Edekọtara!",
+    logOut: "Pụọ",
+  },
+};
 
 interface ProfileProps {
   onNavigate: (screen: string) => void;
@@ -22,6 +140,9 @@ export function Profile({ onNavigate }: ProfileProps) {
   const tin = '123456789-0001';
   const subscription = 'basic'; // basic or premium
 
+  const { language } = useLanguage();
+  const t = translations[language];
+
   const handleCopyTIN = () => {
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
@@ -29,28 +150,50 @@ export function Profile({ onNavigate }: ProfileProps) {
 
   const menuSections = [
     {
-      title: 'Account',
+      titleKey: 'account',
       items: [
-        { id: 'personal', label: 'Personal Information', icon: User, screen: 'profile' },
-        { id: 'language', label: 'Language & Voice', icon: Globe, screen: 'profile' },
-        { id: 'notifications', label: 'Notifications', icon: Bell, screen: 'notifications' },
-      ]
+        { id: 'personal', labelKey: 'personalInformation', icon: User, screen: 'profile' },
+        { id: 'language', labelKey: 'languageAndVoice', icon: Globe, screen: 'profile' },
+        { id: 'notifications', labelKey: 'notifications', icon: Bell, screen: 'notifications' },
+      ],
     },
     {
-      title: 'Tax Services',
+      titleKey: 'taxServices',
       items: [
-        { id: 'clearance', label: 'Request Tax Clearance', icon: FileText, screen: 'taxClearance', highlight: true },
-        { id: 'education', label: 'Tax Education', icon: Sparkles, screen: 'education' },
-      ]
+        {
+          id: 'clearance',
+          labelKey: 'requestTaxClearance',
+          icon: FileText,
+          screen: 'taxClearance',
+          highlight: true,
+        },
+        {
+          id: 'education',
+          labelKey: 'taxEducation',
+          icon: Sparkles,
+          screen: 'education',
+        },
+      ],
     },
     {
-      title: 'Settings',
+      titleKey: 'settings',
       items: [
-        { id: 'subscription', label: 'Upgrade to Premium', icon: Crown, screen: 'settings', premium: true },
-        { id: 'security', label: 'Security & Privacy', icon: Shield, screen: 'profile' },
-      ]
-    }
-  ];
+        {
+          id: 'subscription',
+          labelKey: 'upgradeToPremium',
+          icon: Crown,
+          screen: 'settings',
+          premium: true,
+        },
+        {
+          id: 'security',
+          labelKey: 'securityAndPrivacy',
+          icon: Shield,
+          screen: 'profile',
+        },
+      ],
+    },
+  ];  
 
   return (
     <div className="min-h-screen bg-gray-50 pb-20">
@@ -66,8 +209,8 @@ export function Profile({ onNavigate }: ProfileProps) {
 
       {/* Profile Header */}
       <div className="bg-gradient-to-br from-emerald-500 to-emerald-600 px-6 pt-6 pb-20">
-        <h1 className="text-white text-lg mb-6">Profile</h1>
-        
+        <h1 className="text-white text-lg mb-6">{translations[language].profile}</h1>
+
         <div className="flex items-center gap-4">
           <div className="w-20 h-20 bg-white rounded-2xl flex items-center justify-center">
             <User className="w-10 h-10 text-emerald-600" />
@@ -75,17 +218,17 @@ export function Profile({ onNavigate }: ProfileProps) {
           <div className="flex-1">
             <h2 className="text-white text-xl mb-1">Chukwuma Okafor</h2>
             <p className="text-emerald-100 text-sm">Bukka Restaurant</p>
-            
+
             {/* Subscription Badge */}
             <div className="mt-2">
-              {subscription === 'premium' ? (
-                <div className="inline-flex items-center gap-1 px-3 py-1 bg-gradient-to-r from-amber-400 to-orange-500 text-white rounded-full text-xs">
-                  <Crown className="w-3 h-3" />
-                  Premium
+              {subscription === 'basic' ? (
+                <div className="inline-flex items-center gap-1 px-3 py-1 bg-white/20 text-white rounded-full text-xs">
+                 {translations[language].basicPlan}
                 </div>
               ) : (
-                <div className="inline-flex items-center gap-1 px-3 py-1 bg-white/20 text-white rounded-full text-xs">
-                  Basic Plan
+                <div className="inline-flex items-center gap-1 px-3 py-1 bg-gradient-to-r from-amber-400 to-orange-500 text-white rounded-full text-xs">
+                  <Crown className="w-3 h-3" />
+                  {translations[language].premium}
                 </div>
               )}
             </div>
@@ -102,7 +245,7 @@ export function Profile({ onNavigate }: ProfileProps) {
         >
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-xs text-gray-600 mb-1">Tax Identification Number</p>
+              <p className="text-xs text-gray-600 mb-1">{translations[language].taxIdentificationNumber}</p>
               <p className="text-lg tracking-wider">{tin}</p>
             </div>
             <button
@@ -115,7 +258,7 @@ export function Profile({ onNavigate }: ProfileProps) {
                   animate={{ scale: 1 }}
                   className="text-emerald-600 text-sm"
                 >
-                  Copied!
+                 {translations[language].copied}
                 </motion.div>
               ) : (
                 <Copy className="w-5 h-5 text-gray-600" />
@@ -127,50 +270,70 @@ export function Profile({ onNavigate }: ProfileProps) {
 
       {/* Menu Sections */}
       <div className="px-6 space-y-6">
-        {menuSections.map((section, sectionIndex) => (
-          <motion.div
-            key={section.title}
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: sectionIndex * 0.1 }}
+  {menuSections.map((section, sectionIndex) => (
+    <motion.div
+      key={section.titleKey}
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ delay: sectionIndex * 0.1 }}
+    >
+      <h3 className="text-xs text-gray-500 uppercase tracking-wide mb-3 px-2">
+        {translations[language][section.titleKey]}
+      </h3>
+
+      <div className="bg-white rounded-2xl overflow-hidden shadow-sm">
+        {section.items.map((item, index) => (
+          <button
+            key={item.id}
+            onClick={() => onNavigate(item.screen)}
+            className={`w-full px-4 py-4 flex items-center justify-between hover:bg-gray-50 transition-all
+              ${index !== section.items.length - 1 ? 'border-b border-gray-100' : ''}
+              ${item.premium ? 'bg-gradient-to-r from-amber-50 to-orange-50' : ''}
+            `}
           >
-            <h3 className="text-xs text-gray-500 uppercase tracking-wide mb-3 px-2">
-              {section.title}
-            </h3>
-            <div className="bg-white rounded-2xl overflow-hidden shadow-sm">
-              {section.items.map((item, index) => (
-                <button
-                  key={item.id}
-                  onClick={() => onNavigate(item.screen)}
-                  className={`w-full px-4 py-4 flex items-center justify-between hover:bg-gray-50 transition-all ${
-                    index !== section.items.length - 1 ? 'border-b border-gray-100' : ''
-                  } ${item.premium ? 'bg-gradient-to-r from-amber-50 to-orange-50' : ''}`}
-                >
-                  <div className="flex items-center gap-3">
-                    <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${
-                      item.premium ? 'bg-gradient-to-br from-amber-400 to-orange-500' :
-                      item.highlight ? 'bg-emerald-50' : 'bg-gray-50'
-                    }`}>
-                      <item.icon className={`w-5 h-5 ${
-                        item.premium ? 'text-white' :
-                        item.highlight ? 'text-emerald-600' : 'text-gray-600'
-                      }`} />
-                    </div>
-                    <span className="text-sm">{item.label}</span>
-                  </div>
-                  <ChevronRight className="w-5 h-5 text-gray-400" />
-                </button>
-              ))}
+            <div className="flex items-center gap-3">
+              <div
+                className={`w-10 h-10 rounded-lg flex items-center justify-center
+                  ${
+                    item.premium
+                      ? 'bg-gradient-to-br from-amber-400 to-orange-500'
+                      : item.highlight
+                      ? 'bg-emerald-50'
+                      : 'bg-gray-50'
+                  }
+                `}
+              >
+                <item.icon
+                  className={`w-5 h-5
+                    ${
+                      item.premium
+                        ? 'text-white'
+                        : item.highlight
+                        ? 'text-emerald-600'
+                        : 'text-gray-600'
+                    }
+                  `}
+                />
+              </div>
+
+              <span className="text-sm">
+                {translations[language][item.labelKey]}
+              </span>
             </div>
-          </motion.div>
+
+            <ChevronRight className="w-5 h-5 text-gray-400" />
+          </button>
         ))}
       </div>
+    </motion.div>
+  ))}
+</div>
 
       {/* Logout Button */}
       <div className="px-6 mt-6">
         <button className="w-full py-4 bg-white border border-gray-200 rounded-2xl hover:bg-gray-50 transition-all flex items-center justify-center gap-2 text-red-600">
           <LogOut className="w-5 h-5" />
-          Log Out
+          {translations[language].logOut}
         </button>
       </div>
 
