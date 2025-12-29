@@ -323,8 +323,8 @@ export function UpcomingDeadlines({ onNavigate }: UpcomingDeadlinesProps) {
               <div className="flex items-start gap-3 flex-1">
                 <div className={`w-2 h-2 rounded-full mt-1.5 ${getPriorityDotColor(deadline.priority)}`} />
                 <div className="flex-1">
-                  <h3 className="text-sm mb-1">{deadline.titleKey}</h3>
-                  <p className="text-xs text-gray-600 mb-2">{deadline.descKey}</p>
+                  <h3 className="text-sm mb-1">{t[deadline.titleKey]}</h3>
+                  <p className="text-xs text-gray-600 mb-2">{t[deadline.descKey]}</p>
                   
                   <div className="flex items-center gap-4 text-xs text-gray-500">
                     <div className="flex items-center gap-1">

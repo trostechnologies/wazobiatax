@@ -307,7 +307,7 @@ export function RecentActivity({ onNavigate }: RecentActivityProps) {
                 <div className="flex-1 min-w-0">
                   <div className="flex items-start justify-between mb-1">
                     <div className="flex-1">
-                      <h3 className="text-sm mb-0.5">{activity.categoryKey}</h3>
+                      <h3 className="text-sm mb-0.5">{t[activity.categoryKey]}</h3>
                       <p className="text-xs text-gray-500">{activity.reference}</p>
                     </div>
                     {activity.amount > 0 && (
