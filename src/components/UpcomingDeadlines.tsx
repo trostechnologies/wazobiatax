@@ -1,54 +1,224 @@
 import { motion } from 'motion/react';
 import { ArrowLeft, Clock, Calendar, AlertCircle, CheckCircle2, ChevronRight } from 'lucide-react';
 import { useState } from 'react';
+import { useLanguage } from "@/context/LanguageContext";
+
+const translations = {
+  english: {
+    vatReturnFiling: 'VAT Return Filing',
+    vatReturnFilingDesc: 'Monthly VAT return for November 2025',
+  
+    incomeTaxPayment: 'Income Tax Payment',
+    incomeTaxPaymentDesc: 'Q4 estimated tax payment',
+  
+    quarterlyFinancialReview: 'Quarterly Financial Review',
+    quarterlyFinancialReviewDesc: 'Review Q4 2025 financial records',
+  
+    payeReturn: 'PAYE Return',
+    payeReturnDesc: 'Employee tax withholding return',
+
+    upcomingDeadlines: 'Upcoming Deadlines',
+
+    all: 'All',
+    highPriority: 'High Priority',
+    thisWeek: 'This Week',
+    urgent: 'Urgent',
+    thisMonth: 'This Month',
+  
+    total: 'Total',
+  
+    syncToCalendar: 'Sync to Calendar',
+    addDeadlinesToCalendar: 'Add deadlines to Google Calendar',
+    sync: 'Sync',
+
+    daysLeft: 'days left',
+  days: 'Days',
+  hours: 'Hours',
+  minutes: 'Minutes',
+  completeNow: 'Complete Now',
+  },
+  pidgin: {
+    vatReturnFiling: 'VAT Return Filing',
+    vatReturnFilingDesc: 'Monthly VAT return for November 2025',
+  
+    incomeTaxPayment: 'Income Tax Payment',
+    incomeTaxPaymentDesc: 'Q4 estimated tax payment',
+  
+    quarterlyFinancialReview: 'Quarterly Financial Review',
+    quarterlyFinancialReviewDesc: 'Review financial records for Q4 2025',
+  
+    payeReturn: 'PAYE Return',
+    payeReturnDesc: 'Employee tax wey dem deduct',
+
+    upcomingDeadlines: 'Upcoming Deadlines',
+
+    all: 'All',
+    highPriority: 'High Priority',
+    thisWeek: 'This Week',
+    urgent: 'Urgent',
+    thisMonth: 'This Month',
+  
+    total: 'Total',
+  
+    syncToCalendar: 'Sync to Calendar',
+    addDeadlinesToCalendar: 'Add deadlines to Google Calendar',
+    sync: 'Sync',
+
+    daysLeft: 'days wey remain',
+  days: 'Days',
+  hours: 'Hours',
+  minutes: 'Minutes',
+  completeNow: 'Finish am Now',
+  },
+  hausa: {
+    vatReturnFiling: 'Shigar da Rahoton VAT',
+    vatReturnFilingDesc: 'Rahoton VAT na wata-wata don Nuwamba 2025',
+  
+    incomeTaxPayment: 'Biyan Harajin Kuɗin Shiga',
+    incomeTaxPaymentDesc: 'Biyan haraji na hasashen zangon huɗu (Q4)',
+  
+    quarterlyFinancialReview: 'Binciken Kuɗi na Kwata',
+    quarterlyFinancialReviewDesc: 'Binciken bayanan kuɗi na Q4 2025',
+  
+    payeReturn: 'Rahoton PAYE',
+    payeReturnDesc: 'Rahoton harajin ma’aikata',
+
+    upcomingDeadlines: 'Abubuwan Da Za a Yi Nan Gaba',
+
+    all: 'Duka',
+    highPriority: 'Babban Muhimmanci',
+    thisWeek: 'Wannan Makon',
+    urgent: 'Gaggawa',
+    thisMonth: 'Wannan Watan',
+  
+    total: 'Jimilla',
+  
+    syncToCalendar: 'Daidaita da Kalanda',
+    addDeadlinesToCalendar: 'Ƙara wa’adin aiki zuwa Google Calendar',
+    sync: 'Daidaita',
+
+    daysLeft: 'kwanaki da suka rage',
+  days: 'Kwanaki',
+  hours: 'Awanni',
+  minutes: 'Mintuna',
+  completeNow: 'Kammala Yanzu',
+  },
+  yoruba: {
+    vatReturnFiling: 'Ìforúkọsílẹ̀ VAT',
+    vatReturnFilingDesc: 'Ìròyìn VAT oṣù Kọkànlá 2025',
+  
+    incomeTaxPayment: 'Sísan Owó-ori Owo-wiwọle',
+    incomeTaxPaymentDesc: 'Sísan owó-ori ìṣírò Q4',
+  
+    quarterlyFinancialReview: 'Àyẹ̀wò Ìṣúná Mẹ́ẹ̀rin',
+    quarterlyFinancialReviewDesc: 'Àyẹ̀wò ìwé-ìṣúná Q4 2025',
+  
+    payeReturn: 'Ìròyìn PAYE',
+    payeReturnDesc: 'Owó-ori tí a yọ lára owó oṣiṣẹ́',
+
+    upcomingDeadlines: 'Àwọn Ọjọ́-ìparí Tó ń Bọ̀',
+
+    all: 'Gbogbo rẹ̀',
+    highPriority: 'Pataki Gíga',
+    thisWeek: 'Ọ̀sẹ̀ Yìí',
+    urgent: 'Pajawiri',
+    thisMonth: 'Oṣù Yìí',
+  
+    total: 'Lapapọ̀',
+  
+    syncToCalendar: 'Darapọ̀ mọ́ Kalẹ́nda',
+    addDeadlinesToCalendar: 'Fikun àwọn ọjọ́-ìparí sí Google Calendar',
+    sync: 'Darapọ̀',
+
+     daysLeft: 'ọjọ́ tó kù',
+  days: 'Ọjọ́',
+  hours: 'Wákàtí',
+  minutes: 'Ìṣẹ́jú',
+  completeNow: 'Parí Níbayìí',
+  },
+  igbo: {
+    vatReturnFiling: 'Ntinye VAT',
+    vatReturnFilingDesc: 'Nzipụta VAT kwa ọnwa maka Novemba 2025',
+  
+    incomeTaxPayment: 'Ịkwụ Ụtụ Isi Ego',
+    incomeTaxPaymentDesc: 'Ịkwụ ụtụ isi a tụrụ maka Q4',
+  
+    quarterlyFinancialReview: 'Nlele Ego Kwa Nketa',
+    quarterlyFinancialReviewDesc: 'Nlele ndekọ ego Q4 2025',
+  
+    payeReturn: 'Nzipụta PAYE',
+    payeReturnDesc: 'Ụtụ isi a na-ewe n’aka ndị ọrụ',
+
+    upcomingDeadlines: 'Ụbọchị Mmechi Na-abịa',
+
+    all: 'Ha niile',
+    highPriority: 'Ihe Dị Mkpa Nke Ukpa',
+    thisWeek: 'Izu A',
+    urgent: 'Mberede',
+    thisMonth: 'Ọnwa A',
+  
+    total: 'Ngụkọta',
+  
+    syncToCalendar: 'Jikọọ na Kalenda',
+    addDeadlinesToCalendar: 'Tinye ụbọchị mmechi na Google Calendar',
+    sync: 'Jikọọ',
+
+    daysLeft: 'ụbọchị fọdụrụ',
+  days: 'Ụbọchị',
+  hours: 'Elekere',
+  minutes: 'Nkeji',
+  completeNow: 'Mechaa Ugbu a',
+  }        
+}
 
 interface UpcomingDeadlinesProps {
   onNavigate: (screen: string) => void;
 }
 
 export function UpcomingDeadlines({ onNavigate }: UpcomingDeadlinesProps) {
+
   const deadlines = [
-    { 
-      id: 1, 
-      title: 'VAT Return Filing', 
-      days: 2, 
-      date: 'Dec 15, 2025',
-      priority: 'high',
-      type: 'filing',
-      description: 'Monthly VAT return for November 2025',
-      status: 'pending'
-    },
-    { 
-      id: 2, 
-      title: 'Income Tax Payment', 
-      days: 15, 
-      date: 'Dec 28, 2025',
-      priority: 'medium',
-      type: 'payment',
-      description: 'Q4 estimated tax payment',
-      status: 'pending'
-    },
-    { 
-      id: 3, 
-      title: 'Quarterly Financial Review', 
-      days: 28, 
-      date: 'Jan 10, 2026',
-      priority: 'low',
-      type: 'review',
-      description: 'Review Q4 2025 financial records',
-      status: 'pending'
-    },
-    { 
-      id: 4, 
-      title: 'PAYE Return', 
-      days: 35, 
-      date: 'Jan 17, 2026',
-      priority: 'medium',
-      type: 'filing',
-      description: 'Employee tax withholding return',
-      status: 'pending'
-    },
-  ];
+  {
+    id: 1,
+    titleKey: 'vatReturnFiling',
+    descKey: 'vatReturnFilingDesc',
+    days: 2,
+    date: 'Dec 15, 2025',
+    priority: 'high',
+    type: 'filing',
+    status: 'pending',
+  },
+  {
+    id: 2,
+    titleKey: 'incomeTaxPayment',
+    descKey: 'incomeTaxPaymentDesc',
+    days: 15,
+    date: 'Dec 28, 2025',
+    priority: 'medium',
+    type: 'payment',
+    status: 'pending',
+  },
+  {
+    id: 3,
+    titleKey: 'quarterlyFinancialReview',
+    descKey: 'quarterlyFinancialReviewDesc',
+    days: 28,
+    date: 'Jan 10, 2026',
+    priority: 'low',
+    type: 'review',
+    status: 'pending',
+  },
+  {
+    id: 4,
+    titleKey: 'payeReturn',
+    descKey: 'payeReturnDesc',
+    days: 35,
+    date: 'Jan 17, 2026',
+    priority: 'medium',
+    type: 'filing',
+    status: 'pending',
+  },
+];  
 
   const getPriorityColor = (priority: string) => {
     switch (priority) {
@@ -67,6 +237,9 @@ export function UpcomingDeadlines({ onNavigate }: UpcomingDeadlinesProps) {
       default: return 'bg-gray-500';
     }
   };
+
+  const { language } = useLanguage();
+  const t = translations[language];
 
   return (
     <div className="min-h-screen bg-gray-50 pb-20">
@@ -89,19 +262,19 @@ export function UpcomingDeadlines({ onNavigate }: UpcomingDeadlinesProps) {
           >
             <ArrowLeft className="w-6 h-6 text-gray-700" />
           </button>
-          <h1 className="text-lg">Upcoming Deadlines</h1>
+          <h1 className="text-lg">{translations[language].upcomingDeadlines}</h1>
         </div>
 
         {/* Filter Pills */}
         <div className="flex gap-2 overflow-x-auto">
           <button className="px-4 py-1.5 bg-emerald-600 text-white rounded-full text-sm whitespace-nowrap">
-            All
+            {translations[language].all}
           </button>
           <button className="px-4 py-1.5 bg-gray-100 text-gray-600 rounded-full text-sm whitespace-nowrap hover:bg-gray-200 transition-all">
-            High Priority
+            {translations[language].highPriority}
           </button>
           <button className="px-4 py-1.5 bg-gray-100 text-gray-600 rounded-full text-sm whitespace-nowrap hover:bg-gray-200 transition-all">
-            This Week
+            {translations[language].thisWeek}
           </button>
         </div>
       </div>
@@ -114,7 +287,7 @@ export function UpcomingDeadlines({ onNavigate }: UpcomingDeadlinesProps) {
           className="bg-white rounded-xl p-4 border border-gray-200 text-center"
         >
           <p className="text-2xl text-red-600 mb-1">1</p>
-          <p className="text-xs text-gray-600">Urgent</p>
+          <p className="text-xs text-gray-600">{translations[language].urgent}</p>
         </motion.div>
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -123,7 +296,7 @@ export function UpcomingDeadlines({ onNavigate }: UpcomingDeadlinesProps) {
           className="bg-white rounded-xl p-4 border border-gray-200 text-center"
         >
           <p className="text-2xl text-amber-600 mb-1">2</p>
-          <p className="text-xs text-gray-600">This Month</p>
+          <p className="text-xs text-gray-600">{translations[language].thisMonth}</p>
         </motion.div>
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -132,7 +305,7 @@ export function UpcomingDeadlines({ onNavigate }: UpcomingDeadlinesProps) {
           className="bg-white rounded-xl p-4 border border-gray-200 text-center"
         >
           <p className="text-2xl text-emerald-600 mb-1">4</p>
-          <p className="text-xs text-gray-600">Total</p>
+          <p className="text-xs text-gray-600">{translations[language].total}</p>
         </motion.div>
       </div>
 
@@ -150,8 +323,8 @@ export function UpcomingDeadlines({ onNavigate }: UpcomingDeadlinesProps) {
               <div className="flex items-start gap-3 flex-1">
                 <div className={`w-2 h-2 rounded-full mt-1.5 ${getPriorityDotColor(deadline.priority)}`} />
                 <div className="flex-1">
-                  <h3 className="text-sm mb-1">{deadline.title}</h3>
-                  <p className="text-xs text-gray-600 mb-2">{deadline.description}</p>
+                  <h3 className="text-sm mb-1">{deadline.titleKey}</h3>
+                  <p className="text-xs text-gray-600 mb-2">{deadline.descKey}</p>
                   
                   <div className="flex items-center gap-4 text-xs text-gray-500">
                     <div className="flex items-center gap-1">
@@ -160,7 +333,7 @@ export function UpcomingDeadlines({ onNavigate }: UpcomingDeadlinesProps) {
                     </div>
                     <div className="flex items-center gap-1">
                       <Clock className="w-3 h-3" />
-                      <span>{deadline.days} days left</span>
+                      <span>{deadline.days} {translations[language].daysLeft}</span>
                     </div>
                   </div>
                 </div>
@@ -176,15 +349,15 @@ export function UpcomingDeadlines({ onNavigate }: UpcomingDeadlinesProps) {
               <div className="flex items-center justify-center gap-4">
                 <div className="text-center">
                   <p className="text-2xl text-gray-900">{deadline.days}</p>
-                  <p className="text-xs text-gray-500">Days</p>
+                  <p className="text-xs text-gray-500">{translations[language].days}</p>
                 </div>
                 <div className="text-center">
                   <p className="text-2xl text-gray-900">{Math.floor(Math.random() * 24)}</p>
-                  <p className="text-xs text-gray-500">Hours</p>
+                  <p className="text-xs text-gray-500">{translations[language].hours}</p>
                 </div>
                 <div className="text-center">
                   <p className="text-2xl text-gray-900">{Math.floor(Math.random() * 60)}</p>
-                  <p className="text-xs text-gray-500">Minutes</p>
+                  <p className="text-xs text-gray-500">{translations[language].minutes}</p>
                 </div>
               </div>
             </div>
@@ -195,7 +368,7 @@ export function UpcomingDeadlines({ onNavigate }: UpcomingDeadlinesProps) {
                 onClick={() => onNavigate('fileReturns')}
                 className="flex-1 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-all text-sm"
               >
-                Complete Now
+                {translations[language].completeNow}
               </button>
               <button className="px-4 py-2 bg-gray-100 text-gray-600 rounded-lg hover:bg-gray-200 transition-all text-sm">
                 <ChevronRight className="w-4 h-4" />
@@ -210,11 +383,11 @@ export function UpcomingDeadlines({ onNavigate }: UpcomingDeadlinesProps) {
         <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 flex items-center gap-3">
           <Calendar className="w-10 h-10 text-blue-600 flex-shrink-0" />
           <div className="flex-1">
-            <p className="text-sm mb-1">Sync to Calendar</p>
-            <p className="text-xs text-gray-600">Add deadlines to Google Calendar</p>
+            <p className="text-sm mb-1">{translations[language].syncToCalendar}</p>
+            <p className="text-xs text-gray-600">{translations[language].addDeadlinesToCalendar}</p>
           </div>
           <button className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm hover:bg-blue-700 transition-all">
-            Sync
+            {translations[language].sync}
           </button>
         </div>
       </div>
