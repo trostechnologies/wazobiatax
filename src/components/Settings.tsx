@@ -1,6 +1,25 @@
 import { motion } from 'motion/react';
 import { ArrowLeft, Crown, Check, Sparkles } from 'lucide-react';
 import { useState } from 'react';
+import { useLanguage } from "@/context/LanguageContext";
+
+const translations = {
+  english: {
+
+  },
+  pidgin: {
+
+  },
+  hausa: {
+
+  },
+  yoruba: {
+
+  },
+  igbo: {
+
+  }
+}
 
 interface SettingsProps {
   onNavigate: (screen: string) => void;
@@ -46,6 +65,9 @@ export function Settings({ onNavigate }: SettingsProps) {
     }
   };
 
+  const { language } = useLanguage();
+  const t = translations[language];
+
   return (
     <div className="min-h-screen bg-gray-50 pb-20">
       {/* Status Bar */}
@@ -61,7 +83,7 @@ export function Settings({ onNavigate }: SettingsProps) {
       {/* Header */}
       <div className="bg-white px-6 py-4 border-b border-gray-200">
         <div className="flex items-center gap-4">
-          <button 
+          <button
             onClick={() => onNavigate('profile')}
             className="p-2 hover:bg-gray-100 rounded-lg transition-all -ml-2"
           >
@@ -92,11 +114,10 @@ export function Settings({ onNavigate }: SettingsProps) {
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          className={`bg-white rounded-2xl p-6 border-2 transition-all ${
-            selectedPlan === 'basic' 
-              ? 'border-emerald-600 shadow-lg' 
+          className={`bg-white rounded-2xl p-6 border-2 transition-all ${selectedPlan === 'basic'
+              ? 'border-emerald-600 shadow-lg'
               : 'border-gray-200 hover:border-gray-300'
-          }`}
+            }`}
           onClick={() => setSelectedPlan('basic')}
         >
           <div className="flex items-start justify-between mb-4">
@@ -132,11 +153,10 @@ export function Settings({ onNavigate }: SettingsProps) {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.1 }}
-          className={`bg-gradient-to-br from-amber-50 to-orange-50 rounded-2xl p-6 border-2 transition-all relative overflow-hidden ${
-            selectedPlan === 'premium' 
-              ? 'border-amber-600 shadow-2xl' 
+          className={`bg-gradient-to-br from-amber-50 to-orange-50 rounded-2xl p-6 border-2 transition-all relative overflow-hidden ${selectedPlan === 'premium'
+              ? 'border-amber-600 shadow-2xl'
               : 'border-amber-200 hover:border-amber-300'
-          }`}
+            }`}
           onClick={() => setSelectedPlan('premium')}
         >
           {/* Badge */}
@@ -175,7 +195,7 @@ export function Settings({ onNavigate }: SettingsProps) {
             ))}
           </div>
 
-          <button 
+          <button
             onClick={() => setSelectedPlan('premium')}
             className="w-full py-3 bg-gradient-to-r from-amber-500 to-orange-600 text-white rounded-xl hover:shadow-lg transition-all text-sm"
           >
