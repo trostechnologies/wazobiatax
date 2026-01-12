@@ -3,6 +3,7 @@ import { SplashScreen } from './components/SplashScreen';
 import { LanguageSelection } from './components/LanguageSelection';
 import { VoiceModeToggle } from './components/VoiceModeToggle';
 import { TINRegistrationFlow } from './components/TINRegistrationFlow';
+import { OnboardingWizard } from './components/OnboardingWizardMultilingual';
 import { Dashboard } from './components/Dashboard';
 import { FileReturns } from './components/FileReturns';
 import { PayTax } from './components/PayTax';
@@ -34,7 +35,11 @@ export default function App() {
 
   const handleLanguageSelect = (lang: string) => {
     setLanguage(lang);
-    setCurrentScreen('voiceMode');
+    setCurrentScreen('onboarding');
+  };
+
+  const handleTINRegistrationFlowComplete = () => {
+    setCurrentScreen('dashboard');
   };
 
   const handleVoiceModeSelect = (enabled: boolean) => {
@@ -44,7 +49,7 @@ export default function App() {
 
   const handleOnboardingComplete = () => {
     setOnboardingComplete(true);
-    setCurrentScreen('dashboard');
+    setCurrentScreen('voiceMode');
   };
 
   const handleTabChange = (tab: string) => {
@@ -66,10 +71,12 @@ export default function App() {
         return <SplashScreen />;
       case 'language':
         return <LanguageSelection onSelect={handleLanguageSelect} />;
+        case 'onboarding':
+          return <OnboardingWizard onComplete={handleOnboardingComplete} />;
       case 'voiceMode':
         return <VoiceModeToggle onSelect={handleVoiceModeSelect} />;
       case 'tinRegistration':
-        return <TINRegistrationFlow onComplete={handleOnboardingComplete} />
+        return <TINRegistrationFlow onComplete={handleTINRegistrationFlowComplete} />;
       case 'dashboard':
         return <Dashboard onNavigate={navigateTo} />;
       case 'fileReturns':
