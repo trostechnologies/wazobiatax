@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { SplashScreen } from './components/SplashScreen';
 import { LanguageSelection } from './components/LanguageSelection';
 import { VoiceModeToggle } from './components/VoiceModeToggle';
-import { TINRegistrationFlow } from './components/TINRegistrationFlow';
+import { OnboardingWizard } from './components/OnboardingWizard';
 import { Dashboard } from './components/Dashboard';
 import { FileReturns } from './components/FileReturns';
 import { PayTax } from './components/PayTax';
@@ -27,7 +27,7 @@ export default function App() {
   useEffect(() => {
     // Simulate splash screen duration
     const timer = setTimeout(() => {
-      setCurrentScreen('language');
+      setCurrentScreen('onboarding');
     }, 2000);
     return () => clearTimeout(timer);
   }, []);
@@ -64,12 +64,8 @@ export default function App() {
     switch (currentScreen) {
       case 'splash':
         return <SplashScreen />;
-      case 'language':
-        return <LanguageSelection onSelect={handleLanguageSelect} />;
-      case 'voiceMode':
-        return <VoiceModeToggle onSelect={handleVoiceModeSelect} />;
-      case 'tinRegistration':
-        return <TINRegistrationFlow onComplete={handleOnboardingComplete} />
+      case 'onboarding':
+        return <OnboardingWizard onComplete={handleOnboardingComplete} />;
       case 'dashboard':
         return <Dashboard onNavigate={navigateTo} />;
       case 'fileReturns':
@@ -104,7 +100,7 @@ export default function App() {
         {renderScreen()}
         
         {/* Bottom Navigation - Show only after onboarding */}
-        {onboardingComplete && !['splash', 'language', 'voiceMode', 'tinRegistration'].includes(currentScreen) && (
+        {onboardingComplete && !['splash', 'onboarding'].includes(currentScreen) && (
           <BottomNav activeTab={activeTab} onTabChange={handleTabChange} />
         )}
 
