@@ -399,7 +399,7 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
                       value={formData.email}
                       onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                       placeholder={t.login.emailPlaceholder}
-                      className="w-full pl-11 pr-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none"
+                      className="w-full px-8 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none"
                     />
                   </div>
                 </div>
@@ -413,11 +413,11 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
                       value={formData.password}
                       onChange={(e) => setFormData({ ...formData, password: e.target.value })}
                       placeholder={t.login.passwordPlaceholder}
-                      className="w-full pl-11 pr-12 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none"
+                      className="w-full px-8 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none"
                     />
                     <button
                       onClick={() => setShowPassword(!showPassword)}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700"
+                      className="absolute right-1 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700"
                     >
                       {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
                     </button>
@@ -478,6 +478,17 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
                 </div>
 
                 <div>
+                  <label className="block mb-2 text-gray-700">{t.register.fullName} <span className="text-red-500">{t.common.required}</span></label>
+                  <input
+                    type="text"
+                    value={formData.fullName}
+                    onChange={(e) => setFormData({ ...formData, fullName: e.target.value })}
+                    placeholder={t.register.fullNamePlaceholder}
+                    className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none"
+                  />
+                </div>
+
+                <div>
                   <label className="block mb-2 text-gray-700">{t.register.taxId} <span className="text-red-500">{t.common.required}</span></label>
                   <input
                     type="text"
@@ -525,7 +536,7 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
                       value={formData.email}
                       onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                       placeholder={t.register.emailPlaceholder}
-                      className="w-full pl-11 pr-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none"
+                      className="w-full px-8 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none"
                     />
                   </div>
                 </div>
@@ -550,7 +561,7 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
                       value={formData.password}
                       onChange={(e) => setFormData({ ...formData, password: e.target.value })}
                       placeholder={t.register.passwordPlaceholder}
-                      className="w-full pl-11 pr-12 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none"
+                      className="w-full px-8 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none"
                     />
                     <button
                       onClick={() => setShowPassword(!showPassword)}
