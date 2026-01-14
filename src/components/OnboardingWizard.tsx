@@ -35,7 +35,8 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
     email: '',
     password: '',
     confirmPassword: '',
-    fullName: '',
+    firstName: '',
+    lastName: '',
     taxId: '',
     businessName: '',
     phone: '',
@@ -467,23 +468,23 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
 
               <div className="space-y-4">
                 <div>
-                  <label className="block mb-2 text-gray-700">{t.register.fullName} <span className="text-red-500">{t.common.required}</span></label>
+                  <label className="block mb-2 text-gray-700">{t.register.firstName} <span className="text-red-500">{t.common.required}</span></label>
                   <input
                     type="text"
-                    value={formData.fullName}
-                    onChange={(e) => setFormData({ ...formData, fullName: e.target.value })}
-                    placeholder={t.register.fullNamePlaceholder}
+                    value={formData.firstName}
+                    onChange={(e) => setFormData({ ...formData, firstName: e.target.value })}
+                    placeholder={t.register.firstNamePlaceholder}
                     className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none"
                   />
                 </div>
 
                 <div>
-                  <label className="block mb-2 text-gray-700">{t.register.fullName} <span className="text-red-500">{t.common.required}</span></label>
+                  <label className="block mb-2 text-gray-700">{t.register.lastName} <span className="text-red-500">{t.common.required}</span></label>
                   <input
                     type="text"
-                    value={formData.fullName}
-                    onChange={(e) => setFormData({ ...formData, fullName: e.target.value })}
-                    placeholder={t.register.fullNamePlaceholder}
+                    value={formData.lastName}
+                    onChange={(e) => setFormData({ ...formData, lastName: e.target.value })}
+                    placeholder={t.register.lastNamePlaceholder}
                     className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none"
                   />
                 </div>
@@ -565,7 +566,7 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
                     />
                     <button
                       onClick={() => setShowPassword(!showPassword)}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700"
+                      className="absolute right-1 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700"
                     >
                       {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
                     </button>
@@ -574,13 +575,22 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
 
                 <div>
                   <label className="block mb-2 text-gray-700">{t.register.confirmPassword} <span className="text-red-500">{t.common.required}</span></label>
-                  <input
-                    type={showPassword ? 'text' : 'password'}
-                    value={formData.confirmPassword}
-                    onChange={(e) => setFormData({ ...formData, confirmPassword: e.target.value })}
-                    placeholder={t.register.confirmPasswordPlaceholder}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none"
-                  />
+                  <div className="relative">
+                    <Lock className="w-5 h-5 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+                    <input
+                      type={showPassword ? 'text' : 'password'}
+                      value={formData.confirmPassword}
+                      onChange={(e) => setFormData({ ...formData, confirmPassword: e.target.value })}
+                      placeholder={t.register.confirmPasswordPlaceholder}
+                      className="w-full px-8 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none"
+                    />
+                    <button
+                      onClick={() => setShowPassword(!showPassword)}
+                      className="absolute right-1 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700"
+                    >
+                      {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                    </button>
+                  </div>
                 </div>
               </div>
 
@@ -592,9 +602,9 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
 
               <button
                 onClick={handleRegister}
-                disabled={isProcessing || !formData.fullName || !formData.taxId || !formData.email || !formData.phone || !formData.password}
+                disabled={isProcessing || !formData.firstName || !formData.lastName || !formData.taxId || !formData.email || !formData.phone || !formData.password}
                 className={`w-full py-4 rounded-xl transition-all duration-300 flex items-center justify-center gap-2 ${
-                  !isProcessing && formData.fullName && formData.taxId && formData.email && formData.phone && formData.password
+                  !isProcessing && !formData.firstName && !formData.lastName && formData.taxId && formData.email && formData.phone && formData.password
                     ? 'bg-emerald-600 text-white hover:bg-emerald-700 shadow-lg'
                     : 'bg-gray-200 text-gray-400 cursor-not-allowed'
                 }`}
