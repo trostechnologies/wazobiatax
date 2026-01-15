@@ -301,8 +301,8 @@ export const onboardingTranslations = {
     register: {
       title: 'Buɗe Asusu 🎉',
       subtitle: 'Cika bayananka don yin rajista',
-      firstName: 'First Name',
-      lastName: 'Last Name',
+      firstName: 'Sunan Farko',
+      lastName: 'Sunan Ƙarshe',
       firstNamePlaceholder: 'Chukwuma',
       lastNamePlaceholder: 'Okafor',
       taxId: 'Lambar Haraji daga JRS',
@@ -437,8 +437,8 @@ export const onboardingTranslations = {
     register: {
       title: 'Ṣí Àkọọ́lẹ̀ 🎉',
       subtitle: 'Kún àlàyé rẹ láti forúkọ sílẹ̀',
-      firstName: 'First Name',
-      lastName: 'Last Name',
+      firstName: 'Orúkọ Àkọ́kọ́',
+      lastName: 'Orúkọ Ìdílé',
       firstNamePlaceholder: 'Chukwuma',
       lastNamePlaceholder: 'Okafor',
       taxId: 'Nọ́mbà Owó-orí láti JRS',
@@ -573,8 +573,8 @@ export const onboardingTranslations = {
     register: {
       title: 'Mepee Akaụntụ 🎉',
       subtitle: 'Dejupụta nkọwa gị iji debanye aha',
-      firstName: 'First Name',
-      lastName: 'Last Name',
+      firstName: 'Aha Mbụ',
+      lastName: 'Aha Ikpeazụ',
       firstNamePlaceholder: 'Chukwuma',
       lastNamePlaceholder: 'Okafor',
       taxId: 'Nọmba Ụtụ Isi si JRS',
