@@ -15,7 +15,7 @@ import {
   AlertCircle,
   ArrowLeft
 } from 'lucide-react';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { onboardingTranslations, type LanguageKey } from '../translations/onboarding';
 
 interface OnboardingWizardProps {

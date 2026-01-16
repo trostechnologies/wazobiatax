@@ -2,10 +2,10 @@ const CACHE_NAME = "wazobia-v1";
 const urlsToCache = [
   "/", 
   "/index.html",
-  "/assets/logo-B1M8zBma.png",
-  "/assets/index-BDLmVjNh.css",
-  "/assets/index-B9TTyRFC.js",
-  "/assets/index-D_oS7OWV.js"
+  // "/assets/logo-B1M8zBma.png",
+  "/assets/index-BS8sXXEf.css",
+  // "/assets/index-B9TTyRFC.js",
+  "/assets/index-DAaYrqle.js"
 ];
 
 // Install Service Worker
