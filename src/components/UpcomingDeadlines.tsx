@@ -2,6 +2,7 @@ import { motion } from 'motion/react';
 import { ArrowLeft, Clock, Calendar, AlertCircle, CheckCircle2, ChevronRight } from 'lucide-react';
 import { useState } from 'react';
 import { useLanguage } from "@/context/LanguageContext";
+import { useNavigate } from 'react-router-dom';
 
 const translations = {
   english: {
@@ -171,11 +172,7 @@ const translations = {
   }        
 }
 
-interface UpcomingDeadlinesProps {
-  onNavigate: (screen: string) => void;
-}
-
-export function UpcomingDeadlines({ onNavigate }: UpcomingDeadlinesProps) {
+export function UpcomingDeadlines() {
 
   const deadlines = [
   {
@@ -240,6 +237,7 @@ export function UpcomingDeadlines({ onNavigate }: UpcomingDeadlinesProps) {
 
   const { language } = useLanguage();
   const t = translations[language];
+  const navigate = useNavigate();
 
   return (
     <div className="min-h-screen bg-gray-50 pb-20">
@@ -257,7 +255,7 @@ export function UpcomingDeadlines({ onNavigate }: UpcomingDeadlinesProps) {
       <div className="bg-white px-6 py-4 border-b border-gray-200">
         <div className="flex items-center gap-4 mb-4">
           <button 
-            onClick={() => onNavigate('dashboard')}
+            onClick={() => navigate('/dashboard')}
             className="p-2 hover:bg-gray-100 rounded-lg transition-all -ml-2"
           >
             <ArrowLeft className="w-6 h-6 text-gray-700" />
@@ -365,7 +363,7 @@ export function UpcomingDeadlines({ onNavigate }: UpcomingDeadlinesProps) {
             {/* Action Buttons */}
             <div className="flex gap-2">
               <button 
-                onClick={() => onNavigate('fileReturns')}
+                onClick={() => navigate('/file-returns')}
                 className="flex-1 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-all text-sm"
               >
                 {translations[language].completeNow}

@@ -2,6 +2,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import { ArrowLeft, Shield, CheckCircle2, AlertCircle, Download, Share2, Loader2 } from 'lucide-react';
 import { useState } from 'react';
 import { useLanguage } from "@/context/LanguageContext";
+import { useNavigate } from 'react-router-dom';
 
 const translations = {
   english: {
@@ -246,15 +247,12 @@ const translations = {
   },
 };
 
-interface TaxClearanceProps {
-  onNavigate: (screen: string) => void;
-}
-
-export function TaxClearance({ onNavigate }: TaxClearanceProps) {
+export function TaxClearance() {
   const [step, setStep] = useState('check'); // check, eligible, certificate, ineligible
   const [isChecking, setIsChecking] = useState(false);
   const [isEligible] = useState(true); // Simulate eligibility
   const outstandingAmount = 0;
+  const navigate = useNavigate();
 
   const handleCheckEligibility = () => {
     setIsChecking(true);
@@ -291,7 +289,7 @@ export function TaxClearance({ onNavigate }: TaxClearanceProps) {
       <div className="bg-white px-6 py-4 border-b border-gray-200">
         <div className="flex items-center gap-4">
           <button
-            onClick={() => onNavigate('profile')}
+            onClick={() => navigate('/profile')}
             className="p-2 hover:bg-gray-100 rounded-lg transition-all -ml-2"
           >
             <ArrowLeft className="w-6 h-6 text-gray-700" />
@@ -517,7 +515,7 @@ export function TaxClearance({ onNavigate }: TaxClearanceProps) {
                 {translations[language].shareCertificate}
               </button>
               <button
-                onClick={() => onNavigate('dashboard')}
+                onClick={() => navigate('/dashboard')}
                 className="w-full py-4 bg-gray-100 text-gray-700 rounded-xl hover:bg-gray-200 transition-all"
               >
                 {translations[language].backToDashboard}
@@ -582,13 +580,13 @@ export function TaxClearance({ onNavigate }: TaxClearanceProps) {
 
             <div className="space-y-3">
               <button
-                onClick={() => onNavigate('payTax')}
+                onClick={() => navigate('/pay-tax')}
                 className="w-full py-4 bg-red-600 text-white rounded-xl hover:bg-red-700 shadow-lg transition-all"
               >
                 {translations[language].payOutstanding}
               </button>
               <button
-                onClick={() => onNavigate('dashboard')}
+                onClick={() => navigate('/dashboard')}
                 className="w-full py-4 bg-gray-100 text-gray-700 rounded-xl hover:bg-gray-200 transition-all"
               >
                 {translations[language].backToDashboard}

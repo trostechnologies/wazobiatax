@@ -1,4 +1,5 @@
 import { motion, AnimatePresence } from 'motion/react';
+import { useNavigate } from 'react-router-dom';
 import {
   Bell,
   Calculator,
@@ -183,24 +184,21 @@ const translations = {
   },
 };
 
-interface DashboardProps {
-  onNavigate: (screen: string) => void;
-}
-
-export function Dashboard({ onNavigate }: DashboardProps) {
+export function Dashboard() {
   const [notificationCount] = useState(3);
   const complianceScore = 50;
   const pendingTasks = 3;
   const { language } = useLanguage();
   const t = translations[language];
+  const navigate = useNavigate();
 
   const quickActions = [
-    { id: 'file', labelKey: 'fileReturn', icon: FileText, color: 'bg-blue-50 text-blue-600', screen: 'fileReturns' },
-    { id: 'pay', labelKey: 'payTax', icon: CreditCard, color: 'bg-emerald-50 text-emerald-600', screen: 'payTax' },
-    { id: 'log', labelKey: 'logTransaction', icon: PlusCircle, color: 'bg-gray-50 text-gray-600', screen: 'ledger' },
-    { id: 'scan', labelKey: 'scanReceipt', icon: Camera, color: 'bg-purple-50 text-purple-600', screen: 'ledger' },
-    { id: 'voice', labelKey: 'voiceAdd', icon: Mic, color: 'bg-blue-50 text-blue-600', screen: 'ledger' },
-    { id: 'reports', labelKey: 'viewReports', icon: BarChart3, color: 'bg-amber-50 text-amber-600', screen: 'recentActivity' },
+    { id: 'file', labelKey: 'fileReturn', icon: FileText, color: 'bg-blue-50 text-blue-600', screen: '/file-returns' },
+    { id: 'pay', labelKey: 'payTax', icon: CreditCard, color: 'bg-emerald-50 text-emerald-600', screen: '/pay-tax' },
+    { id: 'log', labelKey: 'logTransaction', icon: PlusCircle, color: 'bg-gray-50 text-gray-600', screen: '/ledger' },
+    { id: 'scan', labelKey: 'scanReceipt', icon: Camera, color: 'bg-purple-50 text-purple-600', screen: '/ledger' },
+    { id: 'voice', labelKey: 'voiceAdd', icon: Mic, color: 'bg-blue-50 text-blue-600', screen: '/ledger' },
+    { id: 'reports', labelKey: 'viewReports', icon: BarChart3, color: 'bg-amber-50 text-amber-600', screen: '/activity' },
   ];
 
   const recentActivity = [
@@ -239,7 +237,7 @@ export function Dashboard({ onNavigate }: DashboardProps) {
           </div>
         </div>
         <button
-          onClick={() => onNavigate('notifications')}
+          onClick={() => navigate('/notifications')}
           className="relative p-2 hover:bg-gray-100 rounded-lg transition-all"
         >
           <Bell className="w-6 h-6 text-gray-700" />
@@ -343,7 +341,7 @@ export function Dashboard({ onNavigate }: DashboardProps) {
           </div>
 
           <button
-            onClick={() => onNavigate('upcomingDeadlines')}
+            onClick={() => navigate('/deadlines')}
             className="w-full py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-all text-sm"
           >
             {translations[language].viewActionItems}
@@ -359,7 +357,7 @@ export function Dashboard({ onNavigate }: DashboardProps) {
           <div className="flex items-center justify-between mb-3">
             <h3 className="text-lg">{translations[language].upcomingDeadlines}</h3>
             <button
-              onClick={() => onNavigate('upcomingDeadlines')}
+              onClick={() => navigate('/deadlines')}
               className="text-sm text-emerald-600 hover:underline"
             >
               {translations[language].viewAll}
@@ -417,7 +415,7 @@ export function Dashboard({ onNavigate }: DashboardProps) {
                 transition={{ delay: 0.2 + index * 0.05 }}
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
-                onClick={() => onNavigate(action.screen)}
+                onClick={() => navigate(action.screen)}
                 className="bg-white rounded-xl p-4 shadow-sm hover:shadow-md transition-all flex flex-col items-center gap-2 border border-gray-100"
               >
                 <div className={`w-12 h-12 ${action.color} rounded-xl flex items-center justify-center`}>
@@ -441,7 +439,7 @@ export function Dashboard({ onNavigate }: DashboardProps) {
           <div className="flex items-center justify-between mb-3">
             <h3 className="text-lg">{translations[language].recentActivity}</h3>
             <button
-              onClick={() => onNavigate('recentActivity')}
+              onClick={() => navigate('/activity')}
               className="text-sm text-emerald-600 hover:underline"
             >
               {translations[language].viewAll}

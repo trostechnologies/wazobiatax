@@ -2,6 +2,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import { ArrowLeft, CreditCard, Building2, QrCode, CheckCircle2, Loader2, Download } from 'lucide-react';
 import { useState } from 'react';
 import { useLanguage } from "@/context/LanguageContext";
+import { useNavigate } from 'react-router-dom';
 
 const translations = {
   english: {
@@ -185,11 +186,7 @@ const translations = {
   },
 };
 
-interface PayTaxProps {
-  onNavigate: (screen: string) => void;
-}
-
-export function PayTax({ onNavigate }: PayTaxProps) {
+export function PayTax() {
   const [step, setStep] = useState('summary'); // summary, payment, processing, success
   const [selectedMethod, setSelectedMethod] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
@@ -200,6 +197,7 @@ export function PayTax({ onNavigate }: PayTaxProps) {
 
   const { language } = useLanguage();
   const t = translations[language];
+  const navigate = useNavigate();
 
   const paymentMethods = [
     {
@@ -253,7 +251,7 @@ export function PayTax({ onNavigate }: PayTaxProps) {
       {/* Header */}
       <div className="bg-white px-6 py-4 flex items-center gap-4 border-b border-gray-200">
         <button
-          onClick={() => onNavigate('dashboard')}
+          onClick={() => navigate('/dashboard')}
           className="p-2 hover:bg-gray-100 rounded-lg transition-all -ml-2"
         >
           <ArrowLeft className="w-6 h-6 text-gray-700" />
@@ -474,7 +472,7 @@ export function PayTax({ onNavigate }: PayTaxProps) {
                 {translations[language].downloadReceipt}
               </button>
               <button
-                onClick={() => onNavigate('dashboard')}
+                onClick={() => navigate('/dashboard')}
                 className="w-full py-4 bg-gray-100 text-gray-700 rounded-xl hover:bg-gray-200 transition-all"
               >
                 {translations[language].backToDashboard}

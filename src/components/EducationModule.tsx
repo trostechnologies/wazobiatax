@@ -2,6 +2,7 @@ import { motion } from 'motion/react';
 import { ArrowLeft, BookOpen, Video, Lightbulb, Search, ChevronDown, Play, CheckCircle2 } from 'lucide-react';
 import { useState } from 'react';
 import { useLanguage } from "@/context/LanguageContext";
+import { useNavigate } from 'react-router-dom';
 
 const translations = {
   english: {
@@ -254,11 +255,7 @@ const translations = {
   }
 }
 
-interface EducationModuleProps {
-  onNavigate: (screen: string) => void;
-}
-
-export function EducationModule({ onNavigate }: EducationModuleProps) {
+export function EducationModule() {
   const [activeTab, setActiveTab] = useState('guides');
   const [expandedFaq, setExpandedFaq] = useState<number | null>(null);
 
@@ -342,6 +339,7 @@ export function EducationModule({ onNavigate }: EducationModuleProps) {
 
   const { language } = useLanguage();
   const t = translations[language];
+  const navigate = useNavigate();
 
   return (
     <div className="min-h-screen bg-gray-50 pb-20">
@@ -359,7 +357,7 @@ export function EducationModule({ onNavigate }: EducationModuleProps) {
       <div className="bg-white px-6 py-4 border-b border-gray-200">
         <div className="flex items-center gap-4 mb-4">
           <button
-            onClick={() => onNavigate('dashboard')}
+            onClick={() => navigate('/dashboard')}
             className="p-2 hover:bg-gray-100 rounded-lg transition-all -ml-2"
           >
             <ArrowLeft className="w-6 h-6 text-gray-700" />

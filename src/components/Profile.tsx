@@ -13,6 +13,7 @@ import {
 } from 'lucide-react';
 import { useState } from 'react';
 import { useLanguage } from "@/context/LanguageContext";
+import { useNavigate } from 'react-router-dom';
 
 const translations = {
   english: {
@@ -131,17 +132,14 @@ const translations = {
   },
 };
 
-interface ProfileProps {
-  onNavigate: (screen: string) => void;
-}
-
-export function Profile({ onNavigate }: ProfileProps) {
+export function Profile() {
   const [copied, setCopied] = useState(false);
   const tin = '123456789-0001';
   const subscription = 'basic'; // basic or premium
 
   const { language } = useLanguage();
   const t = translations[language];
+  const navigate = useNavigate();
 
   const handleCopyTIN = () => {
     setCopied(true);
@@ -152,9 +150,9 @@ export function Profile({ onNavigate }: ProfileProps) {
     {
       titleKey: 'account',
       items: [
-        { id: 'personal', labelKey: 'personalInformation', icon: User, screen: 'profile' },
-        { id: 'language', labelKey: 'languageAndVoice', icon: Globe, screen: 'profile' },
-        { id: 'notifications', labelKey: 'notifications', icon: Bell, screen: 'notifications' },
+        { id: 'personal', labelKey: 'personalInformation', icon: User, screen: '/profile' },
+        { id: 'language', labelKey: 'languageAndVoice', icon: Globe, screen: '/profile' },
+        { id: 'notifications', labelKey: 'notifications', icon: Bell, screen: '/notifications' },
       ],
     },
     {
@@ -164,14 +162,14 @@ export function Profile({ onNavigate }: ProfileProps) {
           id: 'clearance',
           labelKey: 'requestTaxClearance',
           icon: FileText,
-          screen: 'taxClearance',
+          screen: '/tax-clearance',
           highlight: true,
         },
         {
           id: 'education',
           labelKey: 'taxEducation',
           icon: Sparkles,
-          screen: 'education',
+          screen: '/education',
         },
       ],
     },
@@ -182,14 +180,14 @@ export function Profile({ onNavigate }: ProfileProps) {
           id: 'subscription',
           labelKey: 'upgradeToPremium',
           icon: Crown,
-          screen: 'settings',
+          screen: '/settings',
           premium: true,
         },
         {
           id: 'security',
           labelKey: 'securityAndPrivacy',
           icon: Shield,
-          screen: 'profile',
+          screen: '/profile',
         },
       ],
     },
@@ -285,7 +283,7 @@ export function Profile({ onNavigate }: ProfileProps) {
         {section.items.map((item, index) => (
           <button
             key={item.id}
-            onClick={() => onNavigate(item.screen)}
+            onClick={() => navigate(item.screen)}
             className={`w-full px-4 py-4 flex items-center justify-between hover:bg-gray-50 transition-all
               ${index !== section.items.length - 1 ? 'border-b border-gray-100' : ''}
               ${item.premium ? 'bg-gradient-to-r from-amber-50 to-orange-50' : ''}
@@ -331,7 +329,9 @@ export function Profile({ onNavigate }: ProfileProps) {
 
       {/* Logout Button */}
       <div className="px-6 mt-6">
-        <button className="w-full py-4 bg-white border border-gray-200 rounded-2xl hover:bg-gray-50 transition-all flex items-center justify-center gap-2 text-red-600">
+        <button 
+        onClick={() => navigate('/onboarding')}
+        className="w-full py-4 bg-white border border-gray-200 rounded-2xl hover:bg-gray-50 transition-all flex items-center justify-center gap-2 text-red-600">
           <LogOut className="w-5 h-5" />
           {translations[language].logOut}
         </button>

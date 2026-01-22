@@ -1,12 +1,14 @@
 import { motion, AnimatePresence } from 'motion/react';
-import { 
-  Eye, 
-  EyeOff, 
-  Mail, 
-  Lock, 
-  User, 
-  Check, 
-  Loader2, 
+import { registerUser, verifyEmailOtp } from '../services/auth';
+import { useNavigate } from 'react-router-dom';
+import {
+  Eye,
+  EyeOff,
+  Mail,
+  Lock,
+  User,
+  Check,
+  Loader2,
   Shield,
   Crown,
   Sparkles,
@@ -52,6 +54,7 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
 
   // Get current translation
   const t = onboardingTranslations[selectedLanguage];
+  const navigate = useNavigate();
 
   const plans = [
     {
@@ -95,20 +98,82 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
     }
   };
 
-  const handleLogin = () => {
-    setIsProcessing(true);
-    setTimeout(() => {
+  const handleLogin = async () => {
+    if (!formData.email || !formData.password || isProcessing) return;
+  
+    try {
+      setIsProcessing(true);
+  
+      const response = await fetch('https://api.wazobiatax.ng/api/auth/login/', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          email: formData.email,
+          password: formData.password,
+        }),
+      });
+  
+      const text = await response.text();
+      console.log('RAW RESPONSE TEXT:', text);
+      console.log('STATUS:', response.status);
+  
+      const data = text ? JSON.parse(text) : null;
+      console.log('PARSED DATA:', data);
+  
+      if (!response.ok) {
+        throw new Error(data?.message || `Login failed (${response.status})`);
+      }
+  
+      localStorage.setItem('accessToken', data['access-token']);
+      localStorage.setItem('refreshToken', data['refresh-token']);
+      localStorage.setItem('userId', data.user_id);
+  
+      navigate('/dashboard');
+  
+    } catch (error: any) {
+      console.error('LOGIN ERROR:', error.message);
+      alert(error.message);
+    } finally {
       setIsProcessing(false);
-      setCurrentStep('subscription');
-    }, 2000);
-  };
+    }
+  };  
 
-  const handleRegister = () => {
+  const handleRegister = async () => {
+    if (formData.password !== formData.confirmPassword) {
+      alert(t.register.passwordMismatch);
+      return;
+    }
+
     setIsProcessing(true);
-    setTimeout(() => {
-      setIsProcessing(false);
+
+    try {
+      const response = await registerUser({
+        email: formData.email,
+        first_name: formData.firstName,
+        last_name: formData.lastName,
+        phone_number: formData.phone,
+        tax_identification_number: formData.taxId,
+        password: formData.password,
+        business_name: formData.businessName || undefined,
+      });
+
+      console.log('REGISTER RESPONSE:', response);
+
+      // Success → move to email verification
       setCurrentStep('emailVerify');
-    }, 2000);
+    } catch (error: any) {
+      console.error('REGISTER ERROR:', error);
+
+      const message =
+        error?.response?.data?.message ||
+        'Registration failed. Please try again.';
+
+      alert(message);
+    } finally {
+      setIsProcessing(false);
+    }
   };
 
   const handleGoogleAuth = () => {
@@ -119,15 +184,40 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
     }, 2000);
   };
 
-  const handleVerifyEmail = () => {
+  const handleVerifyEmail = async () => {
+    const otp = verificationCode.join('');
+  
+    if (otp.length !== 6) return;
+  
     setIsProcessing(true);
-    setTimeout(() => {
-      setIsProcessing(false);
+  
+    try {
+      await verifyEmailOtp({
+        email: formData.email,
+        otp,
+      });
+  
+      // OTP verified → move forward
       setCurrentStep('subscription');
-    }, 2000);
+    } catch (error: any) {
+      console.error(error);
+  
+      const status = error?.response?.status;
+  
+      let message = 'Verification failed. Please try again.';
+  
+      if (status === 401) message = 'Invalid OTP';
+      if (status === 410) message = 'OTP has expired';
+      if (status === 404) message = 'No OTP request found for this email';
+  
+      alert(message);
+    } finally {
+      setIsProcessing(false);
+    }
   };
 
   const handleResendCode = () => {
+    setVerificationCode(['', '', '', '', '', '']);
     // Resend verification code logic
   };
 
@@ -170,6 +260,15 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
     return Math.round((currentIndex / (steps.length - 1)) * 100);
   };
 
+  const isFormValid =
+    formData.firstName &&
+    formData.lastName &&
+    formData.taxId &&
+    formData.email &&
+    formData.phone &&
+    formData.password &&
+    formData.confirmPassword;
+
   return (
     <div className="h-screen w-full bg-white flex flex-col">
       {/* Status Bar */}
@@ -185,7 +284,7 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
       {/* Header with Logo */}
       <div className="bg-gradient-to-r from-emerald-500 to-emerald-600 px-6 py-4 flex items-center justify-between">
         {currentStep !== 'language' && currentStep !== 'authPath' && (
-          <button 
+          <button
             onClick={() => {
               if (currentStep === 'login' || currentStep === 'register' || currentStep === 'googleAuth') {
                 setCurrentStep('authPath');
@@ -257,11 +356,10 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
                     whileHover={{ scale: 1.02 }}
                     whileTap={{ scale: 0.98 }}
                     onClick={() => handleLanguageSelect(lang.id)}
-                    className={`w-full p-4 rounded-2xl border-2 transition-all duration-300 ${
-                      selectedLanguage === lang.id
+                    className={`w-full p-4 rounded-2xl border-2 transition-all duration-300 ${selectedLanguage === lang.id
                         ? 'border-emerald-600 bg-emerald-50 shadow-lg scale-105'
                         : 'border-gray-200 bg-white hover:border-emerald-300 hover:shadow-md'
-                    }`}
+                      }`}
                   >
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-4">
@@ -288,11 +386,10 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
               <button
                 onClick={handleLanguageProceed}
                 disabled={!selectedLanguage}
-                className={`w-full py-4 rounded-xl transition-all duration-300 ${
-                  selectedLanguage
+                className={`w-full py-4 rounded-xl transition-all duration-300 ${selectedLanguage
                     ? 'bg-emerald-600 text-white shadow-lg hover:bg-emerald-700'
                     : 'bg-gray-200 text-gray-400 cursor-not-allowed'
-                }`}
+                  }`}
               >
                 {t.welcome.proceed}
               </button>
@@ -433,11 +530,10 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
               <button
                 onClick={handleLogin}
                 disabled={isProcessing || !formData.email || !formData.password}
-                className={`w-full py-4 rounded-xl transition-all duration-300 flex items-center justify-center gap-2 ${
-                  !isProcessing && formData.email && formData.password
+                className={`w-full py-4 rounded-xl transition-all duration-300 flex items-center justify-center gap-2 ${!isProcessing && formData.email && formData.password
                     ? 'bg-emerald-600 text-white hover:bg-emerald-700 shadow-lg'
                     : 'bg-gray-200 text-gray-400 cursor-not-allowed'
-                }`}
+                  }`}
               >
                 {isProcessing ? (
                   <>
@@ -504,9 +600,9 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
                     </p>
                     <p className="text-xs text-amber-800">
                       {t.common.visit}{' '}
-                      <a 
-                        href="https://taxid.nrs.gov.ng/" 
-                        target="_blank" 
+                      <a
+                        href="https://taxid.nrs.gov.ng/"
+                        target="_blank"
                         rel="noopener noreferrer"
                         className="text-emerald-700 underline hover:text-emerald-800"
                       >
@@ -602,12 +698,11 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
 
               <button
                 onClick={handleRegister}
-                disabled={isProcessing || !formData.firstName || !formData.lastName || !formData.taxId || !formData.email || !formData.phone || !formData.password}
-                className={`w-full py-4 rounded-xl transition-all duration-300 flex items-center justify-center gap-2 ${
-                  !isProcessing && !formData.firstName && !formData.lastName && formData.taxId && formData.email && formData.phone && formData.password
+                disabled={isProcessing || !isFormValid}
+                className={`w-full py-4 rounded-xl transition-all duration-300 flex items-center justify-center gap-2 ${!isProcessing && isFormValid
                     ? 'bg-emerald-600 text-white hover:bg-emerald-700 shadow-lg'
                     : 'bg-gray-200 text-gray-400 cursor-not-allowed'
-                }`}
+                  }`}
               >
                 {isProcessing ? (
                   <>
@@ -666,11 +761,10 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
               <button
                 onClick={handleGoogleAuth}
                 disabled={isProcessing}
-                className={`w-full py-4 rounded-xl transition-all duration-300 flex items-center justify-center gap-2 ${
-                  !isProcessing
+                className={`w-full py-4 rounded-xl transition-all duration-300 flex items-center justify-center gap-2 ${!isProcessing
                     ? 'bg-blue-600 text-white hover:bg-blue-700 shadow-lg'
                     : 'bg-gray-200 text-gray-400 cursor-not-allowed'
-                }`}
+                  }`}
               >
                 {isProcessing ? (
                   <>
@@ -716,14 +810,26 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
                       maxLength={1}
                       value={digit}
                       onChange={(e) => {
+                        const value = e.target.value;
+                      
+                        if (!/^[0-9]?$/.test(value)) return; // allow only digits
+                      
                         const newCode = [...verificationCode];
-                        newCode[index] = e.target.value;
+                        newCode[index] = value;
                         setVerificationCode(newCode);
-                        if (e.target.value && index < 5) {
-                          const nextInput = e.target.parentElement?.children[index + 1] as HTMLInputElement;
+                      
+                        // Move to next input
+                        if (value && index < 5) {
+                          const nextInput =
+                            e.target.parentElement?.children[index + 1] as HTMLInputElement;
                           nextInput?.focus();
                         }
-                      }}
+                      
+                        // ✅ Auto-submit when last digit is entered
+                        if (value && index === verificationCode.length - 1) {
+                          handleVerifyEmail();
+                        }                        
+                      }}                      
                       className="w-12 h-14 text-center text-xl border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none"
                     />
                   ))}
@@ -732,7 +838,7 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
 
               <div className="text-center">
                 <p className="text-sm text-gray-600 mb-2">{t.emailVerify.didntReceive}</p>
-                <button 
+                <button
                   onClick={handleResendCode}
                   className="text-sm text-emerald-600 hover:underline"
                 >
@@ -743,11 +849,10 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
               <button
                 onClick={handleVerifyEmail}
                 disabled={isProcessing || verificationCode.some(d => !d)}
-                className={`w-full py-4 rounded-xl transition-all duration-300 flex items-center justify-center gap-2 ${
-                  !isProcessing && verificationCode.every(d => d)
+                className={`w-full py-4 rounded-xl transition-all duration-300 flex items-center justify-center gap-2 ${!isProcessing && verificationCode.every(d => d)
                     ? 'bg-emerald-600 text-white hover:bg-emerald-700 shadow-lg'
                     : 'bg-gray-200 text-gray-400 cursor-not-allowed'
-                }`}
+                  }`}
               >
                 {isProcessing ? (
                   <>
@@ -789,11 +894,10 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: index * 0.1 }}
-                    className={`rounded-2xl p-6 border-2 transition-all relative ${
-                      plan.id === 'premium'
+                    className={`rounded-2xl p-6 border-2 transition-all relative ${plan.id === 'premium'
                         ? 'bg-gradient-to-br from-amber-50 to-orange-50 border-amber-200'
                         : 'bg-white border-gray-200'
-                    }`}
+                      }`}
                   >
                     {plan.popular && (
                       <div className="absolute -top-3 left-1/2 -translate-x-1/2">
@@ -818,9 +922,8 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
                     <div className="space-y-2 mb-6">
                       {plan.features.map((feature, idx) => (
                         <div key={idx} className="flex items-start gap-2">
-                          <Check className={`w-4 h-4 mt-0.5 flex-shrink-0 ${
-                            plan.id === 'premium' ? 'text-amber-600' : 'text-emerald-600'
-                          }`} />
+                          <Check className={`w-4 h-4 mt-0.5 flex-shrink-0 ${plan.id === 'premium' ? 'text-amber-600' : 'text-emerald-600'
+                            }`} />
                           <span className="text-sm text-gray-700">{feature}</span>
                         </div>
                       ))}
@@ -828,11 +931,10 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
 
                     <button
                       onClick={() => handleSubscriptionSelect(plan.id)}
-                      className={`w-full py-3 rounded-xl transition-all ${
-                        plan.id === 'premium'
+                      className={`w-full py-3 rounded-xl transition-all ${plan.id === 'premium'
                           ? 'bg-gradient-to-r from-amber-500 to-orange-600 text-white hover:shadow-lg'
                           : 'bg-emerald-600 text-white hover:bg-emerald-700'
-                      }`}
+                        }`}
                     >
                       {plan.id === 'premium' ? t.subscription.startPremium : t.subscription.startBasic}
                     </button>
@@ -942,11 +1044,10 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
                   <button
                     onClick={handlePayment}
                     disabled={isProcessing}
-                    className={`w-full py-4 rounded-xl transition-all duration-300 flex items-center justify-center gap-2 ${
-                      !isProcessing
+                    className={`w-full py-4 rounded-xl transition-all duration-300 flex items-center justify-center gap-2 ${!isProcessing
                         ? 'bg-emerald-600 text-white hover:bg-emerald-700 shadow-lg'
                         : 'bg-gray-200 text-gray-400 cursor-not-allowed'
-                    }`}
+                      }`}
                   >
                     {isProcessing ? (
                       <>
@@ -981,9 +1082,8 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
                     initial={{ y: -100, x: Math.random() * 390, opacity: 1 }}
                     animate={{ y: 900, opacity: 0 }}
                     transition={{ duration: 2, delay: i * 0.05 }}
-                    className={`absolute w-2 h-2 rounded-full ${
-                      i % 3 === 0 ? 'bg-emerald-500' : i % 3 === 1 ? 'bg-amber-500' : 'bg-blue-500'
-                    }`}
+                    className={`absolute w-2 h-2 rounded-full ${i % 3 === 0 ? 'bg-emerald-500' : i % 3 === 1 ? 'bg-amber-500' : 'bg-blue-500'
+                      }`}
                   />
                 ))}
               </div>

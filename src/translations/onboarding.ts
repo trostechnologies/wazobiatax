@@ -48,6 +48,7 @@ export const onboardingTranslations = {
       passwordPlaceholder: 'Create a strong password',
       confirmPassword: 'Confirm Password',
       confirmPasswordPlaceholder: 'Re-enter your password',
+      passwordMismatch: 'Passwords do not match',
       terms: 'By creating an account, you agree to our Terms of Service and Privacy Policy',
       submit: 'Create Account',
       submitting: 'Creating account...'
@@ -184,6 +185,7 @@ export const onboardingTranslations = {
       passwordPlaceholder: 'Create strong password',
       confirmPassword: 'Confirm Password',
       confirmPasswordPlaceholder: 'Put the password again',
+      passwordMismatch: 'Passwords no match',
       terms: 'If you create account, e mean say you don agree to our Terms of Service and Privacy Policy',
       submit: 'Create Account',
       submitting: 'We dey create account...'
@@ -320,6 +322,7 @@ export const onboardingTranslations = {
       passwordPlaceholder: 'Ƙirƙiri kalmar sirri mai ƙarfi',
       confirmPassword: 'Tabbatar da Kalmar Sirri',
       confirmPasswordPlaceholder: 'Sake shigar da kalmar sirri',
+      passwordMismatch: 'Kalmar sirri ba su dace ba',
       terms: 'Ta wurin ƙirƙirar asusu, kun yarda da Sharuɗɗan Sabis da Manufar Sirri',
       submit: 'Buɗe Asusu',
       submitting: 'Ana ƙirƙirar asusu...'
@@ -456,6 +459,7 @@ export const onboardingTranslations = {
       passwordPlaceholder: 'Ṣẹ̀dá ọ̀rọ̀ aṣínà tó lágbára',
       confirmPassword: 'Jẹ́rìí Ọ̀rọ̀ Aṣínà',
       confirmPasswordPlaceholder: 'Tún tẹ ọ̀rọ̀ aṣínà sínú',
+      passwordMismatch: 'Ọrọ aṣínà kò bá ara wọn mu',
       terms: 'Nípa ṣíṣẹ̀dá àkọọ́lẹ̀, o ti gba Àwọn Òfin Iṣẹ́ àti Ìlànà Àṣírí wa',
       submit: 'Ṣẹ̀dá Àkọọ́lẹ̀',
       submitting: 'Ń ṣẹ̀dá àkọọ́lẹ̀...'
@@ -592,6 +596,7 @@ export const onboardingTranslations = {
       passwordPlaceholder: 'Mepụta okwuntughe siri ike',
       confirmPassword: 'Kwado Okwuntughe',
       confirmPasswordPlaceholder: 'Tinye okwuntughe ọzọ',
+      passwordMismatch: 'Okwuntughe adabaghị',
       terms: 'Site n\'ịmepụta akaụntụ, ị kwadoro Usoro Ọrụ na Iwu Nzuzo anyị',
       submit: 'Mepee Akaụntụ',
       submitting: 'Na-emepụta akaụntụ...'

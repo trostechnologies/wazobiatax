@@ -1,7 +1,19 @@
+import { useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { motion } from 'motion/react';
 import { Calculator } from 'lucide-react';
 
 export function SplashScreen() {
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      navigate('/onboarding', { replace: true });
+    }, 2000);
+
+    return () => clearTimeout(timer);
+  }, [navigate]);
+
   return (
     <div className="h-screen w-full bg-gradient-to-br from-emerald-500 to-emerald-700 flex flex-col items-center justify-center relative overflow-hidden">
       {/* Status Bar */}
@@ -14,11 +26,11 @@ export function SplashScreen() {
         </div>
       </div>
 
-      {/* Logo with Animation */}
+      {/* Logo */}
       <motion.div
         initial={{ scale: 0.5, opacity: 0 }}
         animate={{ scale: 1, opacity: 1 }}
-        transition={{ duration: 0.5, ease: "easeOut" }}
+        transition={{ duration: 0.5, ease: 'easeOut' }}
         className="mb-8"
       >
         <div className="w-24 h-24 bg-white rounded-3xl flex items-center justify-center shadow-2xl">
@@ -46,7 +58,7 @@ export function SplashScreen() {
         Simplifying Tax for Nigerian MSMEs
       </motion.p>
 
-      {/* Loading Spinner */}
+      {/* Spinner */}
       <motion.div
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
@@ -56,7 +68,7 @@ export function SplashScreen() {
         <div className="relative w-12 h-12">
           <motion.div
             animate={{ rotate: 360 }}
-            transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+            transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
             className="w-12 h-12 border-4 border-white/30 border-t-white rounded-full"
           />
         </div>

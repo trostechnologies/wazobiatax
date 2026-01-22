@@ -1,4 +1,6 @@
-import { useState, useEffect } from 'react';
+import { useEffect, useState } from 'react';
+import { Routes, Route, Navigate, useLocation } from 'react-router-dom';
+
 import { SplashScreen } from './components/SplashScreen';
 import { LanguageSelection } from './components/LanguageSelection';
 import { VoiceModeToggle } from './components/VoiceModeToggle';
@@ -17,92 +19,78 @@ import { Settings } from './components/Settings';
 import { BottomNav } from './components/BottomNav';
 
 export default function App() {
-  const [currentScreen, setCurrentScreen] = useState('splash');
-  const [onboardingComplete, setOnboardingComplete] = useState(false);
-  const [language, setLanguage] = useState('english');
-  const [voiceEnabled, setVoiceEnabled] = useState(false);
-  const [activeTab, setActiveTab] = useState('home');
+  const location = useLocation();
+
+  const [onboardingComplete, setOnboardingComplete] = useState(
+    localStorage.getItem('onboardingComplete') === 'true'
+  );
+
   const [isOffline, setIsOffline] = useState(false);
 
-  useEffect(() => {
-    // Simulate splash screen duration
-    const timer = setTimeout(() => {
-      setCurrentScreen('onboarding');
-    }, 2000);
-    return () => clearTimeout(timer);
-  }, []);
-
-  const handleLanguageSelect = (lang: string) => {
-    setLanguage(lang);
-    setCurrentScreen('voiceMode');
-  };
-
-  const handleVoiceModeSelect = (enabled: boolean) => {
-    setVoiceEnabled(enabled);
-    setCurrentScreen('tinRegistration');
-  };
-
-  const handleOnboardingComplete = () => {
-    setOnboardingComplete(true);
-    setCurrentScreen('dashboard');
-  };
-
-  const handleTabChange = (tab: string) => {
-    setActiveTab(tab);
-    if (tab === 'home') setCurrentScreen('dashboard');
-    else if (tab === 'file') setCurrentScreen('fileReturns');
-    else if (tab === 'pay') setCurrentScreen('payTax');
-    else if (tab === 'ledger') setCurrentScreen('ledger');
-    else if (tab === 'profile') setCurrentScreen('profile');
-  };
-
-  const navigateTo = (screen: string) => {
-    setCurrentScreen(screen);
-  };
-
-  const renderScreen = () => {
-    switch (currentScreen) {
-      case 'splash':
-        return <SplashScreen />;
-      case 'onboarding':
-        return <OnboardingWizard onComplete={handleOnboardingComplete} />;
-      case 'dashboard':
-        return <Dashboard onNavigate={navigateTo} />;
-      case 'fileReturns':
-        return <FileReturns onNavigate={navigateTo} />;
-      case 'payTax':
-        return <PayTax onNavigate={navigateTo} />;
-      case 'ledger':
-        return <Ledger onNavigate={navigateTo} />;
-      case 'profile':
-        return <Profile onNavigate={navigateTo} />;
-      case 'upcomingDeadlines':
-        return <UpcomingDeadlines onNavigate={navigateTo} />;
-      case 'recentActivity':
-        return <RecentActivity onNavigate={navigateTo} />;
-      case 'notifications':
-        return <Notifications onNavigate={navigateTo} />;
-      case 'education':
-        return <EducationModule onNavigate={navigateTo} />;
-      case 'taxClearance':
-        return <TaxClearance onNavigate={navigateTo} />;
-      case 'settings':
-        return <Settings onNavigate={navigateTo} />;
-      default:
-        return <Dashboard onNavigate={navigateTo} />;
-    }
-  };
+  // Splash screen logic (only when not onboarded)
+  if (!onboardingComplete && location.pathname === '/') {
+    return <SplashScreen />;
+  }
 
   return (
     <div className="relative w-full min-h-screen bg-gray-50">
-      {/* Mobile Frame - iPhone 14 size */}
       <div className="mx-auto max-w-[390px] min-h-screen bg-white relative overflow-hidden">
-        {renderScreen()}
-        
-        {/* Bottom Navigation - Show only after onboarding */}
-        {onboardingComplete && !['splash', 'onboarding'].includes(currentScreen) && (
-          <BottomNav activeTab={activeTab} onTabChange={handleTabChange} />
-        )}
+
+        <Routes>
+          {/* Splash Redirect */}
+          <Route
+            path="/"
+            element={
+              onboardingComplete ? (
+                <Navigate to="/dashboard" replace />
+              ) : (
+                <Navigate to="/onboarding" replace />
+              )
+            }
+          />
+
+          {/* Onboarding */}
+          <Route
+            path="/onboarding"
+            element={
+              onboardingComplete ? (
+                <Navigate to="/dashboard" replace />
+              ) : (
+                <OnboardingWizard
+                  onComplete={() => {
+                    localStorage.setItem('onboardingComplete', 'true');
+                    setOnboardingComplete(true);
+                  }}
+                />
+              )
+            }
+          />
+
+          {/* Main App Routes */}
+          <Route path="/dashboard" element={<Dashboard />} />
+          <Route path="/file-returns" element={<FileReturns />} />
+          <Route path="/pay-tax" element={<PayTax />} />
+          <Route path="/ledger" element={<Ledger />} />
+          <Route path="/profile" element={<Profile />} />
+          <Route path="/deadlines" element={<UpcomingDeadlines />} />
+          <Route path="/activity" element={<RecentActivity />} />
+          <Route path="/notifications" element={<Notifications />} />
+          <Route path="/education" element={<EducationModule />} />
+          <Route path="/tax-clearance" element={<TaxClearance />} />
+          <Route path="/settings" element={<Settings />} />
+
+          {/* Catch-all */}
+          <Route
+            path="*"
+            element={<Navigate to="/dashboard" replace />}
+          />
+        </Routes>
+
+        {/* Bottom Navigation */}
+        {onboardingComplete &&
+          !['/', '/onboarding'].includes(location.pathname) && (
+            <BottomNav />
+          )}
 
         {/* Offline Indicator */}
         {isOffline && (

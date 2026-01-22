@@ -2,6 +2,7 @@ import { motion } from 'motion/react';
 import { ArrowLeft, Bell, AlertCircle, CheckCircle2, Info, Settings } from 'lucide-react';
 import { useState } from 'react';
 import { useLanguage } from "@/context/LanguageContext";
+import { useNavigate } from 'react-router-dom';
 
 const translations = {
   english: {
@@ -146,11 +147,7 @@ const translations = {
   }      
 }
 
-interface NotificationsProps {
-  onNavigate: (screen: string) => void;
-}
-
-export function Notifications({ onNavigate }: NotificationsProps) {
+export function Notifications() {
   const [notifications, setNotifications] = useState([
     {
       id: 1,
@@ -159,7 +156,7 @@ export function Notifications({ onNavigate }: NotificationsProps) {
       messageKey: 'vatDeadlineAlertMsg',
       time: '2h ago',
       read: false,
-      action: 'fileReturns',
+      action: '/file-returns',
     },
     {
       id: 2,
@@ -168,7 +165,7 @@ export function Notifications({ onNavigate }: NotificationsProps) {
       messageKey: 'paymentConfirmedMsg',
       time: '5h ago',
       read: false,
-      action: 'payTax',
+      action: '/pay-tax',
     },
     {
       id: 3,
@@ -177,7 +174,7 @@ export function Notifications({ onNavigate }: NotificationsProps) {
       messageKey: 'newTaxEducationMsg',
       time: '1d ago',
       read: true,
-      action: 'education',
+      action: '/education',
     },
     {
       id: 4,
@@ -186,7 +183,7 @@ export function Notifications({ onNavigate }: NotificationsProps) {
       messageKey: 'complianceScoreUpdateMsg',
       time: '2d ago',
       read: true,
-      action: 'upcomingDeadlines',
+      action: '/deadlines',
     },
     {
       id: 5,
@@ -195,7 +192,7 @@ export function Notifications({ onNavigate }: NotificationsProps) {
       messageKey: 'tinVerifiedMsg',
       time: '3d ago',
       read: true,
-      action: 'profile',
+      action: '/profile',
     },
   ]);  
 
@@ -223,6 +220,7 @@ export function Notifications({ onNavigate }: NotificationsProps) {
 
   const { language } = useLanguage();
   const t = translations[language];
+  const navigate = useNavigate();
 
   return (
     <div className="min-h-screen bg-gray-50 pb-20">
@@ -241,7 +239,7 @@ export function Notifications({ onNavigate }: NotificationsProps) {
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-4">
             <button 
-              onClick={() => onNavigate('dashboard')}
+              onClick={() => navigate('/dashboard')}
               className="p-2 hover:bg-gray-100 rounded-lg transition-all -ml-2"
             >
               <ArrowLeft className="w-6 h-6 text-gray-700" />
@@ -282,7 +280,7 @@ export function Notifications({ onNavigate }: NotificationsProps) {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: index * 0.05 }}
-              onClick={() => onNavigate(notification.action)}
+              onClick={() => navigate(notification.action)}
               className={`w-full p-4 rounded-xl transition-all text-left ${
                 notification.read 
                   ? 'bg-white border border-gray-200 hover:shadow-md' 

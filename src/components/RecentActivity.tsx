@@ -2,6 +2,7 @@ import { motion } from 'motion/react';
 import { ArrowLeft, TrendingUp, TrendingDown, CreditCard, FileText, Search, Filter, Calendar } from 'lucide-react';
 import { useState } from 'react';
 import { useLanguage } from "@/context/LanguageContext";
+import { useNavigate } from 'react-router-dom';
 
 const translations = {
   english: {
@@ -115,11 +116,7 @@ const translations = {
   }
 }
 
-interface RecentActivityProps {
-  onNavigate: (screen: string) => void;
-}
-
-export function RecentActivity({ onNavigate }: RecentActivityProps) {
+export function RecentActivity() {
   const [filter, setFilter] = useState('all');
 
   const activities = [
@@ -207,6 +204,7 @@ export function RecentActivity({ onNavigate }: RecentActivityProps) {
 
   const { language } = useLanguage();
   const t = translations[language];
+  const navigate = useNavigate();
 
   return (
     <div className="min-h-screen bg-gray-50 pb-20">
@@ -224,7 +222,7 @@ export function RecentActivity({ onNavigate }: RecentActivityProps) {
       <div className="bg-white px-6 py-4 border-b border-gray-200">
         <div className="flex items-center gap-4 mb-4">
           <button
-            onClick={() => onNavigate('dashboard')}
+            onClick={() => navigate('/dashboard')}
             className="p-2 hover:bg-gray-100 rounded-lg transition-all -ml-2"
           >
             <ArrowLeft className="w-6 h-6 text-gray-700" />

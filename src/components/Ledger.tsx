@@ -2,6 +2,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import { ArrowLeft, Search, Filter, Plus, Camera, Mic, Download, TrendingUp, TrendingDown, Zap } from 'lucide-react';
 import { useState } from 'react';
 import { useLanguage } from "@/context/LanguageContext";
+import { useNavigate } from 'react-router-dom';
 
 const translations = {
   english: {
@@ -225,18 +226,16 @@ const translations = {
   },
 };
 
-interface LedgerProps {
-  onNavigate: (screen: string) => void;
-}
-
-export function Ledger({ onNavigate }: LedgerProps) {
+export function Ledger() {
   const [showAddModal, setShowAddModal] = useState(false);
   const [addMode, setAddMode] = useState(''); // manual, scan, voice
   const [searchQuery, setSearchQuery] = useState('');
   const [filterType, setFilterType] = useState('all');
+  const [entryType, setEntryType] = useState<'income' | 'expense'>('income');
 
   const { language } = useLanguage();
   const t = translations[language];
+  const navigate = useNavigate();
 
   const entries = [
     { id: 1, date: 'Dec 13, 2025', amount: 25000, categoryKey: 'salesRevenue', type: 'income', status: 'synced' },
@@ -250,6 +249,17 @@ export function Ledger({ onNavigate }: LedgerProps) {
   const handleAddClick = (mode: string) => {
     setAddMode(mode);
   };
+
+  const incomeCategories = [
+    translations[language].salesRevenue,
+    translations[language].serviceIncome,
+  ];
+
+  const expenseCategories = [
+    translations[language].foodSupplies,
+    translations[language].equipment,
+    translations[language].transportation,
+  ];
 
   return (
     <div className="min-h-screen bg-gray-50 pb-20">
@@ -293,8 +303,8 @@ export function Ledger({ onNavigate }: LedgerProps) {
               key={type}
               onClick={() => setFilterType(type)}
               className={`px-4 py-1.5 rounded-full text-sm whitespace-nowrap transition-all ${filterType === type
-                  ? 'bg-emerald-600 text-white'
-                  : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                ? 'bg-emerald-600 text-white'
+                : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
                 }`}
             >
               {translations[language][
@@ -476,11 +486,19 @@ export function Ledger({ onNavigate }: LedgerProps) {
                 <div>
                   <label className="block mb-2 text-sm text-gray-700">{translations[language].type}</label>
                   <div className="grid grid-cols-2 gap-2">
-                    <button className="py-2 px-4 bg-emerald-50 text-emerald-600 border-2 border-emerald-600 rounded-lg text-sm">
-                    {translations[language].income}
+                    <button
+                      onClick={() => setEntryType('income')}
+                      className={`py-2 px-4 rounded-lg text-sm border-2 ${entryType === 'income'
+                        ? 'bg-emerald-50 text-emerald-600 border-emerald-600'
+                        : 'bg-gray-100 text-gray-600 border-transparent'}`}>
+                      {translations[language].income}
                     </button>
-                    <button className="py-2 px-4 bg-gray-100 text-gray-600 border-2 border-transparent rounded-lg text-sm">
-                    {translations[language].expense}
+                    <button
+                      onClick={() => setEntryType('expense')}
+                      className={`py-2 px-4 rounded-lg text-sm border-2 ${entryType === 'expense'
+                        ? 'bg-red-50 text-red-600 border-red-600'
+                        : 'bg-gray-100 text-gray-600 border-transparent'}`}>
+                      {translations[language].expense}
                     </button>
                   </div>
                 </div>
@@ -488,7 +506,9 @@ export function Ledger({ onNavigate }: LedgerProps) {
                 <div>
                   <label className="block mb-2 text-sm text-gray-700">{translations[language].amount}</label>
                   <div className="relative">
-                    <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500">₦</span>
+                    <span className={`absolute left-4 top-1/2 -translate-y-1/2 ${entryType === 'income' ? 'text-emerald-600' : 'text-red-600'}`}>
+                      ₦
+                    </span>                    
                     <input
                       type="text"
                       placeholder="0.00"
@@ -501,11 +521,9 @@ export function Ledger({ onNavigate }: LedgerProps) {
                   <label className="block mb-2 text-sm text-gray-700">{translations[language].category}</label>
                   <select className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none">
                     <option>{translations[language].selectCategory}</option>
-                    <option>{translations[language].salesRevenue}</option>
-                    <option>{translations[language].serviceIncome}</option>
-                    <option>{translations[language].foodSupplies}</option>
-                    <option>{translations[language].equipment}</option>
-                    <option>{translations[language].transportation}</option>
+                    {(entryType === 'income' ? incomeCategories : expenseCategories).map((cat) => (
+                      <option key={cat}>{cat}</option>
+                    ))}
                   </select>
                 </div>
 
@@ -527,12 +545,98 @@ export function Ledger({ onNavigate }: LedgerProps) {
                 </div>
 
                 <button className="w-full py-4 bg-emerald-600 text-white rounded-xl hover:bg-emerald-700 shadow-lg transition-all">
-                {translations[language].saveEntry}
+                  {translations[language].saveEntry}
                 </button>
               </div>
             </motion.div>
           </motion.div>
         )}
+      </AnimatePresence>
+
+      <AnimatePresence>
+      {addMode === 'scan' && (
+  <motion.div
+    initial={{ opacity: 0 }}
+    animate={{ opacity: 1 }}
+    exit={{ opacity: 0 }}
+    className="fixed inset-0 bg-black z-50 flex flex-col"
+  >
+    {/* Header */}
+    <div className="p-4 text-white text-center">
+      <h3 className="text-lg">Scan Receipt</h3>
+      <p className="text-sm text-gray-300">
+        Align receipt within the frame
+      </p>
+    </div>
+
+    {/* Camera Preview */}
+    <div className="flex-1 flex items-center justify-center relative">
+      <div className="w-[85%] h-[70%] border-2 border-dashed border-white/60 rounded-xl" />
+      <p className="absolute bottom-4 text-xs text-white/80">
+        Auto capture enabled
+      </p>
+    </div>
+
+    {/* Controls */}
+    <div className="p-6 flex items-center justify-between">
+      <button
+        onClick={() => setAddMode('')}
+        className="text-white text-sm"
+      >
+        Cancel
+      </button>
+
+      <button className="w-16 h-16 rounded-full bg-white flex items-center justify-center">
+        <Camera className="w-7 h-7 text-black" />
+      </button>
+
+      <div className="w-10" />
+    </div>
+  </motion.div>
+)}
+      </AnimatePresence>
+
+
+      <AnimatePresence>
+      {addMode === 'voice' && (
+  <motion.div
+    initial={{ opacity: 0 }}
+    animate={{ opacity: 1 }}
+    exit={{ opacity: 0 }}
+    className="fixed inset-0 bg-gradient-to-b from-emerald-600 to-emerald-800 z-50 flex flex-col items-center justify-center text-white px-6"
+  >
+    <h3 className="text-lg mb-2">Voice Entry</h3>
+    <p className="text-sm text-emerald-100 mb-10 text-center">
+      Speak naturally to add a transaction
+    </p>
+
+    {/* Mic Animation */}
+    <motion.div
+      animate={{ scale: [1, 1.2, 1] }}
+      transition={{ repeat: Infinity, duration: 1.5 }}
+      className="w-28 h-28 rounded-full bg-white/20 flex items-center justify-center mb-6"
+    >
+      <Mic className="w-10 h-10 text-white" />
+    </motion.div>
+
+    <p className="text-xs text-emerald-200 mb-10">
+      Listening...
+    </p>
+
+    {/* Controls */}
+    <div className="flex gap-6">
+      <button
+        onClick={() => setAddMode('')}
+        className="px-6 py-3 bg-white/20 rounded-full text-sm"
+      >
+        Cancel
+      </button>
+      <button className="px-6 py-3 bg-white text-emerald-700 rounded-full text-sm">
+        Done
+      </button>
+    </div>
+  </motion.div>
+)}
       </AnimatePresence>
     </div>
   );

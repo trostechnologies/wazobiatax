@@ -2,6 +2,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import { ArrowLeft, FileText, DollarSign, Users, TrendingUp, Calculator, Mic, Camera, CheckCircle2, Loader2 } from 'lucide-react';
 import { useState } from 'react';
 import { useLanguage } from "@/context/LanguageContext";
+import { useNavigate } from 'react-router-dom';
 
 const translations = {
   english: {
@@ -196,11 +197,7 @@ const translations = {
   },
 };
 
-interface FileReturnsProps {
-  onNavigate: (screen: string) => void;
-}
-
-export function FileReturns({ onNavigate }: FileReturnsProps) {
+export function FileReturns() {
   const [step, setStep] = useState('select'); // select, form, review, success
   const [selectedType, setSelectedType] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -212,6 +209,7 @@ export function FileReturns({ onNavigate }: FileReturnsProps) {
   });
   const { language } = useLanguage();
   const t = translations[language];
+  const navigate = useNavigate();
 
   const returnTypes = [
     {
@@ -276,7 +274,7 @@ export function FileReturns({ onNavigate }: FileReturnsProps) {
       {/* Header */}
       <div className="bg-white px-6 py-4 flex items-center gap-4 border-b border-gray-200">
         <button
-          onClick={() => onNavigate('dashboard')}
+          onClick={() => navigate('/dashboard')}
           className="p-2 hover:bg-gray-100 rounded-lg transition-all -ml-2"
         >
           <ArrowLeft className="w-6 h-6 text-gray-700" />
@@ -514,13 +512,13 @@ export function FileReturns({ onNavigate }: FileReturnsProps) {
 
             <div className="space-y-3">
               <button
-                onClick={() => onNavigate('payTax')}
+                onClick={() => navigate('/pay-tax')}
                 className="w-full py-4 bg-emerald-600 text-white rounded-xl hover:bg-emerald-700 shadow-lg transition-all"
               >
                 {translations[language].payTaxNow}
               </button>
               <button
-                onClick={() => onNavigate('dashboard')}
+                onClick={() => navigate('/dashboard')}
                 className="w-full py-4 bg-gray-100 text-gray-700 rounded-xl hover:bg-gray-200 transition-all"
               >
                 {translations[language].backToDashboard}
