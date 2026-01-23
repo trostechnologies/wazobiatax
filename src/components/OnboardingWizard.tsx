@@ -53,7 +53,6 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
     { id: 'igbo' as LanguageKey, name: 'Igbo', flag: '🇳🇬', nativeName: 'Igbo' },
   ];
 
-  // Get current translation
   const t = onboardingTranslations[selectedLanguage];
   const navigate = useNavigate();
 
