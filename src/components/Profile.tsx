@@ -14,6 +14,7 @@ import {
 import { useState } from 'react';
 import { useLanguage } from "@/context/LanguageContext";
 import { useNavigate } from 'react-router-dom';
+import { getUser } from '@/utils/storage';
 
 const translations = {
   english: {
@@ -140,6 +141,7 @@ export function Profile() {
   const { language } = useLanguage();
   const t = translations[language];
   const navigate = useNavigate();
+  const user = getUser();
 
   const handleCopyTIN = () => {
     setCopied(true);
@@ -191,7 +193,7 @@ export function Profile() {
         },
       ],
     },
-  ];  
+  ];
 
   return (
     <div className="min-h-screen bg-gray-50 pb-20">
@@ -214,14 +216,14 @@ export function Profile() {
             <User className="w-10 h-10 text-emerald-600" />
           </div>
           <div className="flex-1">
-            <h2 className="text-white text-xl mb-1">Chukwuma Okafor</h2>
-            <p className="text-emerald-100 text-sm">Bukka Restaurant</p>
+            <h2 className="text-white text-xl mb-1">{user?.first_name}</h2>
+            <p className="text-emerald-100 text-sm">{user?.business_name}</p>
 
             {/* Subscription Badge */}
             <div className="mt-2">
               {subscription === 'basic' ? (
                 <div className="inline-flex items-center gap-1 px-3 py-1 bg-white/20 text-white rounded-full text-xs">
-                 {translations[language].basicPlan}
+                  {translations[language].basicPlan}
                 </div>
               ) : (
                 <div className="inline-flex items-center gap-1 px-3 py-1 bg-gradient-to-r from-amber-400 to-orange-500 text-white rounded-full text-xs">
@@ -256,7 +258,7 @@ export function Profile() {
                   animate={{ scale: 1 }}
                   className="text-emerald-600 text-sm"
                 >
-                 {translations[language].copied}
+                  {translations[language].copied}
                 </motion.div>
               ) : (
                 <Copy className="w-5 h-5 text-gray-600" />
@@ -268,70 +270,68 @@ export function Profile() {
 
       {/* Menu Sections */}
       <div className="px-6 space-y-6">
-  {menuSections.map((section, sectionIndex) => (
-    <motion.div
-      key={section.titleKey}
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ delay: sectionIndex * 0.1 }}
-    >
-      <h3 className="text-xs text-gray-500 uppercase tracking-wide mb-3 px-2">
-        {translations[language][section.titleKey]}
-      </h3>
+        {menuSections.map((section, sectionIndex) => (
+          <motion.div
+            key={section.titleKey}
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: sectionIndex * 0.1 }}
+          >
+            <h3 className="text-xs text-gray-500 uppercase tracking-wide mb-3 px-2">
+              {translations[language][section.titleKey]}
+            </h3>
 
-      <div className="bg-white rounded-2xl overflow-hidden shadow-sm">
-        {section.items.map((item, index) => (
-          <button
-            key={item.id}
-            onClick={() => navigate(item.screen)}
-            className={`w-full px-4 py-4 flex items-center justify-between hover:bg-gray-50 transition-all
+            <div className="bg-white rounded-2xl overflow-hidden shadow-sm">
+              {section.items.map((item, index) => (
+                <button
+                  key={item.id}
+                  onClick={() => navigate(item.screen)}
+                  className={`w-full px-4 py-4 flex items-center justify-between hover:bg-gray-50 transition-all
               ${index !== section.items.length - 1 ? 'border-b border-gray-100' : ''}
               ${item.premium ? 'bg-gradient-to-r from-amber-50 to-orange-50' : ''}
             `}
-          >
-            <div className="flex items-center gap-3">
-              <div
-                className={`w-10 h-10 rounded-lg flex items-center justify-center
-                  ${
-                    item.premium
-                      ? 'bg-gradient-to-br from-amber-400 to-orange-500'
-                      : item.highlight
-                      ? 'bg-emerald-50'
-                      : 'bg-gray-50'
-                  }
+                >
+                  <div className="flex items-center gap-3">
+                    <div
+                      className={`w-10 h-10 rounded-lg flex items-center justify-center
+                  ${item.premium
+                          ? 'bg-gradient-to-br from-amber-400 to-orange-500'
+                          : item.highlight
+                            ? 'bg-emerald-50'
+                            : 'bg-gray-50'
+                        }
                 `}
-              >
-                <item.icon
-                  className={`w-5 h-5
-                    ${
-                      item.premium
-                        ? 'text-white'
-                        : item.highlight
-                        ? 'text-emerald-600'
-                        : 'text-gray-600'
-                    }
+                    >
+                      <item.icon
+                        className={`w-5 h-5
+                    ${item.premium
+                            ? 'text-white'
+                            : item.highlight
+                              ? 'text-emerald-600'
+                              : 'text-gray-600'
+                          }
                   `}
-                />
-              </div>
+                      />
+                    </div>
 
-              <span className="text-sm">
-                {translations[language][item.labelKey]}
-              </span>
+                    <span className="text-sm">
+                      {translations[language][item.labelKey]}
+                    </span>
+                  </div>
+
+                  <ChevronRight className="w-5 h-5 text-gray-400" />
+                </button>
+              ))}
             </div>
-
-            <ChevronRight className="w-5 h-5 text-gray-400" />
-          </button>
+          </motion.div>
         ))}
       </div>
-    </motion.div>
-  ))}
-</div>
 
       {/* Logout Button */}
       <div className="px-6 mt-6">
-        <button 
-        onClick={() => navigate('/onboarding')}
-        className="w-full py-4 bg-white border border-gray-200 rounded-2xl hover:bg-gray-50 transition-all flex items-center justify-center gap-2 text-red-600">
+        <button
+          onClick={() => navigate('/onboarding')}
+          className="w-full py-4 bg-white border border-gray-200 rounded-2xl hover:bg-gray-50 transition-all flex items-center justify-center gap-2 text-red-600">
           <LogOut className="w-5 h-5" />
           {translations[language].logOut}
         </button>

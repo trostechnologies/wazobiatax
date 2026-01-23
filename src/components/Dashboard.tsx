@@ -1,5 +1,6 @@
 import { motion, AnimatePresence } from 'motion/react';
 import { useNavigate } from 'react-router-dom';
+import { getUser } from '@/utils/storage';
 import {
   Bell,
   Calculator,
@@ -191,6 +192,7 @@ export function Dashboard() {
   const { language } = useLanguage();
   const t = translations[language];
   const navigate = useNavigate();
+  const user = getUser();
 
   const quickActions = [
     { id: 'file', labelKey: 'fileReturn', icon: FileText, color: 'bg-blue-50 text-blue-600', screen: '/file-returns' },
@@ -233,7 +235,7 @@ export function Dashboard() {
           </div>
           <div>
             <h1 className="text-lg">wazobiatax.ng</h1>
-            <p className="text-xs text-gray-500">Bukka Restaurant</p>
+            <p className="text-xs text-gray-500">{user?.business_name}</p>
           </div>
         </div>
         <button

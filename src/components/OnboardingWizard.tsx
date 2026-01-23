@@ -1,5 +1,6 @@
 import { motion, AnimatePresence } from 'motion/react';
 import { registerUser, verifyEmailOtp } from '../services/auth';
+import { saveUser } from '@/utils/storage';
 import { useNavigate } from 'react-router-dom';
 import {
   Eye,
@@ -104,7 +105,7 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
     try {
       setIsProcessing(true);
   
-      const response = await fetch('https://api.wazobiatax.ng/api/auth/login/', {
+      const response = await fetch('https://api.wazobiatax.ng/api/auth/login', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -145,9 +146,9 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
       alert(t.register.passwordMismatch);
       return;
     }
-
+  
     setIsProcessing(true);
-
+  
     try {
       const response = await registerUser({
         email: formData.email,
@@ -158,18 +159,25 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
         password: formData.password,
         business_name: formData.businessName || undefined,
       });
-
+  
       console.log('REGISTER RESPONSE:', response);
-
-      // Success → move to email verification
+  
+      // ✅ SAVE USER DATA
+      if (response?.data) {
+        saveUser(response.data);
+        console.log('USER SAVED:', response.data);
+      }
+  
+      // ➡️ move to OTP screen
       setCurrentStep('emailVerify');
+  
     } catch (error: any) {
       console.error('REGISTER ERROR:', error);
-
+  
       const message =
         error?.response?.data?.message ||
         'Registration failed. Please try again.';
-
+  
       alert(message);
     } finally {
       setIsProcessing(false);
