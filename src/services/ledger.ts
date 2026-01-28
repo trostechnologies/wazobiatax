@@ -40,20 +40,7 @@ export const addLedgerEntry = async (payload: AddLedgerPayload) => {
 };
 
 export const getLedgerRecords = async () => {
-    const token = localStorage.getItem('token');
-  
-    const response = await fetch('/api/ledger/entry', {
-      method: 'GET',
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    });
-  
-    if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error?.message || 'Failed to fetch ledger records');
-    }
-  
-    return response.json();
-  };
+  const response = await api.get('/api/ledger/entry');
+  return response.data;
+};
   

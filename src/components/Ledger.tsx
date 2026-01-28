@@ -15,6 +15,7 @@ const translations = {
     exempt: "Tax Exempt",
 
     salesRevenue: "Sales Revenue",
+    otherIncome: "Other Income",
     foodSupplies: "Food Supplies",
     equipment: "Equipment",
     serviceIncome: "Service Income",
@@ -249,9 +250,10 @@ export function Ledger() {
       { labelKey: 'serviceIncome', value: 'service income' },
     ],
     expense: [
-      { labelKey: 'foodSupplies', value: 'food supplies expense' },
-      { labelKey: 'equipment', value: 'office equipment' },
-      { labelKey: 'transportation', value: 'transportation expense' },
+      // { labelKey: 'foodSupplies', value: 'food supplies expense' },
+      // { labelKey: 'equipment', value: 'office equipment' },
+      { labelKey: 'otherIncome', value: 'other income' },
+      // { labelKey: 'transportation', value: 'transportation expense' },
     ],
   };  
 
@@ -289,10 +291,11 @@ const [ledgerError, setLedgerError] = useState('');
       setLedgerError('');
   
       const res = await getLedgerRecords();
-      console.log('ledger entries', res)
-      setEntries(res.data);
-    } catch (err) {
-      setLedgerError(err.message);
+      console.log('ledger entries', res);
+  
+      setEntries(res.data || []);
+    } catch (err: any) {
+      setLedgerError(err.message || 'Failed to load ledger records');
     } finally {
       setIsLoadingLedger(false);
     }
