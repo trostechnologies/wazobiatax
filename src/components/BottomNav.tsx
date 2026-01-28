@@ -56,7 +56,7 @@ export function BottomNav() {
   const isActive = (path: string) => location.pathname === path;
 
   return (
-    <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 px-2 py-2 max-w-[390px] mx-auto z-50">
+    <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 px-2 py-2 max-w-[390px] mx-auto">
       <div className="flex items-center justify-around">
         {tabs.map((tab) => {
           const active = isActive(tab.path);

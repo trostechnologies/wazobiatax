@@ -1,8 +1,9 @@
 import { motion, AnimatePresence } from 'motion/react';
 import { ArrowLeft, Search, Filter, Plus, Camera, Mic, Download, TrendingUp, TrendingDown, Zap } from 'lucide-react';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useLanguage } from "@/context/LanguageContext";
 import { useNavigate } from 'react-router-dom';
+import { addLedgerEntry, getLedgerRecords } from '@/services/ledger';
 
 const translations = {
   english: {
@@ -231,20 +232,41 @@ export function Ledger() {
   const [addMode, setAddMode] = useState(''); // manual, scan, voice
   const [searchQuery, setSearchQuery] = useState('');
   const [filterType, setFilterType] = useState('all');
+  const [amount, setAmount] = useState('');
+  const [category, setCategory] = useState('');
+  const [description, setDescription] = useState('');
+  const [date, setDate] = useState('');
+  const [isProcessing, setIsProcessing] = useState(false);
   const [entryType, setEntryType] = useState<'income' | 'expense'>('income');
 
   const { language } = useLanguage();
   const t = translations[language];
   const navigate = useNavigate();
 
-  const entries = [
-    { id: 1, date: 'Dec 13, 2025', amount: 25000, categoryKey: 'salesRevenue', type: 'income', status: 'synced' },
-    { id: 2, date: 'Dec 12, 2025', amount: 5000, categoryKey: 'foodSupplies', type: 'expense', status: 'synced' },
-    { id: 3, date: 'Dec 11, 2025', amount: 15000, categoryKey: 'equipment', type: 'expense', status: 'pending' },
-    { id: 4, date: 'Dec 10, 2025', amount: 30000, categoryKey: 'serviceIncome', type: 'income', status: 'synced' },
-    { id: 5, date: 'Dec 9, 2025', amount: 8000, categoryKey: 'transportation', type: 'expense', status: 'synced' },
-    { id: 6, date: 'Dec 8, 2025', amount: 20000, categoryKey: 'salesRevenue', type: 'income', status: 'synced', exempt: true },
-  ];
+  const CATEGORY_MAP = {
+    income: [
+      { labelKey: 'salesRevenue', value: 'sales revenue' },
+      { labelKey: 'serviceIncome', value: 'service income' },
+    ],
+    expense: [
+      { labelKey: 'foodSupplies', value: 'food supplies expense' },
+      { labelKey: 'equipment', value: 'office equipment' },
+      { labelKey: 'transportation', value: 'transportation expense' },
+    ],
+  };  
+
+  // const entries = [
+  //   { id: 1, date: 'Dec 13, 2025', amount: 25000, categoryKey: 'salesRevenue', type: 'income', status: 'synced' },
+  //   { id: 2, date: 'Dec 12, 2025', amount: 5000, categoryKey: 'foodSupplies', type: 'expense', status: 'synced' },
+  //   { id: 3, date: 'Dec 11, 2025', amount: 15000, categoryKey: 'equipment', type: 'expense', status: 'pending' },
+  //   { id: 4, date: 'Dec 10, 2025', amount: 30000, categoryKey: 'serviceIncome', type: 'income', status: 'synced' },
+  //   { id: 5, date: 'Dec 9, 2025', amount: 8000, categoryKey: 'transportation', type: 'expense', status: 'synced' },
+  //   { id: 6, date: 'Dec 8, 2025', amount: 20000, categoryKey: 'salesRevenue', type: 'income', status: 'synced', exempt: true },
+  // ];
+
+  const [entries, setEntries] = useState<any[]>([]);
+const [isLoadingLedger, setIsLoadingLedger] = useState(false);
+const [ledgerError, setLedgerError] = useState('');
 
   const handleAddClick = (mode: string) => {
     setAddMode(mode);
@@ -260,6 +282,67 @@ export function Ledger() {
     translations[language].equipment,
     translations[language].transportation,
   ];
+
+  const fetchLedgerRecords = async () => {
+    try {
+      setIsLoadingLedger(true);
+      setLedgerError('');
+  
+      const res = await getLedgerRecords();
+      console.log('ledger entries', res)
+      setEntries(res.data);
+    } catch (err) {
+      setLedgerError(err.message);
+    } finally {
+      setIsLoadingLedger(false);
+    }
+  };  
+
+  const handleAddLedger = async () => {
+    if (!amount || !category || !date) return;
+
+    try {
+      setIsProcessing(true);
+
+      const response = await addLedgerEntry({
+        amount: Number(amount),
+        ledger_type: entryType, // 'income' | 'expense'
+        date,
+        category,
+        description,
+      });
+
+      console.log('LEDGER CREATED:', response);
+      alert('LEDGER CREATED.')
+
+      // ✅ Optional: add immediately to UI list
+      // setEntries((prev) => [response.data, ...prev]);
+
+          // ✅ Re-fetch ledger list from API
+    await fetchLedgerRecords();
+
+      // ✅ Reset form
+      setAmount('');
+      setCategory('');
+      setDescription('');
+      setDate('');
+
+    } catch (error: any) {
+      console.error(error);
+
+      const message =
+        error?.response?.data?.message ||
+        'Failed to add ledger entry';
+
+      alert(message);
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchLedgerRecords();
+  }, []);  
 
   return (
     <div className="min-h-screen bg-gray-50 pb-20">
@@ -325,53 +408,77 @@ export function Ledger() {
         <span>{translations[language].pendingSyncInfo}</span>
       </div>
 
+      {isLoadingLedger && (
+  <p className="text-center text-sm text-gray-500">Loading records...</p>
+)}
+
+{!isLoadingLedger && entries.length === 0 && (
+  <p className="text-center text-sm text-gray-500">
+    No ledger records yet
+  </p>
+)}
+
       {/* Ledger Entries */}
       <div className="p-6 space-y-3">
-        {entries.map((entry, index) => (
-          <motion.div
-            key={entry.id}
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: index * 0.05 }}
-            className="bg-white rounded-xl p-4 shadow-sm hover:shadow-md transition-all cursor-pointer border border-gray-100"
-          >
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${entry.type === 'income' ? 'bg-emerald-50' : 'bg-red-50'
-                  }`}>
-                  {entry.type === 'income' ? (
-                    <TrendingUp className="w-5 h-5 text-emerald-600" />
-                  ) : (
-                    <TrendingDown className="w-5 h-5 text-red-600" />
-                  )}
-                </div>
-                <div>
-                  <p className="text-sm mb-0.5">{translations[language][entry.categoryKey]}</p>
-                  <div className="flex items-center gap-2">
-                    <p className="text-xs text-gray-500">{entry.date}</p>
-                    {entry.exempt && (
-                      <span className="px-2 py-0.5 bg-blue-50 text-blue-600 rounded text-xs">
-                        {translations[language].isExempt}
-                      </span>
-                    )}
-                    {entry.status === 'pending' && (
-                      <span className="px-2 py-0.5 bg-amber-50 text-amber-600 rounded text-xs">
-                        {translations[language].pendingSync}
-                      </span>
-                    )}
-                  </div>
-                </div>
-              </div>
-              <div className="text-right">
-                <p className={`text-sm ${entry.type === 'income' ? 'text-emerald-600' : 'text-gray-900'
-                  }`}>
-                  {entry.type === 'income' ? '+' : '-'}₦{entry.amount.toLocaleString()}
+  {entries.map((entry, index) => {
+    const isIncome = entry.ledger_type === 'income';
+
+    return (
+      <motion.div
+        key={entry.id}
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: index * 0.05 }}
+        className="bg-white rounded-xl p-4 shadow-sm hover:shadow-md transition-all cursor-pointer border border-gray-100"
+      >
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div
+              className={`w-10 h-10 rounded-lg flex items-center justify-center ${
+                isIncome ? 'bg-emerald-50' : 'bg-red-50'
+              }`}
+            >
+              {isIncome ? (
+                <TrendingUp className="w-5 h-5 text-emerald-600" />
+              ) : (
+                <TrendingDown className="w-5 h-5 text-red-600" />
+              )}
+            </div>
+
+            <div>
+              <p className="text-sm mb-0.5 capitalize">
+                {entry.category}
+              </p>
+
+              <div className="flex items-center gap-2">
+                <p className="text-xs text-gray-500">
+                  {new Date(entry.date).toLocaleDateString()}
                 </p>
               </div>
+
+              {entry.description && (
+                <p className="text-xs text-gray-400 mt-0.5">
+                  {entry.description}
+                </p>
+              )}
             </div>
-          </motion.div>
-        ))}
-      </div>
+          </div>
+
+          <div className="text-right">
+            <p
+              className={`text-sm font-medium ${
+                isIncome ? 'text-emerald-600' : 'text-gray-900'
+              }`}
+            >
+              {isIncome ? '+' : '-'}₦
+              {Number(entry.amount).toLocaleString()}
+            </p>
+          </div>
+        </div>
+      </motion.div>
+    );
+  })}
+</div>
 
       {/* Export Button */}
       <div className="px-6 pb-6">
@@ -483,160 +590,121 @@ export function Ledger() {
               <h3 className="text-lg mb-4">{translations[language].manualEntry}</h3>
 
               <div className="space-y-4">
+                {/* TYPE */}
                 <div>
-                  <label className="block mb-2 text-sm text-gray-700">{translations[language].type}</label>
+                  <label className="block mb-2 text-sm text-gray-700">
+                    {translations[language].type}
+                  </label>
                   <div className="grid grid-cols-2 gap-2">
                     <button
+                      type="button"
                       onClick={() => setEntryType('income')}
                       className={`py-2 px-4 rounded-lg text-sm border-2 ${entryType === 'income'
-                        ? 'bg-emerald-50 text-emerald-600 border-emerald-600'
-                        : 'bg-gray-100 text-gray-600 border-transparent'}`}>
+                          ? 'bg-emerald-50 text-emerald-600 border-emerald-600'
+                          : 'bg-gray-100 text-gray-600 border-transparent'
+                        }`}
+                    >
                       {translations[language].income}
                     </button>
+
                     <button
+                      type="button"
                       onClick={() => setEntryType('expense')}
                       className={`py-2 px-4 rounded-lg text-sm border-2 ${entryType === 'expense'
-                        ? 'bg-red-50 text-red-600 border-red-600'
-                        : 'bg-gray-100 text-gray-600 border-transparent'}`}>
+                          ? 'bg-red-50 text-red-600 border-red-600'
+                          : 'bg-gray-100 text-gray-600 border-transparent'
+                        }`}
+                    >
                       {translations[language].expense}
                     </button>
                   </div>
                 </div>
 
+                {/* AMOUNT */}
                 <div>
-                  <label className="block mb-2 text-sm text-gray-700">{translations[language].amount}</label>
+                  <label className="block mb-2 text-sm text-gray-700">
+                    {translations[language].amount}
+                  </label>
                   <div className="relative">
-                    <span className={`absolute left-4 top-1/2 -translate-y-1/2 ${entryType === 'income' ? 'text-emerald-600' : 'text-red-600'}`}>
+                    <span
+                      className={`absolute left-4 top-1/2 -translate-y-1/2 ${entryType === 'income' ? 'text-emerald-600' : 'text-red-600'
+                        }`}
+                    >
                       ₦
-                    </span>                    
+                    </span>
                     <input
-                      type="text"
+                      type="number"
                       placeholder="0.00"
-                      className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none"
+                      value={amount}
+                      onChange={(e) => setAmount(e.target.value)}
+                      className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-emerald-500 outline-none"
                     />
                   </div>
                 </div>
 
+                {/* CATEGORY */}
                 <div>
-                  <label className="block mb-2 text-sm text-gray-700">{translations[language].category}</label>
-                  <select className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none">
-                    <option>{translations[language].selectCategory}</option>
-                    {(entryType === 'income' ? incomeCategories : expenseCategories).map((cat) => (
-                      <option key={cat}>{cat}</option>
+                  <label className="block mb-2 text-sm text-gray-700">
+                    {translations[language].category}
+                  </label>
+                  <select
+                    value={category}
+                    onChange={(e) => setCategory(e.target.value)}
+                    className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-emerald-500 outline-none"
+                  >
+                    <option value="">
+                      {translations[language].selectCategory}
+                    </option>
+
+                    {CATEGORY_MAP[entryType].map((cat) => (
+                      <option key={cat.value} value={cat.value}>
+                        {translations[language][cat.labelKey]}
+                      </option>
                     ))}
                   </select>
                 </div>
 
+                {/* DATE */}
                 <div>
-                  <label className="block mb-2 text-sm text-gray-700">{translations[language].date}</label>
+                  <label className="block mb-2 text-sm text-gray-700">
+                    {translations[language].date}
+                  </label>
                   <input
                     type="date"
-                    className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none"
+                    value={date}
+                    onChange={(e) => setDate(e.target.value)}
+                    className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-emerald-500 outline-none"
                   />
                 </div>
 
+                {/* DESCRIPTION */}
                 <div>
-                  <label className="block mb-2 text-sm text-gray-700">{translations[language].notesOptional}</label>
+                  <label className="block mb-2 text-sm text-gray-700">
+                    {translations[language].notesOptional}
+                  </label>
                   <textarea
                     rows={3}
                     placeholder={translations[language].addNotes}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none resize-none"
+                    value={description}
+                    onChange={(e) => setDescription(e.target.value)}
+                    className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-emerald-500 outline-none resize-none"
                   />
                 </div>
 
-                <button className="w-full py-4 bg-emerald-600 text-white rounded-xl hover:bg-emerald-700 shadow-lg transition-all">
-                  {translations[language].saveEntry}
+                {/* SAVE */}
+                <button
+                  onClick={handleAddLedger}
+                  disabled={isProcessing}
+                  className="w-full py-4 bg-emerald-600 text-white rounded-xl hover:bg-emerald-700 shadow-lg transition-all disabled:opacity-60"
+                >
+                  {isProcessing
+                    ? 'Saving...'
+                    : translations[language].saveEntry}
                 </button>
               </div>
             </motion.div>
           </motion.div>
         )}
-      </AnimatePresence>
-
-      <AnimatePresence>
-      {addMode === 'scan' && (
-  <motion.div
-    initial={{ opacity: 0 }}
-    animate={{ opacity: 1 }}
-    exit={{ opacity: 0 }}
-    className="fixed inset-0 bg-black z-50 flex flex-col"
-  >
-    {/* Header */}
-    <div className="p-4 text-white text-center">
-      <h3 className="text-lg">Scan Receipt</h3>
-      <p className="text-sm text-gray-300">
-        Align receipt within the frame
-      </p>
-    </div>
-
-    {/* Camera Preview */}
-    <div className="flex-1 flex items-center justify-center relative">
-      <div className="w-[85%] h-[70%] border-2 border-dashed border-white/60 rounded-xl" />
-      <p className="absolute bottom-4 text-xs text-white/80">
-        Auto capture enabled
-      </p>
-    </div>
-
-    {/* Controls */}
-    <div className="p-6 flex items-center justify-between">
-      <button
-        onClick={() => setAddMode('')}
-        className="text-white text-sm"
-      >
-        Cancel
-      </button>
-
-      <button className="w-16 h-16 rounded-full bg-white flex items-center justify-center">
-        <Camera className="w-7 h-7 text-black" />
-      </button>
-
-      <div className="w-10" />
-    </div>
-  </motion.div>
-)}
-      </AnimatePresence>
-
-
-      <AnimatePresence>
-      {addMode === 'voice' && (
-  <motion.div
-    initial={{ opacity: 0 }}
-    animate={{ opacity: 1 }}
-    exit={{ opacity: 0 }}
-    className="fixed inset-0 bg-gradient-to-b from-emerald-600 to-emerald-800 z-50 flex flex-col items-center justify-center text-white px-6"
-  >
-    <h3 className="text-lg mb-2">Voice Entry</h3>
-    <p className="text-sm text-emerald-100 mb-10 text-center">
-      Speak naturally to add a transaction
-    </p>
-
-    {/* Mic Animation */}
-    <motion.div
-      animate={{ scale: [1, 1.2, 1] }}
-      transition={{ repeat: Infinity, duration: 1.5 }}
-      className="w-28 h-28 rounded-full bg-white/20 flex items-center justify-center mb-6"
-    >
-      <Mic className="w-10 h-10 text-white" />
-    </motion.div>
-
-    <p className="text-xs text-emerald-200 mb-10">
-      Listening...
-    </p>
-
-    {/* Controls */}
-    <div className="flex gap-6">
-      <button
-        onClick={() => setAddMode('')}
-        className="px-6 py-3 bg-white/20 rounded-full text-sm"
-      >
-        Cancel
-      </button>
-      <button className="px-6 py-3 bg-white text-emerald-700 rounded-full text-sm">
-        Done
-      </button>
-    </div>
-  </motion.div>
-)}
       </AnimatePresence>
     </div>
   );

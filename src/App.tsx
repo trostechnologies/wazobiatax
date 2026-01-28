@@ -17,6 +17,11 @@ import { EducationModule } from './components/EducationModule';
 import { TaxClearance } from './components/TaxClearance';
 import { Settings } from './components/Settings';
 import { BottomNav } from './components/BottomNav';
+import { PersonalInformation } from './components/PersonalInformation';
+import { LanguageAndVoice } from './components/LanguageAndVoice';
+import { SecurityAndPrivacy } from './components/SecurityAndPrivacy';
+import { TwoFactorAuth } from './components/TwoFactorAuth';
+import { PrivacyPolicy } from './components/PrivacyPolicy';
 
 export default function App() {
   const location = useLocation();
@@ -78,6 +83,11 @@ export default function App() {
           <Route path="/education" element={<EducationModule />} />
           <Route path="/tax-clearance" element={<TaxClearance />} />
           <Route path="/settings" element={<Settings />} />
+          <Route path="/personal-information" element={<PersonalInformation />} />
+          <Route path="/language-and-voice" element={<LanguageAndVoice />} />
+          <Route path="/security-and-privacy" element={<SecurityAndPrivacy />} />
+          <Route path="/two-factor-auth" element={<TwoFactorAuth />} />
+          <Route path="/privacy-policy" element={<PrivacyPolicy />} />
 
           {/* Catch-all */}
           <Route

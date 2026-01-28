@@ -129,7 +129,10 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
       localStorage.setItem('accessToken', data['access-token']);
       localStorage.setItem('refreshToken', data['refresh-token']);
       localStorage.setItem('userId', data.user_id);
-  
+
+      localStorage.setItem('onboardingComplete', 'true');
+      window.location.href = '/dashboard';
+        
       navigate('/dashboard');
   
     } catch (error: any) {

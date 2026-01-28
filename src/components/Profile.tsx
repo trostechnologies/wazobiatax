@@ -152,8 +152,8 @@ export function Profile() {
     {
       titleKey: 'account',
       items: [
-        { id: 'personal', labelKey: 'personalInformation', icon: User, screen: '/profile' },
-        { id: 'language', labelKey: 'languageAndVoice', icon: Globe, screen: '/profile' },
+        { id: 'personal', labelKey: 'personalInformation', icon: User, screen: '/personal-information' },
+        { id: 'language', labelKey: 'languageAndVoice', icon: Globe, screen: '/language-and-voice' },
         { id: 'notifications', labelKey: 'notifications', icon: Bell, screen: '/notifications' },
       ],
     },
@@ -189,7 +189,7 @@ export function Profile() {
           id: 'security',
           labelKey: 'securityAndPrivacy',
           icon: Shield,
-          screen: '/profile',
+          screen: '/security-and-privacy',
         },
       ],
     },
