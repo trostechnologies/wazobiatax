@@ -1,6 +1,7 @@
 import { motion, AnimatePresence } from 'motion/react';
 import { useNavigate } from 'react-router-dom';
 import { getUser } from '@/utils/storage';
+import { getUserProfile } from '../services/auth';
 import {
   Bell,
   Calculator,
@@ -15,7 +16,7 @@ import {
   CheckCircle2,
   AlertCircle
 } from 'lucide-react';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useLanguage } from "@/context/LanguageContext";
 
 const translations = {
@@ -193,6 +194,8 @@ export function Dashboard() {
   const t = translations[language];
   const navigate = useNavigate();
   const user = getUser();
+  const [currentUser, setCurrentUser] = useState(null);
+  const [loading, setLoading] = useState(true);
 
   const quickActions = [
     { id: 'file', labelKey: 'fileReturn', icon: FileText, color: 'bg-blue-50 text-blue-600', screen: '/file-returns' },
@@ -215,6 +218,24 @@ export function Dashboard() {
     { id: 3, titleKey: 'quarterlyReview', days: 28, priority: 'low' },
   ];
 
+  useEffect(() => {
+    const fetchProfile = async () => {
+      try {
+        const res = await getUserProfile();
+        setCurrentUser(res.data); // <-- API response shape
+        console.log('user data', res.data)
+      } catch (error) {
+        console.error(error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchProfile();
+  }, []);
+
+  // if (loading) return <p className='italic'>Loading...</p>;
+
   return (
     <div className="min-h-screen bg-gray-50 pb-20">
       {/* Status Bar */}
@@ -235,7 +256,7 @@ export function Dashboard() {
           </div>
           <div>
             <h1 className="text-lg">wazobiatax.ng</h1>
-            <p className="text-xs text-gray-500">{user?.business_name}</p>
+            <p className="text-xs text-gray-500">{loading ? "Loading..." : user?.business_name || currentUser.business_name}</p>
           </div>
         </div>
         <button

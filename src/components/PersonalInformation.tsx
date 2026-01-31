@@ -1,9 +1,11 @@
 import { motion } from 'motion/react';
 import { ArrowLeft, User, Mail, Phone, Building2, Hash, Calendar, Edit2, Check, X } from 'lucide-react';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { profileTranslations, type LanguageKey } from '../translations/profile';
 import { toast } from 'sonner';
 import { useNavigate } from 'react-router-dom';
+import { getUser } from '@/utils/storage';
+import { getUserProfile } from '../services/auth';
 
 interface PersonalInformationProps {
   language?: LanguageKey;
@@ -13,16 +15,51 @@ export function PersonalInformation({ language = 'english' }: PersonalInformatio
   const t = profileTranslations[language].personalInfo;
   const [isEditing, setIsEditing] = useState(false);
   const navigate = useNavigate();
+  const user = getUser();
+  const [currentUser, setCurrentUser] = useState(null);
+  const [loading, setLoading] = useState(true);
+
+    // Mock user data - in production this would come from the onboarding flow/backend
+    const [userData, setUserData] = useState({
+      fullName: '',
+      email: '',
+      phone: '',
+      taxId: '',
+      businessName: '',
+      accountCreated: '',
+    });  
+
+  useEffect(() => {
+    const fetchProfile = async () => {
+      try {
+        const res = await getUserProfile();
+        const data = res.data;
   
-  // Mock user data - in production this would come from the onboarding flow/backend
-  const [userData, setUserData] = useState({
-    fullName: 'Chukwuma Okafor',
-    email: 'chukwuma.okafor@example.com',
-    phone: '+234 801 234 5678',
-    taxId: '123456789-0001',
-    businessName: 'Bukka Restaurant',
-    accountCreated: 'January 15, 2026'
-  });
+        setCurrentUser(data);
+  
+        setUserData({
+          fullName: `${data.first_name} ${data.last_name}`,
+          email: data.email,
+          phone: data.phone_number,
+          taxId: data.tax_identification_number,
+          businessName: data.business_name || '—',
+          accountCreated: new Date().toLocaleDateString('en-NG', {
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric',
+          }), // until backend sends created_at
+        });
+  
+        console.log('user data', data);
+      } catch (error) {
+        console.error(error);
+      } finally {
+        setLoading(false);
+      }
+    };
+  
+    fetchProfile();
+  }, []);  
 
   const [editedData, setEditedData] = useState(userData);
 
@@ -156,6 +193,7 @@ export function PersonalInformation({ language = 'english' }: PersonalInformatio
           <div className="p-6 border-t border-gray-100">
             {!isEditing ? (
               <button
+              disabled={loading}
                 onClick={() => setIsEditing(true)}
                 className="w-full py-4 bg-emerald-600 text-white rounded-xl hover:bg-emerald-700 transition-all flex items-center justify-center gap-2"
               >

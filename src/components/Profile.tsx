@@ -11,10 +11,11 @@ import {
   Crown,
   Sparkles
 } from 'lucide-react';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useLanguage } from "@/context/LanguageContext";
 import { useNavigate } from 'react-router-dom';
 import { getUser } from '@/utils/storage';
+import { getUserProfile } from '../services/auth';
 
 const translations = {
   english: {
@@ -142,6 +143,8 @@ export function Profile() {
   const t = translations[language];
   const navigate = useNavigate();
   const user = getUser();
+  const [currentUser, setCurrentUser] = useState(null);
+  const [loading, setLoading] = useState(true);
 
   const handleCopyTIN = () => {
     setCopied(true);
@@ -195,6 +198,24 @@ export function Profile() {
     },
   ];
 
+  useEffect(() => {
+    const fetchProfile = async () => {
+      try {
+        const res = await getUserProfile();
+        setCurrentUser(res.data); // <-- API response shape
+        console.log('user data', res.data)
+      } catch (error) {
+        console.error(error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchProfile();
+  }, []);
+
+  if (loading) return <p className='italic text-center'>Loading profile information...</p>;
+
   return (
     <div className="min-h-screen bg-gray-50 pb-20">
       {/* Status Bar */}
@@ -216,8 +237,11 @@ export function Profile() {
             <User className="w-10 h-10 text-emerald-600" />
           </div>
           <div className="flex-1">
-            <h2 className="text-white text-xl mb-1">{user?.first_name}</h2>
-            <p className="text-emerald-100 text-sm">{user?.business_name}</p>
+          <h2 className="text-white text-xl mb-1">
+  {user
+    ? `${user.first_name} ${user.last_name}`
+    : `${currentUser.first_name} ${currentUser.last_name}`}
+</h2>            <p className="text-emerald-100 text-sm">{user?.business_name || currentUser.business_name}</p>
 
             {/* Subscription Badge */}
             <div className="mt-2">
