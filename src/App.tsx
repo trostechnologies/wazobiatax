@@ -22,9 +22,14 @@ import { LanguageAndVoice } from './components/LanguageAndVoice';
 import { SecurityAndPrivacy } from './components/SecurityAndPrivacy';
 import { TwoFactorAuth } from './components/TwoFactorAuth';
 import { PrivacyPolicy } from './components/PrivacyPolicy';
+import { ScanReceipt } from './components/ScanReceipt';
+import { VoiceEntry } from './components/VoiceEntry';
+import type { LanguageKey } from './translations/profile';
 
 export default function App() {
   const location = useLocation();
+  const [currentScreen, setCurrentScreen] = useState('splash');
+  const [language, setLanguage] = useState('english');
 
   const [onboardingComplete, setOnboardingComplete] = useState(
     localStorage.getItem('onboardingComplete') === 'true'
@@ -36,6 +41,10 @@ export default function App() {
   if (!onboardingComplete && location.pathname === '/') {
     return <SplashScreen />;
   }
+
+  const navigateTo = (screen: string) => {
+    setCurrentScreen(screen);
+  };
 
   return (
     <div className="relative w-full min-h-screen bg-gray-50">
@@ -72,22 +81,24 @@ export default function App() {
           />
 
           {/* Main App Routes */}
-          <Route path="/dashboard" element={<Dashboard />} />
-          <Route path="/file-returns" element={<FileReturns />} />
+          <Route path="/dashboard" element={<Dashboard language={language as LanguageKey} />} />
+          <Route path="/file-returns" element={<FileReturns language={language as LanguageKey} />} />
           <Route path="/pay-tax" element={<PayTax />} />
-          <Route path="/ledger" element={<Ledger />} />
-          <Route path="/profile" element={<Profile />} />
+          <Route path="/ledger" element={<Ledger onNavigate={navigateTo} language={language as LanguageKey} />} />
+          <Route path="/profile" element={<Profile language={language as LanguageKey} />} />
           <Route path="/deadlines" element={<UpcomingDeadlines />} />
           <Route path="/activity" element={<RecentActivity />} />
           <Route path="/notifications" element={<Notifications />} />
           <Route path="/education" element={<EducationModule />} />
           <Route path="/tax-clearance" element={<TaxClearance />} />
-          <Route path="/settings" element={<Settings />} />
-          <Route path="/personal-information" element={<PersonalInformation />} />
-          <Route path="/language-and-voice" element={<LanguageAndVoice />} />
-          <Route path="/security-and-privacy" element={<SecurityAndPrivacy />} />
-          <Route path="/two-factor-auth" element={<TwoFactorAuth />} />
-          <Route path="/privacy-policy" element={<PrivacyPolicy />} />
+          <Route path="/settings" element={<Settings language={language as LanguageKey} />} />
+          <Route path="/personal-information" element={<PersonalInformation language={language as LanguageKey} />} />
+          <Route path="/language-and-voice" element={<LanguageAndVoice language={language as LanguageKey} onLanguageChange={(lang) => setLanguage(lang)} />} />
+          <Route path="/security-and-privacy" element={<SecurityAndPrivacy language={language as LanguageKey} />} />
+          <Route path="/two-factor-auth" element={<TwoFactorAuth language={language as LanguageKey} />} />
+          <Route path="/privacy-policy" element={<PrivacyPolicy language={language as LanguageKey} />} />
+          <Route path="/scan" element={<ScanReceipt language={language as LanguageKey} />} />
+          <Route path="/voice" element={<VoiceEntry language={language as LanguageKey} />} />
 
           {/* Catch-all */}
           <Route

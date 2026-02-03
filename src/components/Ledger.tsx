@@ -1,9 +1,11 @@
 import { motion, AnimatePresence } from 'motion/react';
-import { ArrowLeft, Search, Filter, Plus, Camera, Mic, Download, TrendingUp, TrendingDown, Zap } from 'lucide-react';
+import { ArrowLeft, Search, Filter, Plus, Camera, Mic, Download, TrendingUp, TrendingDown, Zap, RefreshCw, Check, Save, Square } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { useLanguage } from "@/context/LanguageContext";
 import { useNavigate } from 'react-router-dom';
 import { addLedgerEntry, getLedgerRecords } from '@/services/ledger';
+import { toast } from 'sonner';
+import { profileTranslations, type LanguageKey } from '../translations/profile';
 
 const translations = {
   english: {
@@ -228,7 +230,15 @@ const translations = {
   },
 };
 
-export function Ledger() {
+interface LedgerProps {
+  onNavigate: (screen: string) => void;
+  language?: LanguageKey;
+}
+
+export function Ledger({ onNavigate, language = 'english' }: LedgerProps) {
+  const scanT = profileTranslations[language].scanReceipt;
+  const voiceT = profileTranslations[language].voiceEntry;
+
   const [showAddModal, setShowAddModal] = useState(false);
   const [addMode, setAddMode] = useState(''); // manual, scan, voice
   const [searchQuery, setSearchQuery] = useState('');
@@ -237,12 +247,111 @@ export function Ledger() {
   const [category, setCategory] = useState('');
   const [description, setDescription] = useState('');
   const [date, setDate] = useState('');
-  const [isProcessing, setIsProcessing] = useState(false);
   const [entryType, setEntryType] = useState<'income' | 'expense'>('income');
 
-  const { language } = useLanguage();
-  const t = translations[language];
+  // Scan Receipt States
+  const [scanStep, setScanStep] = useState<'permission' | 'camera' | 'preview' | 'extracted'>('camera');
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [isExtracting, setIsExtracting] = useState(false);
+  const [extractedData, setExtractedData] = useState({
+    vendor: 'Fresh Foods Market',
+    date: '2026-02-02',
+    amount: '5,000',
+    category: 'Food Supplies'
+  });
+  
+  // Voice Entry States
+  const [recordingStep, setRecordingStep] = useState<'ready' | 'listening' | 'processing' | 'review'>('ready');
+  const [isListening, setIsListening] = useState(false);
+  const [transcription, setTranscription] = useState('');
+  const [detectedData, setDetectedData] = useState({
+    amount: '5,000',
+    type: 'Expense',
+    category: 'Food Supplies',
+    description: 'Food supplies purchase'
+  });
+
+  // const { language } = useLanguage();
+  // const t = translations[language];
+  const t = profileTranslations[language].scanReceipt;
   const navigate = useNavigate();
+
+  const handleAddClick = (mode: string) => {
+    setAddMode(mode);
+    setShowAddModal(false);
+  };
+  
+  // Scan Receipt Handlers
+  const handleCapture = () => {
+    setIsProcessing(true);
+    setTimeout(() => {
+      setIsProcessing(false);
+      setScanStep('preview');
+    }, 1500);
+  };
+
+  const handleConfirmAndExtract = () => {
+    setIsExtracting(true);
+    setTimeout(() => {
+      setIsExtracting(false);
+      setScanStep('extracted');
+    }, 2000);
+  };
+
+  const handleSaveScan = () => {
+    toast.success(scanT.saved);
+    setTimeout(() => {
+      setAddMode('');
+      setScanStep('camera');
+    }, 1000);
+  };
+
+  const handleRetake = () => {
+    setScanStep('camera');
+  };
+  
+  // Voice Entry Handlers
+  const handleStartListening = () => {
+    setIsListening(true);
+    setRecordingStep('listening');
+    
+    setTimeout(() => {
+      setTranscription('I spent 5000 naira on food supplies today');
+      setIsListening(false);
+      setRecordingStep('processing');
+      
+      setTimeout(() => {
+        setRecordingStep('review');
+      }, 1500);
+    }, 3000);
+  };
+
+  const handleStopListening = () => {
+    setIsListening(false);
+    if (transcription) {
+      setRecordingStep('processing');
+      setTimeout(() => {
+        setRecordingStep('review');
+      }, 1500);
+    } else {
+      setRecordingStep('ready');
+      toast.error(voiceT.noSpeech);
+    }
+  };
+
+  const handleTryAgain = () => {
+    setTranscription('');
+    setRecordingStep('ready');
+  };
+
+  const handleSaveVoice = () => {
+    toast.success(voiceT.saved);
+    setTimeout(() => {
+      setAddMode('');
+      setRecordingStep('ready');
+      setTranscription('');
+    }, 1000);
+  };
 
   const CATEGORY_MAP = {
     income: [
@@ -269,10 +378,6 @@ export function Ledger() {
   const [entries, setEntries] = useState<any[]>([]);
 const [isLoadingLedger, setIsLoadingLedger] = useState(false);
 const [ledgerError, setLedgerError] = useState('');
-
-  const handleAddClick = (mode: string) => {
-    setAddMode(mode);
-  };
 
   const incomeCategories = [
     translations[language].salesRevenue,
@@ -704,6 +809,568 @@ const [ledgerError, setLedgerError] = useState('');
                     ? 'Saving...'
                     : translations[language].saveEntry}
                 </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Scan Receipt Modal */}
+      <AnimatePresence>
+        {addMode === 'scan' && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-gray-900 z-50"
+          >
+            <motion.div
+              initial={{ y: 900 }}
+              animate={{ y: 0 }}
+              exit={{ y: 900 }}
+              transition={{ type: "spring", damping: 30, stiffness: 300 }}
+              className="min-h-screen bg-gray-900 pb-6"
+            >
+              {/* Header */}
+              <div className="bg-gray-900 px-6 pt-6 pb-8">
+                <div className="flex items-center justify-between mb-6">
+                  <button
+                    onClick={() => setAddMode('')}
+                    className="p-2 hover:bg-white/10 rounded-lg transition-all"
+                  >
+                    <ArrowLeft className="w-6 h-6 text-white" />
+                  </button>
+                  <h1 className="text-white text-lg flex-1 text-center mr-10">{scanT.title}</h1>
+                </div>
+                <p className="text-gray-300 text-center text-sm">{scanT.subtitle}</p>
+              </div>
+
+              <AnimatePresence mode="wait">
+                {scanStep === 'camera' && (
+                  <motion.div
+                    key="camera"
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                    className="px-6"
+                  >
+                    {/* Camera Viewfinder */}
+                    <div className="relative aspect-[3/4] bg-black rounded-2xl overflow-hidden mb-6 border-2 border-purple-500">
+                      <div className="absolute inset-0 bg-gradient-to-br from-gray-800 to-gray-900 flex items-center justify-center">
+                        <div className="text-center text-gray-400">
+                          <Camera className="w-16 h-16 mx-auto mb-4 opacity-50" />
+                          <p className="text-sm">Camera View</p>
+                          <p className="text-xs mt-2">Position receipt here</p>
+                        </div>
+                      </div>
+
+                      {/* Scanning Frame */}
+                      <div className="absolute inset-8 border-2 border-dashed border-purple-400 rounded-xl">
+                        <div className="absolute top-0 left-0 w-6 h-6 border-t-4 border-l-4 border-purple-500 rounded-tl-lg" />
+                        <div className="absolute top-0 right-0 w-6 h-6 border-t-4 border-r-4 border-purple-500 rounded-tr-lg" />
+                        <div className="absolute bottom-0 left-0 w-6 h-6 border-b-4 border-l-4 border-purple-500 rounded-bl-lg" />
+                        <div className="absolute bottom-0 right-0 w-6 h-6 border-b-4 border-r-4 border-purple-500 rounded-br-lg" />
+                      </div>
+                    </div>
+
+                    {/* Instructions */}
+                    <div className="bg-gray-800 rounded-2xl p-6 mb-6">
+                      <h3 className="text-white text-sm mb-4">{scanT.instructions}</h3>
+                      <div className="space-y-3">
+                        {[scanT.step1, scanT.step2, scanT.step3, scanT.step4].map((step, index) => (
+                          <div key={index} className="flex items-start gap-3">
+                            <div className="w-6 h-6 bg-purple-600 rounded-full flex items-center justify-center flex-shrink-0 text-white text-xs">
+                              {index + 1}
+                            </div>
+                            <p className="text-gray-300 text-sm flex-1">{step}</p>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Capture Button */}
+                    <button
+                      onClick={handleCapture}
+                      disabled={isProcessing}
+                      className={`w-full py-4 rounded-xl transition-all flex items-center justify-center gap-2 ${
+                        isProcessing
+                          ? 'bg-gray-700 text-gray-400 cursor-not-allowed'
+                          : 'bg-purple-600 text-white hover:bg-purple-700'
+                      }`}
+                    >
+                      <Camera className="w-5 h-5" />
+                      {isProcessing ? scanT.processingButton : scanT.captureButton}
+                    </button>
+
+                    {/* Tip */}
+                    <div className="mt-4 p-4 bg-purple-900/30 border border-purple-500/30 rounded-xl">
+                      <p className="text-purple-200 text-xs">{scanT.scanTip}</p>
+                    </div>
+                  </motion.div>
+                )}
+
+                {scanStep === 'preview' && (
+                  <motion.div
+                    key="preview"
+                    initial={{ opacity: 0, scale: 0.95 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    exit={{ opacity: 0, scale: 0.95 }}
+                    className="px-6"
+                  >
+                    {/* Preview Image */}
+                    <div className="relative aspect-[3/4] bg-white rounded-2xl overflow-hidden mb-6 border-2 border-emerald-500">
+                      <div className="absolute inset-0 bg-gradient-to-br from-gray-100 to-gray-200 flex items-center justify-center">
+                        <div className="text-center text-gray-500">
+                          <Check className="w-16 h-16 mx-auto mb-4" />
+                          <p className="text-sm">Receipt Captured</p>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Action Buttons */}
+                    <div className="flex gap-3 mb-4">
+                      <button
+                        onClick={handleRetake}
+                        className="flex-1 py-4 border border-gray-600 text-white rounded-xl hover:bg-gray-800 transition-all flex items-center justify-center gap-2"
+                      >
+                        <RefreshCw className="w-5 h-5" />
+                        {scanT.retakeButton}
+                      </button>
+                      <button
+                        onClick={handleConfirmAndExtract}
+                        disabled={isExtracting}
+                        className={`flex-1 py-4 rounded-xl transition-all flex items-center justify-center gap-2 ${
+                          isExtracting
+                            ? 'bg-gray-700 text-gray-400 cursor-not-allowed'
+                            : 'bg-emerald-600 text-white hover:bg-emerald-700'
+                        }`}
+                      >
+                        <Check className="w-5 h-5" />
+                        {isExtracting ? scanT.extracting : scanT.confirmButton}
+                      </button>
+                    </div>
+                  </motion.div>
+                )}
+
+                {scanStep === 'extracted' && (
+                  <motion.div
+                    key="extracted"
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -20 }}
+                    className="px-6"
+                  >
+                    {/* Success Indicator */}
+                    <div className="bg-emerald-900/30 border border-emerald-500/30 rounded-2xl p-6 mb-6">
+                      <div className="flex items-center gap-3 mb-2">
+                        <div className="w-10 h-10 bg-emerald-600 rounded-full flex items-center justify-center">
+                          <Check className="w-6 h-6 text-white" />
+                        </div>
+                        <div>
+                          <h3 className="text-white text-sm">{scanT.detectedFields}</h3>
+                          <p className="text-emerald-200 text-xs">{scanT.editDetails}</p>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Extracted Data */}
+                    <div className="bg-gray-800 rounded-2xl p-6 space-y-4 mb-6">
+                      <div>
+                        <label className="text-xs text-gray-400 mb-2 block">{scanT.vendor}</label>
+                        <input
+                          type="text"
+                          value={extractedData.vendor}
+                          onChange={(e) => setExtractedData({ ...extractedData, vendor: e.target.value })}
+                          className="w-full px-4 py-3 bg-gray-700 border border-gray-600 text-white rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="text-xs text-gray-400 mb-2 block">{scanT.date}</label>
+                        <input
+                          type="date"
+                          value={extractedData.date}
+                          onChange={(e) => setExtractedData({ ...extractedData, date: e.target.value })}
+                          className="w-full px-4 py-3 bg-gray-700 border border-gray-600 text-white rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="text-xs text-gray-400 mb-2 block">{scanT.amount}</label>
+                        <div className="relative">
+                          <span className="absolute left-4 top-1/2 -translate-y-1/2 text-white">₦</span>
+                          <input
+                            type="text"
+                            value={extractedData.amount}
+                            onChange={(e) => setExtractedData({ ...extractedData, amount: e.target.value })}
+                            className="w-full pl-10 pr-4 py-3 bg-gray-700 border border-gray-600 text-white rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none"
+                          />
+                        </div>
+                      </div>
+
+                      <div>
+                        <label className="text-xs text-gray-400 mb-2 block">{scanT.category}</label>
+                        <select
+                          value={extractedData.category}
+                          onChange={(e) => setExtractedData({ ...extractedData, category: e.target.value })}
+                          className="w-full px-4 py-3 bg-gray-700 border border-gray-600 text-white rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none"
+                        >
+                          <option>Food Supplies</option>
+                          <option>Equipment</option>
+                          <option>Transportation</option>
+                          <option>Utilities</option>
+                          <option>Other</option>
+                        </select>
+                      </div>
+                    </div>
+
+                    {/* Save Button */}
+                    <div className="flex gap-3">
+                      <button
+                        onClick={handleRetake}
+                        className="flex-1 py-4 border border-gray-600 text-white rounded-xl hover:bg-gray-800 transition-all flex items-center justify-center gap-2"
+                      >
+                        <RefreshCw className="w-5 h-5" />
+                        {scanT.retakeButton}
+                      </button>
+                      <button
+                        onClick={handleSaveScan}
+                        className="flex-1 py-4 bg-emerald-600 text-white rounded-xl hover:bg-emerald-700 transition-all flex items-center justify-center gap-2"
+                      >
+                        <Save className="w-5 h-5" />
+                        {scanT.saveEntry}
+                      </button>
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Voice Entry Modal */}
+      <AnimatePresence>
+        {addMode === 'voice' && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-gradient-to-br from-blue-900 via-blue-800 to-blue-900 z-50"
+          >
+            <motion.div
+              initial={{ y: 900 }}
+              animate={{ y: 0 }}
+              exit={{ y: 900 }}
+              transition={{ type: "spring", damping: 30, stiffness: 300 }}
+              className="min-h-screen pb-6"
+            >
+              {/* Header */}
+              <div className="bg-blue-900 px-6 pt-6 pb-8">
+                <div className="flex items-center justify-between mb-6">
+                  <button
+                    onClick={() => setAddMode('')}
+                    className="p-2 hover:bg-white/10 rounded-lg transition-all"
+                  >
+                    <ArrowLeft className="w-6 h-6 text-white" />
+                  </button>
+                  <h1 className="text-white text-lg flex-1 text-center mr-10">{voiceT.title}</h1>
+                </div>
+                <p className="text-blue-200 text-center text-sm">{voiceT.subtitle}</p>
+              </div>
+
+              <div className="px-6">
+                <AnimatePresence mode="wait">
+                  {recordingStep === 'ready' && (
+                    <motion.div
+                      key="ready"
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: -20 }}
+                      className="space-y-6"
+                    >
+                      {/* Microphone Visual */}
+                      <div className="flex justify-center mb-8">
+                        <motion.div
+                          whileHover={{ scale: 1.05 }}
+                          className="relative"
+                        >
+                          <div className="w-40 h-40 bg-white rounded-full flex items-center justify-center shadow-2xl">
+                            <Mic className="w-20 h-20 text-blue-600" />
+                          </div>
+                          <motion.div
+                            animate={{
+                              scale: [1, 1.2, 1],
+                              opacity: [0.5, 0, 0.5]
+                            }}
+                            transition={{
+                              duration: 2,
+                              repeat: Infinity,
+                              ease: "easeInOut"
+                            }}
+                            className="absolute inset-0 bg-blue-400 rounded-full -z-10"
+                          />
+                        </motion.div>
+                      </div>
+
+                      {/* Instructions */}
+                      <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-6 mb-6">
+                        <h3 className="text-white text-sm mb-4">{voiceT.instructions}</h3>
+                        <div className="space-y-3">
+                          {[voiceT.step1, voiceT.step2, voiceT.step3, voiceT.step4].map((step, index) => (
+                            <div key={index} className="flex items-start gap-3">
+                              <div className="w-6 h-6 bg-blue-600 rounded-full flex items-center justify-center flex-shrink-0 text-white text-xs">
+                                {index + 1}
+                              </div>
+                              <p className="text-blue-100 text-sm flex-1">{step}</p>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+
+                      {/* Example */}
+                      <div className="bg-blue-800/50 border border-blue-400/30 rounded-2xl p-6">
+                        <h4 className="text-blue-200 text-xs mb-2">{voiceT.example}</h4>
+                        <p className="text-white text-sm italic">{voiceT.exampleText}</p>
+                      </div>
+
+                      {/* Tips */}
+                      <div className="bg-white/5 rounded-2xl p-6">
+                        <h4 className="text-blue-200 text-xs mb-3">{voiceT.tips}</h4>
+                        <div className="space-y-2">
+                          {[voiceT.tip1, voiceT.tip2, voiceT.tip3, voiceT.tip4].map((tip, index) => (
+                            <div key={index} className="flex items-start gap-2">
+                              <span className="text-blue-400 text-sm">•</span>
+                              <p className="text-blue-100 text-xs">{tip}</p>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+
+                      {/* Start Button */}
+                      <button
+                        onClick={handleStartListening}
+                        className="w-full py-4 bg-white text-blue-600 rounded-xl hover:bg-blue-50 transition-all flex items-center justify-center gap-2 shadow-lg"
+                      >
+                        <Mic className="w-5 h-5" />
+                        {voiceT.startListening}
+                      </button>
+                    </motion.div>
+                  )}
+
+                  {recordingStep === 'listening' && (
+                    <motion.div
+                      key="listening"
+                      initial={{ opacity: 0, scale: 0.95 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      exit={{ opacity: 0, scale: 0.95 }}
+                      className="space-y-6"
+                    >
+                      {/* Animated Microphone */}
+                      <div className="flex justify-center mb-8">
+                        <div className="relative">
+                          <motion.div
+                            animate={{
+                              scale: [1, 1.1, 1],
+                            }}
+                            transition={{
+                              duration: 1.5,
+                              repeat: Infinity,
+                              ease: "easeInOut"
+                            }}
+                            className="w-40 h-40 bg-white rounded-full flex items-center justify-center shadow-2xl"
+                          >
+                            <Mic className="w-20 h-20 text-red-600" />
+                          </motion.div>
+                          
+                          {/* Pulsing rings */}
+                          {[0, 1, 2].map((i) => (
+                            <motion.div
+                              key={i}
+                              animate={{
+                                scale: [1, 2.5],
+                                opacity: [0.6, 0]
+                              }}
+                              transition={{
+                                duration: 2,
+                                repeat: Infinity,
+                                delay: i * 0.4,
+                                ease: "easeOut"
+                              }}
+                              className="absolute inset-0 bg-red-400 rounded-full"
+                            />
+                          ))}
+                        </div>
+                      </div>
+
+                      {/* Listening Indicator */}
+                      <div className="bg-red-900/30 border border-red-400/30 rounded-2xl p-6 text-center">
+                        <h3 className="text-white text-lg mb-2">{voiceT.listening}</h3>
+                        <p className="text-red-200 text-sm">Speak clearly and naturally...</p>
+                        
+                        {/* Waveform Animation */}
+                        <div className="flex justify-center items-center gap-1 mt-6 h-12">
+                          {[...Array(20)].map((_, i) => (
+                            <motion.div
+                              key={i}
+                              animate={{
+                                height: ['20%', '100%', '20%']
+                              }}
+                              transition={{
+                                duration: 1,
+                                repeat: Infinity,
+                                delay: i * 0.05,
+                                ease: "easeInOut"
+                              }}
+                              className="w-1 bg-white rounded-full"
+                            />
+                          ))}
+                        </div>
+                      </div>
+
+                      {/* Live Transcription */}
+                      {transcription && (
+                        <motion.div
+                          initial={{ opacity: 0, y: 10 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          className="bg-white/10 backdrop-blur-sm rounded-2xl p-6"
+                        >
+                          <h4 className="text-blue-200 text-xs mb-2">{voiceT.transcription}</h4>
+                          <p className="text-white text-sm">{transcription}</p>
+                        </motion.div>
+                      )}
+
+                      {/* Stop Button */}
+                      <button
+                        onClick={handleStopListening}
+                        className="w-full py-4 bg-red-600 text-white rounded-xl hover:bg-red-700 transition-all flex items-center justify-center gap-2 shadow-lg"
+                      >
+                        <Square className="w-5 h-5" />
+                        {voiceT.stopListening}
+                      </button>
+                    </motion.div>
+                  )}
+
+                  {recordingStep === 'processing' && (
+                    <motion.div
+                      key="processing"
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      exit={{ opacity: 0 }}
+                      className="flex flex-col items-center justify-center min-h-[60vh]"
+                    >
+                      <motion.div
+                        animate={{ rotate: 360 }}
+                        transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
+                        className="w-20 h-20 border-4 border-white/20 border-t-white rounded-full mb-6"
+                      />
+                      <h3 className="text-white text-lg mb-2">{voiceT.processing}</h3>
+                      <p className="text-blue-200 text-sm">Analyzing your voice input...</p>
+                    </motion.div>
+                  )}
+
+                  {recordingStep === 'review' && (
+                    <motion.div
+                      key="review"
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: -20 }}
+                      className="space-y-6"
+                    >
+                      {/* Success Indicator */}
+                      <div className="bg-emerald-900/30 border border-emerald-400/30 rounded-2xl p-6">
+                        <div className="flex items-center gap-3 mb-4">
+                          <div className="w-10 h-10 bg-emerald-600 rounded-full flex items-center justify-center">
+                            <Check className="w-6 h-6 text-white" />
+                          </div>
+                          <div>
+                            <h3 className="text-white text-sm">{voiceT.detectedInfo}</h3>
+                            <p className="text-emerald-200 text-xs">Review and confirm</p>
+                          </div>
+                        </div>
+
+                        {/* Transcription Display */}
+                        <div className="bg-white/10 rounded-xl p-4">
+                          <h4 className="text-blue-200 text-xs mb-2">{voiceT.transcription}</h4>
+                          <p className="text-white text-sm italic">"{transcription}"</p>
+                        </div>
+                      </div>
+
+                      {/* Detected Data Form */}
+                      <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-6 space-y-4">
+                        <div>
+                          <label className="text-xs text-blue-200 mb-2 block">{voiceT.amount}</label>
+                          <div className="relative">
+                            <span className="absolute left-4 top-1/2 -translate-y-1/2 text-white">₦</span>
+                            <input
+                              type="text"
+                              value={detectedData.amount}
+                              onChange={(e) => setDetectedData({ ...detectedData, amount: e.target.value })}
+                              className="w-full pl-10 pr-4 py-3 bg-white/20 border border-white/30 text-white rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none placeholder-blue-200"
+                            />
+                          </div>
+                        </div>
+
+                        <div>
+                          <label className="text-xs text-blue-200 mb-2 block">{voiceT.type}</label>
+                          <select
+                            value={detectedData.type}
+                            onChange={(e) => setDetectedData({ ...detectedData, type: e.target.value })}
+                            className="w-full px-4 py-3 bg-white/20 border border-white/30 text-white rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none"
+                          >
+                            <option className="bg-blue-900">Income</option>
+                            <option className="bg-blue-900">Expense</option>
+                          </select>
+                        </div>
+
+                        <div>
+                          <label className="text-xs text-blue-200 mb-2 block">{voiceT.category}</label>
+                          <select
+                            value={detectedData.category}
+                            onChange={(e) => setDetectedData({ ...detectedData, category: e.target.value })}
+                            className="w-full px-4 py-3 bg-white/20 border border-white/30 text-white rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none"
+                          >
+                            <option className="bg-blue-900">Food Supplies</option>
+                            <option className="bg-blue-900">Equipment</option>
+                            <option className="bg-blue-900">Transportation</option>
+                            <option className="bg-blue-900">Utilities</option>
+                            <option className="bg-blue-900">Sales Revenue</option>
+                            <option className="bg-blue-900">Service Income</option>
+                            <option className="bg-blue-900">Other</option>
+                          </select>
+                        </div>
+
+                        <div>
+                          <label className="text-xs text-blue-200 mb-2 block">{voiceT.description}</label>
+                          <textarea
+                            value={detectedData.description}
+                            onChange={(e) => setDetectedData({ ...detectedData, description: e.target.value })}
+                            rows={3}
+                            className="w-full px-4 py-3 bg-white/20 border border-white/30 text-white rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none placeholder-blue-200 resize-none"
+                          />
+                        </div>
+                      </div>
+
+                      {/* Action Buttons */}
+                      <div className="flex gap-3">
+                        <button
+                          onClick={handleTryAgain}
+                          className="flex-1 py-4 border border-white/30 text-white rounded-xl hover:bg-white/10 transition-all flex items-center justify-center gap-2"
+                        >
+                          <RefreshCw className="w-5 h-5" />
+                          {voiceT.tryAgain}
+                        </button>
+                        <button
+                          onClick={handleSaveVoice}
+                          className="flex-1 py-4 bg-emerald-600 text-white rounded-xl hover:bg-emerald-700 transition-all flex items-center justify-center gap-2 shadow-lg"
+                        >
+                          <Save className="w-5 h-5" />
+                          {voiceT.saveEntry}
+                        </button>
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
               </div>
             </motion.div>
           </motion.div>

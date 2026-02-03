@@ -3,6 +3,11 @@ import { ArrowLeft, Crown, Check, Sparkles } from 'lucide-react';
 import { useState } from 'react';
 import { useLanguage } from "@/context/LanguageContext";
 import { useNavigate } from 'react-router-dom';
+import { profileTranslations, type LanguageKey } from '../translations/profile';
+
+interface SettingsProps {
+  language?: LanguageKey;
+}
 
 const translations = {
   english: {
@@ -22,7 +27,7 @@ const translations = {
   }
 }
 
-export function Settings() {
+export function Settings( { language = 'english' }: SettingsProps ) {
   const [selectedPlan, setSelectedPlan] = useState('basic');
 
   const plans = {
@@ -62,7 +67,7 @@ export function Settings() {
     }
   };
 
-  const { language } = useLanguage();
+  // const { language } = useLanguage();
   const t = translations[language];
   const navigate = useNavigate();
 

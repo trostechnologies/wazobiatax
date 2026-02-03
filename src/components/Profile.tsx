@@ -16,6 +16,11 @@ import { useLanguage } from "@/context/LanguageContext";
 import { useNavigate } from 'react-router-dom';
 import { getUser } from '@/utils/storage';
 import { getUserProfile } from '../services/auth';
+import { profileTranslations, type LanguageKey } from '../translations/profile';
+
+interface ProfileProps {
+  language?: LanguageKey;
+}
 
 const translations = {
   english: {
@@ -134,12 +139,12 @@ const translations = {
   },
 };
 
-export function Profile() {
+export function Profile( { language = 'english' }: ProfileProps ) {
   const [copied, setCopied] = useState(false);
   const tin = '123456789-0001';
   const subscription = 'basic'; // basic or premium
 
-  const { language } = useLanguage();
+  // const { language } = useLanguage();
   const t = translations[language];
   const navigate = useNavigate();
   const user = getUser();

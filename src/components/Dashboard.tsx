@@ -18,6 +18,11 @@ import {
 } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { useLanguage } from "@/context/LanguageContext";
+import { profileTranslations, type LanguageKey } from '../translations/profile';
+
+interface DashboardProps {
+  language?: LanguageKey;
+}
 
 const translations = {
   english: {
@@ -186,11 +191,11 @@ const translations = {
   },
 };
 
-export function Dashboard() {
+export function Dashboard( { language = 'english' }: DashboardProps ) {
   const [notificationCount] = useState(3);
   const complianceScore = 50;
   const pendingTasks = 3;
-  const { language } = useLanguage();
+  // const { language } = useLanguage();
   const t = translations[language];
   const navigate = useNavigate();
   const user = getUser();

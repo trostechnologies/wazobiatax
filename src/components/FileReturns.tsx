@@ -3,6 +3,11 @@ import { ArrowLeft, FileText, DollarSign, Users, TrendingUp, Calculator, Mic, Ca
 import { useState } from 'react';
 import { useLanguage } from "@/context/LanguageContext";
 import { useNavigate } from 'react-router-dom';
+import { profileTranslations, type LanguageKey } from '../translations/profile';
+
+interface FilePolicyProps {
+  language?: LanguageKey;
+}
 
 const translations = {
   english: {
@@ -197,7 +202,7 @@ const translations = {
   },
 };
 
-export function FileReturns() {
+export function FileReturns( { language = 'english' }: FilePolicyProps ) {
   const [step, setStep] = useState('select'); // select, form, review, success
   const [selectedType, setSelectedType] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -207,7 +212,7 @@ export function FileReturns() {
     taxableIncome: '130000',
     taxDue: '13000',
   });
-  const { language } = useLanguage();
+  // const { language } = useLanguage();
   const t = translations[language];
   const navigate = useNavigate();
 
