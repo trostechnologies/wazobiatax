@@ -20,6 +20,7 @@ import {
 } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { onboardingTranslations, type LanguageKey } from '../translations/onboarding';
+import { toast } from 'sonner';
 
 interface OnboardingWizardProps {
   onComplete: () => void;
@@ -234,7 +235,8 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
   const handleSubscriptionSelect = (planId: string) => {
     setSelectedPlan(planId);
     if (planId === 'basic') {
-      setCurrentStep('success');
+      setCurrentStep('login');
+      toast.success("LOGIN NOW TO CONTINUE!")
     } else {
       setCurrentStep('payment');
     }

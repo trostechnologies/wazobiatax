@@ -83,14 +83,14 @@ export default function App() {
           {/* Main App Routes */}
           <Route path="/dashboard" element={<Dashboard language={language as LanguageKey} />} />
           <Route path="/file-returns" element={<FileReturns language={language as LanguageKey} />} />
-          <Route path="/pay-tax" element={<PayTax />} />
+          <Route path="/pay-tax" element={<PayTax language={language as LanguageKey} />} />
           <Route path="/ledger" element={<Ledger onNavigate={navigateTo} language={language as LanguageKey} />} />
           <Route path="/profile" element={<Profile language={language as LanguageKey} />} />
-          <Route path="/deadlines" element={<UpcomingDeadlines />} />
-          <Route path="/activity" element={<RecentActivity />} />
-          <Route path="/notifications" element={<Notifications />} />
-          <Route path="/education" element={<EducationModule />} />
-          <Route path="/tax-clearance" element={<TaxClearance />} />
+          <Route path="/deadlines" element={<UpcomingDeadlines language={language as LanguageKey} />} />
+          <Route path="/activity" element={<RecentActivity language={language as LanguageKey} />} />
+          <Route path="/notifications" element={<Notifications language={language as LanguageKey} />} />
+          <Route path="/education" element={<EducationModule language={language as LanguageKey} />} />
+          <Route path="/tax-clearance" element={<TaxClearance language={language as LanguageKey} />} />
           <Route path="/settings" element={<Settings language={language as LanguageKey} />} />
           <Route path="/personal-information" element={<PersonalInformation language={language as LanguageKey} />} />
           <Route path="/language-and-voice" element={<LanguageAndVoice language={language as LanguageKey} onLanguageChange={(lang) => setLanguage(lang)} />} />

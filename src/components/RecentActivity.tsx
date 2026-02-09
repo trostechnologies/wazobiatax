@@ -3,6 +3,11 @@ import { ArrowLeft, TrendingUp, TrendingDown, CreditCard, FileText, Search, Filt
 import { useState } from 'react';
 import { useLanguage } from "@/context/LanguageContext";
 import { useNavigate } from 'react-router-dom';
+import { profileTranslations, type LanguageKey } from '../translations/profile';
+
+interface RecentActivityProps {
+  language?: LanguageKey;
+}
 
 const translations = {
   english: {
@@ -116,7 +121,7 @@ const translations = {
   }
 }
 
-export function RecentActivity() {
+export function RecentActivity( { language = 'english' }: RecentActivityProps ) {
   const [filter, setFilter] = useState('all');
 
   const activities = [
@@ -202,7 +207,7 @@ export function RecentActivity() {
     ? activities
     : activities.filter(a => a.type === filter);
 
-  const { language } = useLanguage();
+  // const { language } = useLanguage();
   const t = translations[language];
   const navigate = useNavigate();
 

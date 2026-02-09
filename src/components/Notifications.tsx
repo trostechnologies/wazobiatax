@@ -3,6 +3,11 @@ import { ArrowLeft, Bell, AlertCircle, CheckCircle2, Info, Settings } from 'luci
 import { useState } from 'react';
 import { useLanguage } from "@/context/LanguageContext";
 import { useNavigate } from 'react-router-dom';
+import { profileTranslations, type LanguageKey } from '../translations/profile';
+
+interface NotificationsProps {
+  language?: LanguageKey;
+}
 
 const translations = {
   english: {
@@ -147,7 +152,7 @@ const translations = {
   }      
 }
 
-export function Notifications() {
+export function Notifications( { language = 'english' }: NotificationsProps ) {
   const [notifications, setNotifications] = useState([
     {
       id: 1,
@@ -218,7 +223,7 @@ export function Notifications() {
     }
   };
 
-  const { language } = useLanguage();
+  // const { language } = useLanguage();
   const t = translations[language];
   const navigate = useNavigate();
 

@@ -1,11 +1,27 @@
-import { motion, AnimatePresence } from 'motion/react';
-import { ArrowLeft, Search, Filter, Plus, Camera, Mic, Download, TrendingUp, TrendingDown, Zap, RefreshCw, Check, Save, Square } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { motion, AnimatePresence } from "motion/react";
+import {
+  ArrowLeft,
+  Search,
+  Filter,
+  Plus,
+  Camera,
+  Mic,
+  Download,
+  TrendingUp,
+  TrendingDown,
+  Zap,
+  RefreshCw,
+  Check,
+  Save,
+  Square,
+  CameraIcon,
+} from "lucide-react";
+import { useEffect, useRef, useState } from "react";
 import { useLanguage } from "@/context/LanguageContext";
-import { useNavigate } from 'react-router-dom';
-import { addLedgerEntry, getLedgerRecords } from '@/services/ledger';
-import { toast } from 'sonner';
-import { profileTranslations, type LanguageKey } from '../translations/profile';
+import { useNavigate } from "react-router-dom";
+import { addLedgerEntry, getLedgerRecords } from "@/services/ledger";
+import { toast } from "sonner";
+import { profileTranslations, type LanguageKey } from "../translations/profile";
 
 const translations = {
   english: {
@@ -117,7 +133,8 @@ const translations = {
 
     digitalLedger: "Littafin Dijital",
     searchTransactions: "Nemo ma'amaloli...",
-    pendingSyncInfo: "Akwai bayanai 3 da ba su daidaita ba – Za su daidaita idan an samu intanet",
+    pendingSyncInfo:
+      "Akwai bayanai 3 da ba su daidaita ba – Za su daidaita idan an samu intanet",
 
     filterAll: "Duka",
     filterIncome: "Kuɗin Shiga",
@@ -161,7 +178,8 @@ const translations = {
 
     digitalLedger: "Ledger Ayelujara",
     searchTransactions: "Wa awọn ìṣúná...",
-    pendingSyncInfo: "Àwọn ìforúkọsílẹ̀ 3 ń dúró fún ìṣọ̀kan – Yóò darapọ̀ nígbà tí intanẹẹti bá wà",
+    pendingSyncInfo:
+      "Àwọn ìforúkọsílẹ̀ 3 ń dúró fún ìṣọ̀kan – Yóò darapọ̀ nígbà tí intanẹẹti bá wà",
 
     filterAll: "Gbogbo",
     filterIncome: "Ìní",
@@ -205,7 +223,8 @@ const translations = {
 
     digitalLedger: "Ledger Dijitalụ",
     searchTransactions: "Chọọ azụmahịa...",
-    pendingSyncInfo: "Enwere ndekọ 3 na-echere njikọ – Ha ga-ejikọ mgbe ịntanetị dị",
+    pendingSyncInfo:
+      "Enwere ndekọ 3 na-echere njikọ – Ha ga-ejikọ mgbe ịntanetị dị",
 
     filterAll: "Niile",
     filterIncome: "Ego Mbata",
@@ -230,45 +249,60 @@ const translations = {
   },
 };
 
+type ExtractedLedgerData = {
+  entryType: "expense" | "income";
+  amount: string;
+  category: string;
+  date: string;
+  description: string;
+};
+
 interface LedgerProps {
   onNavigate: (screen: string) => void;
   language?: LanguageKey;
 }
 
-export function Ledger({ onNavigate, language = 'english' }: LedgerProps) {
+export function Ledger({ onNavigate, language = "english" }: LedgerProps) {
   const scanT = profileTranslations[language].scanReceipt;
   const voiceT = profileTranslations[language].voiceEntry;
 
   const [showAddModal, setShowAddModal] = useState(false);
-  const [addMode, setAddMode] = useState(''); // manual, scan, voice
-  const [searchQuery, setSearchQuery] = useState('');
-  const [filterType, setFilterType] = useState('all');
-  const [amount, setAmount] = useState('');
-  const [category, setCategory] = useState('');
-  const [description, setDescription] = useState('');
-  const [date, setDate] = useState('');
-  const [entryType, setEntryType] = useState<'income' | 'expense'>('income');
+  const [addMode, setAddMode] = useState(""); // manual, scan, voice
+  const [scanState, setScanState] = useState("camera");
+  const [capturedImage, setCapturedImage] = useState<File | null>(null);
+  const [capturedPreview, setCapturedPreview] = useState<string | null>(null);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [filterType, setFilterType] = useState("all");
+  const [amount, setAmount] = useState("");
+  const [category, setCategory] = useState("");
+  const [description, setDescription] = useState("");
+  const [date, setDate] = useState("");
+  const [entryType, setEntryType] = useState<"income" | "expense">("income");
 
   // Scan Receipt States
-  const [scanStep, setScanStep] = useState<'permission' | 'camera' | 'preview' | 'extracted'>('camera');
+  const [scanStep, setScanStep] = useState<
+    "permission" | "camera" | "preview" | "extracted"
+  >("camera");
   const [isProcessing, setIsProcessing] = useState(false);
   const [isExtracting, setIsExtracting] = useState(false);
   const [extractedData, setExtractedData] = useState({
-    vendor: 'Fresh Foods Market',
-    date: '2026-02-02',
-    amount: '5,000',
-    category: 'Food Supplies'
+    vendor: "Fresh Foods Market",
+    date: "2026-02-02",
+    amount: "5,000",
+    category: "Food Supplies",
   });
-  
+
   // Voice Entry States
-  const [recordingStep, setRecordingStep] = useState<'ready' | 'listening' | 'processing' | 'review'>('ready');
+  const [recordingStep, setRecordingStep] = useState<
+    "ready" | "listening" | "processing" | "review"
+  >("ready");
   const [isListening, setIsListening] = useState(false);
-  const [transcription, setTranscription] = useState('');
+  const [transcription, setTranscription] = useState("");
   const [detectedData, setDetectedData] = useState({
-    amount: '5,000',
-    type: 'Expense',
-    category: 'Food Supplies',
-    description: 'Food supplies purchase'
+    amount: "5,000",
+    type: "Expense",
+    category: "Food Supplies",
+    description: "Food supplies purchase",
   });
 
   // const { language } = useLanguage();
@@ -280,13 +314,58 @@ export function Ledger({ onNavigate, language = 'english' }: LedgerProps) {
     setAddMode(mode);
     setShowAddModal(false);
   };
-  
+
   // Scan Receipt Handlers
-  const handleCapture = () => {
+  // const handleCapture = () => {
+  //   setIsProcessing(true);
+  //   setTimeout(() => {
+  //     setIsProcessing(false);
+  //     setScanStep('preview');
+  //   }, 1500);
+  // };
+
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const videoRef = useRef<HTMLVideoElement | null>(null);
+
+  const handleCapture = (e: React.ChangeEvent<HTMLInputElement>) => {
     setIsProcessing(true);
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const previewUrl = URL.createObjectURL(file);
+
+    setCapturedImage(file);        // for OCR upload
+    setCapturedPreview(previewUrl); // for UI
+    setIsProcessing(false);
+    setScanState("preview");
+  };
+
+  const handleExtract = async () => {
+    if (!capturedImage) return;
+
+    setScanState("processing");
+    setIsExtracting(true);
+
+    // Simulate AI processing delay
     setTimeout(() => {
-      setIsProcessing(false);
-      setScanStep('preview');
+      // Pretend this came from AI
+      const extractedData: ExtractedLedgerData = {
+        entryType: "expense",
+        amount: "8500",
+        category: "food",
+        date: "2026-02-04",
+        description: "Chicken Republic",
+      };
+
+      // Populate shared ledger states
+      setEntryType(extractedData.entryType);
+      setAmount(extractedData.amount);
+      setCategory(extractedData.category);
+      setDate(extractedData.date);
+      setDescription(extractedData.description);
+
+      setIsExtracting(false);
+      setScanState("confirm");
     }, 1500);
   };
 
@@ -294,34 +373,34 @@ export function Ledger({ onNavigate, language = 'english' }: LedgerProps) {
     setIsExtracting(true);
     setTimeout(() => {
       setIsExtracting(false);
-      setScanStep('extracted');
+      setScanStep("extracted");
     }, 2000);
   };
 
   const handleSaveScan = () => {
     toast.success(scanT.saved);
     setTimeout(() => {
-      setAddMode('');
-      setScanStep('camera');
+      setAddMode("");
+      setScanStep("camera");
     }, 1000);
   };
 
   const handleRetake = () => {
-    setScanStep('camera');
+    setScanStep("camera");
   };
-  
+
   // Voice Entry Handlers
   const handleStartListening = () => {
     setIsListening(true);
-    setRecordingStep('listening');
-    
+    setRecordingStep("listening");
+
     setTimeout(() => {
-      setTranscription('I spent 5000 naira on food supplies today');
+      setTranscription("I spent 5000 naira on food supplies today");
       setIsListening(false);
-      setRecordingStep('processing');
-      
+      setRecordingStep("processing");
+
       setTimeout(() => {
-        setRecordingStep('review');
+        setRecordingStep("review");
       }, 1500);
     }, 3000);
   };
@@ -329,42 +408,42 @@ export function Ledger({ onNavigate, language = 'english' }: LedgerProps) {
   const handleStopListening = () => {
     setIsListening(false);
     if (transcription) {
-      setRecordingStep('processing');
+      setRecordingStep("processing");
       setTimeout(() => {
-        setRecordingStep('review');
+        setRecordingStep("review");
       }, 1500);
     } else {
-      setRecordingStep('ready');
+      setRecordingStep("ready");
       toast.error(voiceT.noSpeech);
     }
   };
 
   const handleTryAgain = () => {
-    setTranscription('');
-    setRecordingStep('ready');
+    setTranscription("");
+    setRecordingStep("ready");
   };
 
   const handleSaveVoice = () => {
     toast.success(voiceT.saved);
     setTimeout(() => {
-      setAddMode('');
-      setRecordingStep('ready');
-      setTranscription('');
+      setAddMode("");
+      setRecordingStep("ready");
+      setTranscription("");
     }, 1000);
   };
 
   const CATEGORY_MAP = {
     income: [
-      { labelKey: 'salesRevenue', value: 'sales revenue' },
-      { labelKey: 'serviceIncome', value: 'service income' },
+      { labelKey: "salesRevenue", value: "sales revenue" },
+      { labelKey: "serviceIncome", value: "service income" },
     ],
     expense: [
       // { labelKey: 'foodSupplies', value: 'food supplies expense' },
       // { labelKey: 'equipment', value: 'office equipment' },
-      { labelKey: 'otherIncome', value: 'other income' },
+      { labelKey: "otherIncome", value: "other income" },
       // { labelKey: 'transportation', value: 'transportation expense' },
     ],
-  };  
+  };
 
   // const entries = [
   //   { id: 1, date: 'Dec 13, 2025', amount: 25000, categoryKey: 'salesRevenue', type: 'income', status: 'synced' },
@@ -376,8 +455,8 @@ export function Ledger({ onNavigate, language = 'english' }: LedgerProps) {
   // ];
 
   const [entries, setEntries] = useState<any[]>([]);
-const [isLoadingLedger, setIsLoadingLedger] = useState(false);
-const [ledgerError, setLedgerError] = useState('');
+  const [isLoadingLedger, setIsLoadingLedger] = useState(false);
+  const [ledgerError, setLedgerError] = useState("");
 
   const incomeCategories = [
     translations[language].salesRevenue,
@@ -390,21 +469,29 @@ const [ledgerError, setLedgerError] = useState('');
     translations[language].transportation,
   ];
 
+  useEffect(() => {
+    if (scanState === "camera" && videoRef.current) {
+      navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } })
+        .then((stream) => { videoRef.current!.srcObject = stream; })
+        .catch((err) => console.error("Camera error:", err));
+    }
+  }, [scanState]);
+
   const fetchLedgerRecords = async () => {
     try {
       setIsLoadingLedger(true);
-      setLedgerError('');
-  
+      setLedgerError("");
+
       const res = await getLedgerRecords();
-      console.log('ledger entries', res);
-  
+      console.log("ledger entries", res);
+
       setEntries(res.data || []);
     } catch (err: any) {
-      setLedgerError(err.message || 'Failed to load ledger records');
+      setLedgerError(err.message || "Failed to load ledger records");
     } finally {
       setIsLoadingLedger(false);
     }
-  };  
+  };
 
   const handleAddLedger = async () => {
     if (!amount || !category || !date) return;
@@ -420,27 +507,25 @@ const [ledgerError, setLedgerError] = useState('');
         description,
       });
 
-      console.log('LEDGER CREATED:', response);
-      alert('LEDGER CREATED.')
+      console.log("LEDGER CREATED:", response);
+      alert("LEDGER CREATED.");
 
       // ✅ Optional: add immediately to UI list
       // setEntries((prev) => [response.data, ...prev]);
 
-          // ✅ Re-fetch ledger list from API
-    await fetchLedgerRecords();
+      // ✅ Re-fetch ledger list from API
+      await fetchLedgerRecords();
 
       // ✅ Reset form
-      setAmount('');
-      setCategory('');
-      setDescription('');
-      setDate('');
-
+      setAmount("");
+      setCategory("");
+      setDescription("");
+      setDate("");
     } catch (error: any) {
       console.error(error);
 
       const message =
-        error?.response?.data?.message ||
-        'Failed to add ledger entry';
+        error?.response?.data?.message || "Failed to add ledger entry";
 
       alert(message);
     } finally {
@@ -450,7 +535,7 @@ const [ledgerError, setLedgerError] = useState('');
 
   useEffect(() => {
     fetchLedgerRecords();
-  }, []);  
+  }, []);
 
   return (
     <div className="min-h-screen bg-gray-50 pb-20">
@@ -469,6 +554,24 @@ const [ledgerError, setLedgerError] = useState('');
         <div className="flex items-center gap-4 mb-4">
           <h1 className="text-lg">{translations[language].digitalLedger}</h1>
         </div>
+
+
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept="image/*"
+          capture="environment"  // opens back camera on phones
+          style={{ display: 'none' }} // hidden
+          onChange={(e) => {
+            const file = e.target.files?.[0];
+            if (!file) return;
+
+            const previewUrl = URL.createObjectURL(file);
+            setCapturedImage(file);       // for OCR upload
+            setCapturedPreview(previewUrl); // for UI display
+            setScanState('preview');      // move to preview state
+          }}
+        />
 
         {/* Search & Filter */}
         <div className="flex gap-2">
@@ -489,22 +592,24 @@ const [ledgerError, setLedgerError] = useState('');
 
         {/* Filter Chips */}
         <div className="flex gap-2 mt-3 overflow-x-auto">
-          {['all', 'income', 'expense'].map((type) => (
+          {["all", "income", "expense"].map((type) => (
             <button
               key={type}
               onClick={() => setFilterType(type)}
               className={`px-4 py-1.5 rounded-full text-sm whitespace-nowrap transition-all ${filterType === type
-                ? 'bg-emerald-600 text-white'
-                : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                ? "bg-emerald-600 text-white"
+                : "bg-gray-100 text-gray-600 hover:bg-gray-200"
                 }`}
             >
-              {translations[language][
-                type === 'all'
-                  ? 'filterAll'
-                  : type === 'income'
-                    ? 'filterIncome'
-                    : 'filterExpense'
-              ]}
+              {
+                translations[language][
+                type === "all"
+                  ? "filterAll"
+                  : type === "income"
+                    ? "filterIncome"
+                    : "filterExpense"
+                ]
+              }
             </button>
           ))}
         </div>
@@ -517,76 +622,74 @@ const [ledgerError, setLedgerError] = useState('');
       </div>
 
       {isLoadingLedger && (
-  <p className="text-center text-sm text-gray-500">Loading records...</p>
-)}
+        <p className="text-center text-sm text-gray-500">Loading records...</p>
+      )}
 
-{!isLoadingLedger && entries.length === 0 && (
-  <p className="text-center text-sm text-gray-500">
-    No ledger records yet
-  </p>
-)}
+      {!isLoadingLedger && entries.length === 0 && (
+        <p className="text-center text-sm text-gray-500">
+          No ledger records yet
+        </p>
+      )}
 
       {/* Ledger Entries */}
       <div className="p-6 space-y-3">
-  {entries.map((entry, index) => {
-    const isIncome = entry.ledger_type === 'income';
+        {entries.map((entry, index) => {
+          const isIncome = entry.ledger_type === "income";
 
-    return (
-      <motion.div
-        key={entry.id}
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: index * 0.05 }}
-        className="bg-white rounded-xl p-4 shadow-sm hover:shadow-md transition-all cursor-pointer border border-gray-100"
-      >
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div
-              className={`w-10 h-10 rounded-lg flex items-center justify-center ${
-                isIncome ? 'bg-emerald-50' : 'bg-red-50'
-              }`}
+          return (
+            <motion.div
+              key={entry.id}
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: index * 0.05 }}
+              className="bg-white rounded-xl p-4 shadow-sm hover:shadow-md transition-all cursor-pointer border border-gray-100"
             >
-              {isIncome ? (
-                <TrendingUp className="w-5 h-5 text-emerald-600" />
-              ) : (
-                <TrendingDown className="w-5 h-5 text-red-600" />
-              )}
-            </div>
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div
+                    className={`w-10 h-10 rounded-lg flex items-center justify-center ${isIncome ? "bg-emerald-50" : "bg-red-50"
+                      }`}
+                  >
+                    {isIncome ? (
+                      <TrendingUp className="w-5 h-5 text-emerald-600" />
+                    ) : (
+                      <TrendingDown className="w-5 h-5 text-red-600" />
+                    )}
+                  </div>
 
-            <div>
-              <p className="text-sm mb-0.5 capitalize">
-                {entry.category}
-              </p>
+                  <div>
+                    <p className="text-sm mb-0.5 capitalize">
+                      {entry.category}
+                    </p>
 
-              <div className="flex items-center gap-2">
-                <p className="text-xs text-gray-500">
-                  {new Date(entry.date).toLocaleDateString()}
-                </p>
+                    <div className="flex items-center gap-2">
+                      <p className="text-xs text-gray-500">
+                        {new Date(entry.date).toLocaleDateString()}
+                      </p>
+                    </div>
+
+                    {entry.description && (
+                      <p className="text-xs text-gray-400 mt-0.5">
+                        {entry.description}
+                      </p>
+                    )}
+                  </div>
+                </div>
+
+                <div className="text-right">
+                  <p
+                    className={`text-sm font-medium ${isIncome ? "text-emerald-600" : "text-gray-900"
+                      }`}
+                  >
+                    {isIncome ? "+" : "-"}₦
+                    {Number(entry.amount).toLocaleString()}
+                  </p>
+                </div>
               </div>
-
-              {entry.description && (
-                <p className="text-xs text-gray-400 mt-0.5">
-                  {entry.description}
-                </p>
-              )}
-            </div>
-          </div>
-
-          <div className="text-right">
-            <p
-              className={`text-sm font-medium ${
-                isIncome ? 'text-emerald-600' : 'text-gray-900'
-              }`}
-            >
-              {isIncome ? '+' : '-'}₦
-              {Number(entry.amount).toLocaleString()}
-            </p>
-          </div>
-        </div>
-      </motion.div>
-    );
-  })}
-</div>
+            </motion.div>
+          );
+        })}
+      </div>
 
       {/* Export Button */}
       <div className="px-6 pb-6">
@@ -628,45 +731,59 @@ const [ledgerError, setLedgerError] = useState('');
             >
               <div className="w-12 h-1 bg-gray-300 rounded-full mx-auto mb-6" />
 
-              <h3 className="text-lg mb-4">{translations[language].addEntry}</h3>
+              <h3 className="text-lg mb-4">
+                {translations[language].addEntry}
+              </h3>
 
               <div className="space-y-3">
                 <button
-                  onClick={() => handleAddClick('manual')}
+                  onClick={() => handleAddClick("manual")}
                   className="w-full p-4 bg-gray-50 hover:bg-gray-100 rounded-xl flex items-center gap-4 transition-all text-left"
                 >
                   <div className="w-12 h-12 bg-emerald-50 rounded-lg flex items-center justify-center">
                     <Plus className="w-6 h-6 text-emerald-600" />
                   </div>
                   <div>
-                    <p className="text-sm">{translations[language].manualEntry}</p>
-                    <p className="text-xs text-gray-600">{translations[language].manualEntryDesc}</p>
+                    <p className="text-sm">
+                      {translations[language].manualEntry}
+                    </p>
+                    <p className="text-xs text-gray-600">
+                      {translations[language].manualEntryDesc}
+                    </p>
                   </div>
                 </button>
 
                 <button
-                  onClick={() => handleAddClick('scan')}
+                  onClick={() => handleAddClick("scan")}
                   className="w-full p-4 bg-purple-50 hover:bg-purple-100 rounded-xl flex items-center gap-4 transition-all text-left"
                 >
                   <div className="w-12 h-12 bg-white rounded-lg flex items-center justify-center">
                     <Camera className="w-6 h-6 text-purple-600" />
                   </div>
                   <div>
-                    <p className="text-sm">{translations[language].scanReceipt}</p>
-                    <p className="text-xs text-gray-600">{translations[language].scanReceiptDesc}</p>
+                    <p className="text-sm">
+                      {translations[language].scanReceipt}
+                    </p>
+                    <p className="text-xs text-gray-600">
+                      {translations[language].scanReceiptDesc}
+                    </p>
                   </div>
                 </button>
 
                 <button
-                  onClick={() => handleAddClick('voice')}
+                  onClick={() => handleAddClick("voice")}
                   className="w-full p-4 bg-blue-50 hover:bg-blue-100 rounded-xl flex items-center gap-4 transition-all text-left"
                 >
                   <div className="w-12 h-12 bg-white rounded-lg flex items-center justify-center">
                     <Mic className="w-6 h-6 text-blue-600" />
                   </div>
                   <div>
-                    <p className="text-sm">{translations[language].voiceEntry}</p>
-                    <p className="text-xs text-gray-600">{translations[language].speakToAdd}</p>
+                    <p className="text-sm">
+                      {translations[language].voiceEntry}
+                    </p>
+                    <p className="text-xs text-gray-600">
+                      {translations[language].speakToAdd}
+                    </p>
                   </div>
                 </button>
               </div>
@@ -677,13 +794,13 @@ const [ledgerError, setLedgerError] = useState('');
 
       {/* Manual Entry Modal */}
       <AnimatePresence>
-        {addMode === 'manual' && (
+        {addMode === "manual" && (
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-end"
-            onClick={() => setAddMode('')}
+            onClick={() => setAddMode("")}
           >
             <motion.div
               initial={{ y: 900 }}
@@ -695,7 +812,9 @@ const [ledgerError, setLedgerError] = useState('');
             >
               <div className="w-12 h-1 bg-gray-300 rounded-full mx-auto mb-6" />
 
-              <h3 className="text-lg mb-4">{translations[language].manualEntry}</h3>
+              <h3 className="text-lg mb-4">
+                {translations[language].manualEntry}
+              </h3>
 
               <div className="space-y-4">
                 {/* TYPE */}
@@ -706,10 +825,10 @@ const [ledgerError, setLedgerError] = useState('');
                   <div className="grid grid-cols-2 gap-2">
                     <button
                       type="button"
-                      onClick={() => setEntryType('income')}
-                      className={`py-2 px-4 rounded-lg text-sm border-2 ${entryType === 'income'
-                          ? 'bg-emerald-50 text-emerald-600 border-emerald-600'
-                          : 'bg-gray-100 text-gray-600 border-transparent'
+                      onClick={() => setEntryType("income")}
+                      className={`py-2 px-4 rounded-lg text-sm border-2 ${entryType === "income"
+                        ? "bg-emerald-50 text-emerald-600 border-emerald-600"
+                        : "bg-gray-100 text-gray-600 border-transparent"
                         }`}
                     >
                       {translations[language].income}
@@ -717,10 +836,10 @@ const [ledgerError, setLedgerError] = useState('');
 
                     <button
                       type="button"
-                      onClick={() => setEntryType('expense')}
-                      className={`py-2 px-4 rounded-lg text-sm border-2 ${entryType === 'expense'
-                          ? 'bg-red-50 text-red-600 border-red-600'
-                          : 'bg-gray-100 text-gray-600 border-transparent'
+                      onClick={() => setEntryType("expense")}
+                      className={`py-2 px-4 rounded-lg text-sm border-2 ${entryType === "expense"
+                        ? "bg-red-50 text-red-600 border-red-600"
+                        : "bg-gray-100 text-gray-600 border-transparent"
                         }`}
                     >
                       {translations[language].expense}
@@ -735,7 +854,9 @@ const [ledgerError, setLedgerError] = useState('');
                   </label>
                   <div className="relative">
                     <span
-                      className={`absolute left-4 top-1/2 -translate-y-1/2 ${entryType === 'income' ? 'text-emerald-600' : 'text-red-600'
+                      className={`absolute left-4 top-1/2 -translate-y-1/2 ${entryType === "income"
+                        ? "text-emerald-600"
+                        : "text-red-600"
                         }`}
                     >
                       ₦
@@ -806,7 +927,7 @@ const [ledgerError, setLedgerError] = useState('');
                   className="w-full py-4 bg-emerald-600 text-white rounded-xl hover:bg-emerald-700 shadow-lg transition-all disabled:opacity-60"
                 >
                   {isProcessing
-                    ? 'Saving...'
+                    ? "Saving..."
                     : translations[language].saveEntry}
                 </button>
               </div>
@@ -815,566 +936,361 @@ const [ledgerError, setLedgerError] = useState('');
         )}
       </AnimatePresence>
 
-      {/* Scan Receipt Modal */}
       <AnimatePresence>
-        {addMode === 'scan' && (
+        {addMode === "scan" && (
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-gray-900 z-50"
+            className="fixed inset-0 bg-black z-50"
+            onClick={() => setAddMode("")}
           >
             <motion.div
               initial={{ y: 900 }}
               animate={{ y: 0 }}
               exit={{ y: 900 }}
               transition={{ type: "spring", damping: 30, stiffness: 300 }}
-              className="min-h-screen bg-gray-900 pb-6"
+              onClick={(e) => e.stopPropagation()}
+              className="bg-white rounded-t-3xl w-full max-w-[390px] mx-auto h-[90vh] overflow-hidden flex flex-col"
             >
-              {/* Header */}
-              <div className="bg-gray-900 px-6 pt-6 pb-8">
-                <div className="flex items-center justify-between mb-6">
-                  <button
-                    onClick={() => setAddMode('')}
-                    className="p-2 hover:bg-white/10 rounded-lg transition-all"
-                  >
-                    <ArrowLeft className="w-6 h-6 text-white" />
-                  </button>
-                  <h1 className="text-white text-lg flex-1 text-center mr-10">{scanT.title}</h1>
-                </div>
-                <p className="text-gray-300 text-center text-sm">{scanT.subtitle}</p>
+              <div className="p-4 border-b flex items-center justify-between">
+                <h3 className="text-lg font-medium">Scan Receipt</h3>
+                <button
+                  onClick={() => setAddMode("")}
+                  className="text-gray-500"
+                >
+                  ✕
+                </button>
               </div>
 
-              <AnimatePresence mode="wait">
-                {scanStep === 'camera' && (
-                  <motion.div
-                    key="camera"
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    exit={{ opacity: 0 }}
-                    className="px-6"
-                  >
-                    {/* Camera Viewfinder */}
-                    <div className="relative aspect-[3/4] bg-black rounded-2xl overflow-hidden mb-6 border-2 border-purple-500">
-                      <div className="absolute inset-0 bg-gradient-to-br from-gray-800 to-gray-900 flex items-center justify-center">
-                        <div className="text-center text-gray-400">
-                          <Camera className="w-16 h-16 mx-auto mb-4 opacity-50" />
-                          <p className="text-sm">Camera View</p>
-                          <p className="text-xs mt-2">Position receipt here</p>
-                        </div>
-                      </div>
+              {scanState === "camera" && (
+                <div className="flex-1 flex flex-col justify-between bg-gradient-to-b from-gray-900 to-gray-800 relative rounded-2xl overflow-hidden">
+                  {/* Overlay gradient for subtle effect */}
+                  <div className="absolute inset-0 bg-black/20 pointer-events-none" />
 
-                      {/* Scanning Frame */}
-                      <div className="absolute inset-8 border-2 border-dashed border-purple-400 rounded-xl">
-                        <div className="absolute top-0 left-0 w-6 h-6 border-t-4 border-l-4 border-purple-500 rounded-tl-lg" />
-                        <div className="absolute top-0 right-0 w-6 h-6 border-t-4 border-r-4 border-purple-500 rounded-tr-lg" />
-                        <div className="absolute bottom-0 left-0 w-6 h-6 border-b-4 border-l-4 border-purple-500 rounded-bl-lg" />
-                        <div className="absolute bottom-0 right-0 w-6 h-6 border-b-4 border-r-4 border-purple-500 rounded-br-lg" />
-                      </div>
+                  {/* Camera Preview / Instruction */}
+                  <div className="flex-1 flex flex-col items-center justify-center px-6">
+                    <div className="w-20 h-20 bg-white/10 rounded-full flex items-center justify-center mb-4 animate-pulse">
+                      <Camera className="w-10 h-10 text-white/80" />
                     </div>
+                    <p className="text-center text-[#222] text-sm opacity-80">
+                      Point your camera at the receipt to capture details
+                    </p>
+                  </div>
 
-                    {/* Instructions */}
-                    <div className="bg-gray-800 rounded-2xl p-6 mb-6">
-                      <h3 className="text-white text-sm mb-4">{scanT.instructions}</h3>
-                      <div className="space-y-3">
-                        {[scanT.step1, scanT.step2, scanT.step3, scanT.step4].map((step, index) => (
-                          <div key={index} className="flex items-start gap-3">
-                            <div className="w-6 h-6 bg-purple-600 rounded-full flex items-center justify-center flex-shrink-0 text-white text-xs">
-                              {index + 1}
-                            </div>
-                            <p className="text-gray-300 text-sm flex-1">{step}</p>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-
-                    {/* Capture Button */}
+                  {/* Capture Button */}
+                  <div className="p-6 flex justify-center">
                     <button
-                      onClick={handleCapture}
-                      disabled={isProcessing}
-                      className={`w-full py-4 rounded-xl transition-all flex items-center justify-center gap-2 ${
-                        isProcessing
-                          ? 'bg-gray-700 text-gray-400 cursor-not-allowed'
-                          : 'bg-purple-600 text-white hover:bg-purple-700'
-                      }`}
+                      onClick={() => fileInputRef.current?.click()}
+                      className="w-20 h-20 cursor-pointer rounded-full bg-emerald-600 shadow-2xl flex items-center justify-center hover:scale-105 active:scale-95 transition-transform duration-200"
                     >
-                      <Camera className="w-5 h-5" />
-                      {isProcessing ? scanT.processingButton : scanT.captureButton}
+                      <Camera className="w-10 h-10 text-white" />
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {/* {scanState === "camera" && (
+  <video ref={videoRef} autoPlay className="flex-1 w-full bg-black" />
+)} */}
+
+
+              {scanState === "preview" && capturedPreview && (
+                <div className="flex-1 flex flex-col">
+                  <img
+                    src={capturedPreview!}
+                    alt="Receipt preview"
+                    className="flex-1 object-contain bg-black"
+                  />
+
+                  <div className="p-4 space-y-3">
+                    <button
+                      onClick={handleRetake}
+                      className="w-full py-3 border rounded-xl"
+                    >
+                      Retake
                     </button>
 
-                    {/* Tip */}
-                    <div className="mt-4 p-4 bg-purple-900/30 border border-purple-500/30 rounded-xl">
-                      <p className="text-purple-200 text-xs">{scanT.scanTip}</p>
-                    </div>
-                  </motion.div>
-                )}
+                    <button
+                      onClick={handleExtract}
+                      className="w-full py-3 bg-emerald-600 text-white rounded-xl"
+                    >
+                      Extract Details
+                    </button>
+                  </div>
+                </div>
+              )}
 
-                {scanStep === 'preview' && (
-                  <motion.div
-                    key="preview"
-                    initial={{ opacity: 0, scale: 0.95 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    exit={{ opacity: 0, scale: 0.95 }}
-                    className="px-6"
+              {scanState === "processing" && (
+                <div className="flex-1 flex flex-col items-center justify-center px-6 text-center bg-gray-50">
+                  {/* Animated loader */}
+                  <div className="relative mb-6">
+                    <div className="w-16 h-16 rounded-full border-4 border-emerald-100" />
+                    <div className="absolute inset-0 w-16 h-16 rounded-full border-4 border-emerald-600 border-t-transparent animate-spin" />
+                  </div>
+
+                  {/* Main text */}
+                  <h4 className="text-base font-medium text-gray-900">
+                    Scanning receipt
+                  </h4>
+
+                  {/* Sub text */}
+                  <p className="mt-2 text-sm text-gray-500 max-w-[240px]">
+                    We’re extracting the amount, date, and category from your receipt.
+                  </p>
+
+                  {/* Progress hint */}
+                  <div className="mt-6 w-full max-w-xs">
+                    <div className="h-1.5 bg-gray-200 rounded-full overflow-hidden">
+                      <div className="h-full w-1/2 bg-emerald-600 animate-pulse rounded-full" />
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {scanState === "confirm" && (
+                <div className="flex-1 overflow-y-auto p-6 space-y-4">
+                  <div className="text-sm text-gray-500">
+                    Review and confirm details
+                  </div>
+
+                  {/* Amount */}
+                  <input
+                    type="number"
+                    value={amount}
+                    onChange={(e) => setAmount(e.target.value)}
+                    className="w-full px-4 py-3 border rounded-xl"
+                  />
+
+                  {/* Category */}
+                  <select
+                    value={category}
+                    onChange={(e) => setCategory(e.target.value)}
+                    className="w-full px-4 py-3 border rounded-xl"
                   >
-                    {/* Preview Image */}
-                    <div className="relative aspect-[3/4] bg-white rounded-2xl overflow-hidden mb-6 border-2 border-emerald-500">
-                      <div className="absolute inset-0 bg-gradient-to-br from-gray-100 to-gray-200 flex items-center justify-center">
-                        <div className="text-center text-gray-500">
-                          <Check className="w-16 h-16 mx-auto mb-4" />
-                          <p className="text-sm">Receipt Captured</p>
-                        </div>
-                      </div>
-                    </div>
+                    {CATEGORY_MAP[entryType].map((cat) => (
+                      <option key={cat.value} value={cat.value}>
+                        {translations[language][cat.labelKey]}
+                      </option>
+                    ))}
+                  </select>
 
-                    {/* Action Buttons */}
-                    <div className="flex gap-3 mb-4">
-                      <button
-                        onClick={handleRetake}
-                        className="flex-1 py-4 border border-gray-600 text-white rounded-xl hover:bg-gray-800 transition-all flex items-center justify-center gap-2"
-                      >
-                        <RefreshCw className="w-5 h-5" />
-                        {scanT.retakeButton}
-                      </button>
-                      <button
-                        onClick={handleConfirmAndExtract}
-                        disabled={isExtracting}
-                        className={`flex-1 py-4 rounded-xl transition-all flex items-center justify-center gap-2 ${
-                          isExtracting
-                            ? 'bg-gray-700 text-gray-400 cursor-not-allowed'
-                            : 'bg-emerald-600 text-white hover:bg-emerald-700'
-                        }`}
-                      >
-                        <Check className="w-5 h-5" />
-                        {isExtracting ? scanT.extracting : scanT.confirmButton}
-                      </button>
-                    </div>
-                  </motion.div>
-                )}
+                  {/* Date */}
+                  <input
+                    type="date"
+                    value={date}
+                    onChange={(e) => setDate(e.target.value)}
+                    className="w-full px-4 py-3 border rounded-xl"
+                  />
 
-                {scanStep === 'extracted' && (
-                  <motion.div
-                    key="extracted"
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: -20 }}
-                    className="px-6"
+                  {/* Notes */}
+                  <textarea
+                    rows={3}
+                    value={description}
+                    onChange={(e) => setDescription(e.target.value)}
+                    className="w-full px-4 py-3 border rounded-xl"
+                  />
+
+                  <button
+                    onClick={handleAddLedger}
+                    className="w-full py-4 bg-emerald-600 text-white rounded-xl"
                   >
-                    {/* Success Indicator */}
-                    <div className="bg-emerald-900/30 border border-emerald-500/30 rounded-2xl p-6 mb-6">
-                      <div className="flex items-center gap-3 mb-2">
-                        <div className="w-10 h-10 bg-emerald-600 rounded-full flex items-center justify-center">
-                          <Check className="w-6 h-6 text-white" />
-                        </div>
-                        <div>
-                          <h3 className="text-white text-sm">{scanT.detectedFields}</h3>
-                          <p className="text-emerald-200 text-xs">{scanT.editDetails}</p>
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Extracted Data */}
-                    <div className="bg-gray-800 rounded-2xl p-6 space-y-4 mb-6">
-                      <div>
-                        <label className="text-xs text-gray-400 mb-2 block">{scanT.vendor}</label>
-                        <input
-                          type="text"
-                          value={extractedData.vendor}
-                          onChange={(e) => setExtractedData({ ...extractedData, vendor: e.target.value })}
-                          className="w-full px-4 py-3 bg-gray-700 border border-gray-600 text-white rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none"
-                        />
-                      </div>
-
-                      <div>
-                        <label className="text-xs text-gray-400 mb-2 block">{scanT.date}</label>
-                        <input
-                          type="date"
-                          value={extractedData.date}
-                          onChange={(e) => setExtractedData({ ...extractedData, date: e.target.value })}
-                          className="w-full px-4 py-3 bg-gray-700 border border-gray-600 text-white rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none"
-                        />
-                      </div>
-
-                      <div>
-                        <label className="text-xs text-gray-400 mb-2 block">{scanT.amount}</label>
-                        <div className="relative">
-                          <span className="absolute left-4 top-1/2 -translate-y-1/2 text-white">₦</span>
-                          <input
-                            type="text"
-                            value={extractedData.amount}
-                            onChange={(e) => setExtractedData({ ...extractedData, amount: e.target.value })}
-                            className="w-full pl-10 pr-4 py-3 bg-gray-700 border border-gray-600 text-white rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none"
-                          />
-                        </div>
-                      </div>
-
-                      <div>
-                        <label className="text-xs text-gray-400 mb-2 block">{scanT.category}</label>
-                        <select
-                          value={extractedData.category}
-                          onChange={(e) => setExtractedData({ ...extractedData, category: e.target.value })}
-                          className="w-full px-4 py-3 bg-gray-700 border border-gray-600 text-white rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none"
-                        >
-                          <option>Food Supplies</option>
-                          <option>Equipment</option>
-                          <option>Transportation</option>
-                          <option>Utilities</option>
-                          <option>Other</option>
-                        </select>
-                      </div>
-                    </div>
-
-                    {/* Save Button */}
-                    <div className="flex gap-3">
-                      <button
-                        onClick={handleRetake}
-                        className="flex-1 py-4 border border-gray-600 text-white rounded-xl hover:bg-gray-800 transition-all flex items-center justify-center gap-2"
-                      >
-                        <RefreshCw className="w-5 h-5" />
-                        {scanT.retakeButton}
-                      </button>
-                      <button
-                        onClick={handleSaveScan}
-                        className="flex-1 py-4 bg-emerald-600 text-white rounded-xl hover:bg-emerald-700 transition-all flex items-center justify-center gap-2"
-                      >
-                        <Save className="w-5 h-5" />
-                        {scanT.saveEntry}
-                      </button>
-                    </div>
-                  </motion.div>
-                )}
-              </AnimatePresence>
+                    Save Entry
+                  </button>
+                </div>
+              )}
             </motion.div>
           </motion.div>
         )}
       </AnimatePresence>
 
-      {/* Voice Entry Modal */}
       <AnimatePresence>
-        {addMode === 'voice' && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-gradient-to-br from-blue-900 via-blue-800 to-blue-900 z-50"
-          >
-            <motion.div
-              initial={{ y: 900 }}
-              animate={{ y: 0 }}
-              exit={{ y: 900 }}
-              transition={{ type: "spring", damping: 30, stiffness: 300 }}
-              className="min-h-screen pb-6"
+      {addMode === "voice" && (
+  <motion.div
+    initial={{ opacity: 0 }}
+    animate={{ opacity: 1 }}
+    exit={{ opacity: 0 }}
+    className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-end"
+    onClick={() => setAddMode("")}
+  >
+    <motion.div
+      initial={{ y: 800 }}
+      animate={{ y: 0 }}
+      exit={{ y: 800 }}
+      transition={{ type: "spring", damping: 30, stiffness: 300 }}
+      onClick={(e) => e.stopPropagation()}
+      className="bg-white rounded-t-3xl w-full max-w-[390px] mx-auto h-[90vh] flex flex-col"
+    >
+      {/* Header */}
+      <div className="p-4 border-b flex items-center justify-between">
+        <h3 className="text-lg font-medium">Voice Entry</h3>
+        <button onClick={() => setAddMode("")} className="text-gray-500">
+          ✕
+        </button>
+      </div>
+
+      {/* CONTENT */}
+      <div className="flex-1 flex flex-col justify-center px-6 text-center">
+
+        {/* READY / LISTENING */}
+        {recordingStep === "ready" || recordingStep === "listening" ? (
+          <>
+            {/* Animated Mic */}
+            <div className="relative mx-auto mb-6">
+              <div
+                className={`w-24 h-24 rounded-full flex items-center justify-center
+                ${isListening ? "bg-emerald-100 animate-pulse" : "bg-gray-100"}`}
+              >
+                <Mic
+                  className={`w-10 h-10 ${
+                    isListening ? "text-emerald-600" : "text-gray-500"
+                  }`}
+                />
+              </div>
+            </div>
+
+            <h4 className="text-base font-medium text-gray-900">
+              {isListening ? "Listening…" : "Add ledger with your voice"}
+            </h4>
+
+            <p className="mt-2 text-sm text-gray-500 max-w-xs mx-auto">
+              Say something like:
+              <br />
+              <span className="italic text-gray-400">
+                “I spent 5,000 naira on food”
+              </span>
+            </p>
+
+            {/* Action */}
+            <button
+              onClick={
+                isListening ? handleStopListening : handleStartListening
+              }
+              className={`mt-8 w-full py-4 rounded-xl text-white transition-all
+              ${isListening ? "bg-red-600" : "bg-emerald-600 hover:bg-emerald-700"}`}
             >
-              {/* Header */}
-              <div className="bg-blue-900 px-6 pt-6 pb-8">
-                <div className="flex items-center justify-between mb-6">
-                  <button
-                    onClick={() => setAddMode('')}
-                    className="p-2 hover:bg-white/10 rounded-lg transition-all"
-                  >
-                    <ArrowLeft className="w-6 h-6 text-white" />
-                  </button>
-                  <h1 className="text-white text-lg flex-1 text-center mr-10">{voiceT.title}</h1>
-                </div>
-                <p className="text-blue-200 text-center text-sm">{voiceT.subtitle}</p>
-              </div>
+              {isListening ? "Stop Listening" : "Start Speaking"}
+            </button>
+          </>
+        ) : null}
 
-              <div className="px-6">
-                <AnimatePresence mode="wait">
-                  {recordingStep === 'ready' && (
-                    <motion.div
-                      key="ready"
-                      initial={{ opacity: 0, y: 20 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      exit={{ opacity: 0, y: -20 }}
-                      className="space-y-6"
-                    >
-                      {/* Microphone Visual */}
-                      <div className="flex justify-center mb-8">
-                        <motion.div
-                          whileHover={{ scale: 1.05 }}
-                          className="relative"
-                        >
-                          <div className="w-40 h-40 bg-white rounded-full flex items-center justify-center shadow-2xl">
-                            <Mic className="w-20 h-20 text-blue-600" />
-                          </div>
-                          <motion.div
-                            animate={{
-                              scale: [1, 1.2, 1],
-                              opacity: [0.5, 0, 0.5]
-                            }}
-                            transition={{
-                              duration: 2,
-                              repeat: Infinity,
-                              ease: "easeInOut"
-                            }}
-                            className="absolute inset-0 bg-blue-400 rounded-full -z-10"
-                          />
-                        </motion.div>
-                      </div>
+        {/* PROCESSING */}
+        {recordingStep === "processing" && (
+          <div className="flex flex-col items-center space-y-5">
+            <div className="relative">
+              <div className="w-16 h-16 rounded-full border-4 border-emerald-100" />
+              <div className="absolute inset-0 w-16 h-16 rounded-full border-4 border-emerald-600 border-t-transparent animate-spin" />
+            </div>
 
-                      {/* Instructions */}
-                      <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-6 mb-6">
-                        <h3 className="text-white text-sm mb-4">{voiceT.instructions}</h3>
-                        <div className="space-y-3">
-                          {[voiceT.step1, voiceT.step2, voiceT.step3, voiceT.step4].map((step, index) => (
-                            <div key={index} className="flex items-start gap-3">
-                              <div className="w-6 h-6 bg-blue-600 rounded-full flex items-center justify-center flex-shrink-0 text-white text-xs">
-                                {index + 1}
-                              </div>
-                              <p className="text-blue-100 text-sm flex-1">{step}</p>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
+            <h4 className="text-base font-medium text-gray-900">
+              Processing voice input
+            </h4>
 
-                      {/* Example */}
-                      <div className="bg-blue-800/50 border border-blue-400/30 rounded-2xl p-6">
-                        <h4 className="text-blue-200 text-xs mb-2">{voiceT.example}</h4>
-                        <p className="text-white text-sm italic">{voiceT.exampleText}</p>
-                      </div>
-
-                      {/* Tips */}
-                      <div className="bg-white/5 rounded-2xl p-6">
-                        <h4 className="text-blue-200 text-xs mb-3">{voiceT.tips}</h4>
-                        <div className="space-y-2">
-                          {[voiceT.tip1, voiceT.tip2, voiceT.tip3, voiceT.tip4].map((tip, index) => (
-                            <div key={index} className="flex items-start gap-2">
-                              <span className="text-blue-400 text-sm">•</span>
-                              <p className="text-blue-100 text-xs">{tip}</p>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-
-                      {/* Start Button */}
-                      <button
-                        onClick={handleStartListening}
-                        className="w-full py-4 bg-white text-blue-600 rounded-xl hover:bg-blue-50 transition-all flex items-center justify-center gap-2 shadow-lg"
-                      >
-                        <Mic className="w-5 h-5" />
-                        {voiceT.startListening}
-                      </button>
-                    </motion.div>
-                  )}
-
-                  {recordingStep === 'listening' && (
-                    <motion.div
-                      key="listening"
-                      initial={{ opacity: 0, scale: 0.95 }}
-                      animate={{ opacity: 1, scale: 1 }}
-                      exit={{ opacity: 0, scale: 0.95 }}
-                      className="space-y-6"
-                    >
-                      {/* Animated Microphone */}
-                      <div className="flex justify-center mb-8">
-                        <div className="relative">
-                          <motion.div
-                            animate={{
-                              scale: [1, 1.1, 1],
-                            }}
-                            transition={{
-                              duration: 1.5,
-                              repeat: Infinity,
-                              ease: "easeInOut"
-                            }}
-                            className="w-40 h-40 bg-white rounded-full flex items-center justify-center shadow-2xl"
-                          >
-                            <Mic className="w-20 h-20 text-red-600" />
-                          </motion.div>
-                          
-                          {/* Pulsing rings */}
-                          {[0, 1, 2].map((i) => (
-                            <motion.div
-                              key={i}
-                              animate={{
-                                scale: [1, 2.5],
-                                opacity: [0.6, 0]
-                              }}
-                              transition={{
-                                duration: 2,
-                                repeat: Infinity,
-                                delay: i * 0.4,
-                                ease: "easeOut"
-                              }}
-                              className="absolute inset-0 bg-red-400 rounded-full"
-                            />
-                          ))}
-                        </div>
-                      </div>
-
-                      {/* Listening Indicator */}
-                      <div className="bg-red-900/30 border border-red-400/30 rounded-2xl p-6 text-center">
-                        <h3 className="text-white text-lg mb-2">{voiceT.listening}</h3>
-                        <p className="text-red-200 text-sm">Speak clearly and naturally...</p>
-                        
-                        {/* Waveform Animation */}
-                        <div className="flex justify-center items-center gap-1 mt-6 h-12">
-                          {[...Array(20)].map((_, i) => (
-                            <motion.div
-                              key={i}
-                              animate={{
-                                height: ['20%', '100%', '20%']
-                              }}
-                              transition={{
-                                duration: 1,
-                                repeat: Infinity,
-                                delay: i * 0.05,
-                                ease: "easeInOut"
-                              }}
-                              className="w-1 bg-white rounded-full"
-                            />
-                          ))}
-                        </div>
-                      </div>
-
-                      {/* Live Transcription */}
-                      {transcription && (
-                        <motion.div
-                          initial={{ opacity: 0, y: 10 }}
-                          animate={{ opacity: 1, y: 0 }}
-                          className="bg-white/10 backdrop-blur-sm rounded-2xl p-6"
-                        >
-                          <h4 className="text-blue-200 text-xs mb-2">{voiceT.transcription}</h4>
-                          <p className="text-white text-sm">{transcription}</p>
-                        </motion.div>
-                      )}
-
-                      {/* Stop Button */}
-                      <button
-                        onClick={handleStopListening}
-                        className="w-full py-4 bg-red-600 text-white rounded-xl hover:bg-red-700 transition-all flex items-center justify-center gap-2 shadow-lg"
-                      >
-                        <Square className="w-5 h-5" />
-                        {voiceT.stopListening}
-                      </button>
-                    </motion.div>
-                  )}
-
-                  {recordingStep === 'processing' && (
-                    <motion.div
-                      key="processing"
-                      initial={{ opacity: 0 }}
-                      animate={{ opacity: 1 }}
-                      exit={{ opacity: 0 }}
-                      className="flex flex-col items-center justify-center min-h-[60vh]"
-                    >
-                      <motion.div
-                        animate={{ rotate: 360 }}
-                        transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
-                        className="w-20 h-20 border-4 border-white/20 border-t-white rounded-full mb-6"
-                      />
-                      <h3 className="text-white text-lg mb-2">{voiceT.processing}</h3>
-                      <p className="text-blue-200 text-sm">Analyzing your voice input...</p>
-                    </motion.div>
-                  )}
-
-                  {recordingStep === 'review' && (
-                    <motion.div
-                      key="review"
-                      initial={{ opacity: 0, y: 20 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      exit={{ opacity: 0, y: -20 }}
-                      className="space-y-6"
-                    >
-                      {/* Success Indicator */}
-                      <div className="bg-emerald-900/30 border border-emerald-400/30 rounded-2xl p-6">
-                        <div className="flex items-center gap-3 mb-4">
-                          <div className="w-10 h-10 bg-emerald-600 rounded-full flex items-center justify-center">
-                            <Check className="w-6 h-6 text-white" />
-                          </div>
-                          <div>
-                            <h3 className="text-white text-sm">{voiceT.detectedInfo}</h3>
-                            <p className="text-emerald-200 text-xs">Review and confirm</p>
-                          </div>
-                        </div>
-
-                        {/* Transcription Display */}
-                        <div className="bg-white/10 rounded-xl p-4">
-                          <h4 className="text-blue-200 text-xs mb-2">{voiceT.transcription}</h4>
-                          <p className="text-white text-sm italic">"{transcription}"</p>
-                        </div>
-                      </div>
-
-                      {/* Detected Data Form */}
-                      <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-6 space-y-4">
-                        <div>
-                          <label className="text-xs text-blue-200 mb-2 block">{voiceT.amount}</label>
-                          <div className="relative">
-                            <span className="absolute left-4 top-1/2 -translate-y-1/2 text-white">₦</span>
-                            <input
-                              type="text"
-                              value={detectedData.amount}
-                              onChange={(e) => setDetectedData({ ...detectedData, amount: e.target.value })}
-                              className="w-full pl-10 pr-4 py-3 bg-white/20 border border-white/30 text-white rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none placeholder-blue-200"
-                            />
-                          </div>
-                        </div>
-
-                        <div>
-                          <label className="text-xs text-blue-200 mb-2 block">{voiceT.type}</label>
-                          <select
-                            value={detectedData.type}
-                            onChange={(e) => setDetectedData({ ...detectedData, type: e.target.value })}
-                            className="w-full px-4 py-3 bg-white/20 border border-white/30 text-white rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none"
-                          >
-                            <option className="bg-blue-900">Income</option>
-                            <option className="bg-blue-900">Expense</option>
-                          </select>
-                        </div>
-
-                        <div>
-                          <label className="text-xs text-blue-200 mb-2 block">{voiceT.category}</label>
-                          <select
-                            value={detectedData.category}
-                            onChange={(e) => setDetectedData({ ...detectedData, category: e.target.value })}
-                            className="w-full px-4 py-3 bg-white/20 border border-white/30 text-white rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none"
-                          >
-                            <option className="bg-blue-900">Food Supplies</option>
-                            <option className="bg-blue-900">Equipment</option>
-                            <option className="bg-blue-900">Transportation</option>
-                            <option className="bg-blue-900">Utilities</option>
-                            <option className="bg-blue-900">Sales Revenue</option>
-                            <option className="bg-blue-900">Service Income</option>
-                            <option className="bg-blue-900">Other</option>
-                          </select>
-                        </div>
-
-                        <div>
-                          <label className="text-xs text-blue-200 mb-2 block">{voiceT.description}</label>
-                          <textarea
-                            value={detectedData.description}
-                            onChange={(e) => setDetectedData({ ...detectedData, description: e.target.value })}
-                            rows={3}
-                            className="w-full px-4 py-3 bg-white/20 border border-white/30 text-white rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none placeholder-blue-200 resize-none"
-                          />
-                        </div>
-                      </div>
-
-                      {/* Action Buttons */}
-                      <div className="flex gap-3">
-                        <button
-                          onClick={handleTryAgain}
-                          className="flex-1 py-4 border border-white/30 text-white rounded-xl hover:bg-white/10 transition-all flex items-center justify-center gap-2"
-                        >
-                          <RefreshCw className="w-5 h-5" />
-                          {voiceT.tryAgain}
-                        </button>
-                        <button
-                          onClick={handleSaveVoice}
-                          className="flex-1 py-4 bg-emerald-600 text-white rounded-xl hover:bg-emerald-700 transition-all flex items-center justify-center gap-2 shadow-lg"
-                        >
-                          <Save className="w-5 h-5" />
-                          {voiceT.saveEntry}
-                        </button>
-                      </div>
-                    </motion.div>
-                  )}
-                </AnimatePresence>
-              </div>
-            </motion.div>
-          </motion.div>
+            <p className="text-sm text-gray-500 max-w-xs">
+              We’re extracting the amount, category, and type from what you said.
+            </p>
+          </div>
         )}
+
+        {/* REVIEW */}
+        {recordingStep === "review" && (
+          <div className="flex-1 overflow-y-auto text-left">
+            <h4 className="text-base font-medium text-gray-900 mb-1">
+              Review & confirm
+            </h4>
+
+            <p className="text-xs text-gray-500 mb-4">
+              Edit anything before saving
+            </p>
+
+            <div className="space-y-4">
+              {/* TYPE */}
+              <div className="grid grid-cols-2 gap-2">
+                <button
+                  onClick={() => setEntryType("income")}
+                  className={`py-2 rounded-lg text-sm border ${
+                    entryType === "income"
+                      ? "bg-emerald-50 border-emerald-600 text-emerald-600"
+                      : "bg-gray-100 border-transparent text-gray-600"
+                  }`}
+                >
+                  Income
+                </button>
+                <button
+                  onClick={() => setEntryType("expense")}
+                  className={`py-2 rounded-lg text-sm border ${
+                    entryType === "expense"
+                      ? "bg-red-50 border-red-600 text-red-600"
+                      : "bg-gray-100 border-transparent text-gray-600"
+                  }`}
+                >
+                  Expense
+                </button>
+              </div>
+
+              {/* AMOUNT */}
+              <input
+                type="number"
+                value={amount}
+                onChange={(e) => setAmount(e.target.value)}
+                placeholder="Amount"
+                className="w-full px-4 py-3 border rounded-xl"
+              />
+
+              {/* CATEGORY */}
+              <select
+                value={category}
+                onChange={(e) => setCategory(e.target.value)}
+                className="w-full px-4 py-3 border rounded-xl"
+              >
+                <option value="">Select category</option>
+                {CATEGORY_MAP[entryType].map((cat) => (
+                  <option key={cat.value} value={cat.value}>
+                    {translations[language][cat.labelKey]}
+                  </option>
+                ))}
+              </select>
+
+              {/* DATE */}
+              <input
+                type="date"
+                value={date}
+                onChange={(e) => setDate(e.target.value)}
+                className="w-full px-4 py-3 border rounded-xl"
+              />
+
+              {/* NOTES */}
+              <textarea
+                rows={3}
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+                placeholder="Notes"
+                className="w-full px-4 py-3 border rounded-xl resize-none"
+              />
+
+              {/* ACTIONS */}
+              <div className="flex gap-2 pt-2">
+                <button
+                  onClick={handleTryAgain}
+                  className="flex-1 py-3 border rounded-xl text-sm"
+                >
+                  Try again
+                </button>
+
+                <button
+                  onClick={handleAddLedger}
+                  className="flex-1 py-3 bg-emerald-600 text-white rounded-xl"
+                >
+                  Save Entry
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+    </motion.div>
+  </motion.div>
+)}
       </AnimatePresence>
     </div>
   );

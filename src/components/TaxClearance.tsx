@@ -3,6 +3,11 @@ import { ArrowLeft, Shield, CheckCircle2, AlertCircle, Download, Share2, Loader2
 import { useState } from 'react';
 import { useLanguage } from "@/context/LanguageContext";
 import { useNavigate } from 'react-router-dom';
+import { profileTranslations, type LanguageKey } from '../translations/profile';
+
+interface TaxClearanceProps {
+  language?: LanguageKey;
+}
 
 const translations = {
   english: {
@@ -247,7 +252,7 @@ const translations = {
   },
 };
 
-export function TaxClearance() {
+export function TaxClearance( { language = 'english' }: TaxClearanceProps ) {
   const [step, setStep] = useState('check'); // check, eligible, certificate, ineligible
   const [isChecking, setIsChecking] = useState(false);
   const [isEligible] = useState(true); // Simulate eligibility
@@ -270,7 +275,7 @@ export function TaxClearance() {
     setStep('certificate');
   };
 
-  const { language } = useLanguage();
+  // const { language } = useLanguage();
   const t = translations[language];
 
   return (

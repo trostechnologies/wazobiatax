@@ -3,6 +3,11 @@ import { ArrowLeft, Clock, Calendar, AlertCircle, CheckCircle2, ChevronRight } f
 import { useState } from 'react';
 import { useLanguage } from "@/context/LanguageContext";
 import { useNavigate } from 'react-router-dom';
+import { profileTranslations, type LanguageKey } from '../translations/profile';
+
+interface UpcomingDeadlinesProps {
+  language?: LanguageKey;
+}
 
 const translations = {
   english: {
@@ -172,7 +177,7 @@ const translations = {
   }        
 }
 
-export function UpcomingDeadlines() {
+export function UpcomingDeadlines( { language = 'english' }: UpcomingDeadlinesProps ) {
 
   const deadlines = [
   {
@@ -235,7 +240,7 @@ export function UpcomingDeadlines() {
     }
   };
 
-  const { language } = useLanguage();
+  // const { language } = useLanguage();
   const t = translations[language];
   const navigate = useNavigate();
 

@@ -3,6 +3,11 @@ import { ArrowLeft, CreditCard, Building2, QrCode, CheckCircle2, Loader2, Downlo
 import { useState } from 'react';
 import { useLanguage } from "@/context/LanguageContext";
 import { useNavigate } from 'react-router-dom';
+import { profileTranslations, type LanguageKey } from '../translations/profile';
+
+interface PayTaxProps {
+  language?: LanguageKey;
+}
 
 const translations = {
   english: {
@@ -186,7 +191,7 @@ const translations = {
   },
 };
 
-export function PayTax() {
+export function PayTax( { language = 'english' }: PayTaxProps ) {
   const [step, setStep] = useState('summary'); // summary, payment, processing, success
   const [selectedMethod, setSelectedMethod] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
@@ -195,7 +200,7 @@ export function PayTax() {
   const penalty = 0;
   const total = taxDue + penalty;
 
-  const { language } = useLanguage();
+  // const { language } = useLanguage();
   const t = translations[language];
   const navigate = useNavigate();
 
