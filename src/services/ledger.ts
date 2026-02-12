@@ -21,6 +21,15 @@ export interface AddLedgerPayload {
   description: string;
 }
 
+export interface UpdateLedgerPayload {
+  title?: string;
+  ledger_type: 'income' | 'expense';
+  amount?: number;
+  category?: string;
+  description?: string;
+  date?: string;
+}
+
 export const addLedgerEntry = async (payload: AddLedgerPayload) => {
   const formData = new FormData();
 
@@ -44,3 +53,28 @@ export const getLedgerRecords = async () => {
   return response.data;
 };
   
+export const updateLedgerEntry = async (
+  ledgerId: string,
+  payload: UpdateLedgerPayload
+) => {
+  const response = await api.patch(
+    `/api/ledger/entry/${ledgerId}`,
+    payload
+  );
+  return response.data;
+};
+
+export const deleteLedgerEntry = async (id: string) => {
+  const token = localStorage.getItem("accessToken");
+
+  const response = await api.delete(
+    `/api/ledger/entry/${id}`,
+    {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    }
+  );
+
+  return response.data;
+};

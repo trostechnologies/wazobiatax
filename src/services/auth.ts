@@ -32,6 +32,14 @@ export interface UserProfile {
   business_name: string | null;
 }
 
+export interface UpdateUserProfilePayload {
+  first_name?: string;
+  last_name?: string;
+  email?: string;
+  phone_number?: string;
+  business_name?: string;
+}
+
 /* =======================
    AUTH / USER APIs
 ======================= */
@@ -77,6 +85,24 @@ export const getUserProfile = async () => {
     message: string;
     data: UserProfile;
   }>('/api/auth/user-details', {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+
+  return response.data;
+};
+
+/* =======================
+   UPDATE USER PROFILE
+======================= */
+
+export const updateUserProfile = async (
+  payload: UpdateUserProfilePayload
+) => {
+  const token = localStorage.getItem('accessToken');
+
+  const response = await api.patch('/api/auth/user-details', payload, {
     headers: {
       Authorization: `Bearer ${token}`,
     },

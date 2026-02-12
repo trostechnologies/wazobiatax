@@ -2,6 +2,11 @@ import { Home, FileText, CreditCard, BookOpen, User } from 'lucide-react';
 import { motion } from 'motion/react';
 import { NavLink, useLocation } from 'react-router-dom';
 import { useLanguage } from '@/context/LanguageContext';
+import { profileTranslations, type LanguageKey } from '../translations/profile';
+
+interface BottomNavProps {
+  language?: LanguageKey;
+}
 
 const translations = {
   english: {
@@ -41,8 +46,8 @@ const translations = {
   },
 };
 
-export function BottomNav() {
-  const { language } = useLanguage();
+export function BottomNav( { language = 'english' }: BottomNavProps ) {
+  // const { language } = useLanguage();
   const location = useLocation();
 
   const tabs = [

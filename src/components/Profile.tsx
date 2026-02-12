@@ -150,6 +150,7 @@ export function Profile( { language = 'english' }: ProfileProps ) {
   const user = getUser();
   const [currentUser, setCurrentUser] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
   const handleCopyTIN = () => {
     setCopied(true);
@@ -204,22 +205,55 @@ export function Profile( { language = 'english' }: ProfileProps ) {
   ];
 
   useEffect(() => {
+    let isMounted = true;
+  
     const fetchProfile = async () => {
       try {
         const res = await getUserProfile();
-        setCurrentUser(res.data); // <-- API response shape
-        console.log('user data', res.data)
-      } catch (error) {
-        console.error(error);
+        if (isMounted) {
+          setCurrentUser(res.data);
+        }
+      } catch (err) {
+        console.error(err);
+        if (isMounted) {
+          setError('Unable to load profile. Please try again.');
+        }
       } finally {
-        setLoading(false);
+        if (isMounted) setLoading(false);
       }
     };
-
+  
     fetchProfile();
-  }, []);
+  
+    return () => {
+      isMounted = false;
+    };
+  }, []);  
 
-  if (loading) return <p className='italic text-center'>Loading profile information...</p>;
+if (loading)
+  return (
+    <div className="flex flex-col items-center my-auto justify-center h-40 gap-3">
+      <div className="w-6 h-6 border-2 border-gray-300 border-t-gray-900 rounded-full animate-spin" />
+      <p className="text-sm text-gray-500">Loading your profile…</p>
+    </div>
+  );
+
+  if (error)
+    return (
+      <div className="flex min-h-[200px] items-center justify-center">
+        <div className="flex max-w-sm flex-col items-center gap-3 rounded-xl border border-red-100 bg-red-50 px-6 py-5 text-center">
+          <p className="text-sm font-medium text-red-600">
+            {error}
+          </p>
+          <button
+            onClick={() => window.location.reload()}
+            className="text-xs font-semibold text-red-700 hover:underline"
+          >
+            Retry
+          </button>
+        </div>
+      </div>
+    );  
 
   return (
     <div className="min-h-screen bg-gray-50 pb-20">

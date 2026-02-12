@@ -110,7 +110,7 @@ export default function App() {
         {/* Bottom Navigation */}
         {onboardingComplete &&
           !['/', '/onboarding'].includes(location.pathname) && (
-            <BottomNav />
+            <BottomNav language={language as LanguageKey} />
           )}
 
         {/* Offline Indicator */}

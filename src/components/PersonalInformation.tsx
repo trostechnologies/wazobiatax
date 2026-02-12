@@ -5,7 +5,7 @@ import { profileTranslations, type LanguageKey } from '../translations/profile';
 import { toast } from 'sonner';
 import { useNavigate } from 'react-router-dom';
 import { getUser } from '@/utils/storage';
-import { getUserProfile } from '../services/auth';
+import { getUserProfile, updateUserProfile } from '../services/auth';
 
 interface PersonalInformationProps {
   language?: LanguageKey;
@@ -18,8 +18,11 @@ export function PersonalInformation({ language = 'english' }: PersonalInformatio
   const user = getUser();
   const [currentUser, setCurrentUser] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
 
     // Mock user data - in production this would come from the onboarding flow/backend
+
+
     const [userData, setUserData] = useState({
       fullName: '',
       email: '',
@@ -27,7 +30,13 @@ export function PersonalInformation({ language = 'english' }: PersonalInformatio
       taxId: '',
       businessName: '',
       accountCreated: '',
-    });  
+    });
+    
+    const [editedData, setEditedData] = useState(userData);
+    
+    useEffect(() => {
+      setEditedData(userData);
+    }, [userData]);     
 
   useEffect(() => {
     const fetchProfile = async () => {
@@ -59,15 +68,38 @@ export function PersonalInformation({ language = 'english' }: PersonalInformatio
     };
   
     fetchProfile();
-  }, []);  
+  }, []);
 
-  const [editedData, setEditedData] = useState(userData);
+const handleSave = async () => {
+  try {
+    const [first_name, ...rest] = editedData.fullName.trim().split(' ');
+    const last_name = rest.join(' ') || '';
 
-  const handleSave = () => {
+    const payload = {
+      first_name,
+      last_name,
+      email: editedData.email,
+      phone_number: editedData.phone,
+      business_name: editedData.businessName === '—' ? null : editedData.businessName,
+    };
+
+    setSaving(true);
+    await updateUserProfile(payload);
+    setSaving(false);    
+
+    // Update UI after successful save
     setUserData(editedData);
     setIsEditing(false);
+
     toast.success(t.updatedSuccess);
-  };
+  } catch (error: any) {
+    console.error(error);
+
+    toast.error(
+      error?.response?.data?.message || 'Failed to update profile'
+    );
+  }
+};
 
   const handleCancel = () => {
     setEditedData(userData);
@@ -210,11 +242,12 @@ export function PersonalInformation({ language = 'english' }: PersonalInformatio
                   {t.cancelButton}
                 </button>
                 <button
+                  disabled={saving}
                   onClick={handleSave}
                   className="flex-1 py-4 bg-emerald-600 text-white rounded-xl hover:bg-emerald-700 transition-all flex items-center justify-center gap-2"
                 >
                   <Check className="w-5 h-5" />
-                  {t.saveButton}
+                  {saving ? "Saving..." : t.saveButton}
                 </button>
               </div>
             )}

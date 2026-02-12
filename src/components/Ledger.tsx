@@ -4,6 +4,8 @@ import {
   Search,
   Filter,
   Plus,
+  Pencil,
+  Trash2,
   Camera,
   Mic,
   Download,
@@ -19,9 +21,10 @@ import {
 import { useEffect, useRef, useState } from "react";
 import { useLanguage } from "@/context/LanguageContext";
 import { useNavigate } from "react-router-dom";
-import { addLedgerEntry, getLedgerRecords } from "@/services/ledger";
-import { toast } from "sonner";
+import { addLedgerEntry, deleteLedgerEntry, getLedgerRecords, updateLedgerEntry } from "@/services/ledger";
+import { ToastContainer, toast } from 'react-toastify';
 import { profileTranslations, type LanguageKey } from "../translations/profile";
+import { useCameraPermissions } from "@/hooks/useCameraPermissions";
 
 const translations = {
   english: {
@@ -279,6 +282,13 @@ export function Ledger({ onNavigate, language = "english" }: LedgerProps) {
   const [date, setDate] = useState("");
   const [entryType, setEntryType] = useState<"income" | "expense">("income");
 
+  const [selectedLedger, setSelectedLedger] = useState<any | null>(null);
+  const [deleteId, setDeleteId] = useState<string | null>(null);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);  
+
+  const [updating, setUpdating] = useState(false);
+
+
   // Scan Receipt States
   const [scanStep, setScanStep] = useState<
     "permission" | "camera" | "preview" | "extracted"
@@ -309,11 +319,25 @@ export function Ledger({ onNavigate, language = "english" }: LedgerProps) {
   // const t = translations[language];
   const t = profileTranslations[language].scanReceipt;
   const navigate = useNavigate();
+  const { permissionState, requestPermission } = useCameraPermissions();
 
   const handleAddClick = (mode: string) => {
+    if (!selectedLedger) {
+      // only reset form if NOT editing
+      setAmount("");
+      setCategory("");
+      setDescription("");
+      setDate("");
+      setEntryType("income");
+    }
+
     setAddMode(mode);
     setShowAddModal(false);
+    if (mode === 'scan' && permissionState !== 'granted') {
+      requestPermission();
+    }
   };
+
 
   // Scan Receipt Handlers
   // const handleCapture = () => {
@@ -493,6 +517,69 @@ export function Ledger({ onNavigate, language = "english" }: LedgerProps) {
     }
   };
 
+  const handleUpdateLedger = async () => {
+    if (!selectedLedger) return;
+
+    try {
+      setIsProcessing(true);
+
+      await updateLedgerEntry(selectedLedger.id || selectedLedger.entry_id, {
+        amount: Number(amount),
+        ledger_type: entryType,
+        date,
+        category,
+        description,
+      });
+
+      toast.success("Ledger updated successfully");
+
+      await fetchLedgerRecords();
+
+      setAddMode("");
+      setAmount("");
+      setCategory("");
+      setDescription("");
+      setDate("");
+    } catch (error: any) {
+      console.error(error);
+      toast.error(error?.response?.data?.message || "Update failed");
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!deleteId) return;
+  
+    try {
+      await deleteLedgerEntry(deleteId);
+  
+      setEntries((prev: any[]) =>
+        prev.filter((entry) => entry.id !== deleteId)
+      );
+  
+      setShowDeleteConfirm(false);
+      setDeleteId(null);
+  
+      toast.success("Ledger deleted successfully");
+    } catch (error) {
+      console.error("Delete failed:", error);
+      toast.error("Failed to delete ledger");
+    }
+  };
+  
+  
+
+  useEffect(() => {
+    if (selectedLedger && addMode === "manual") {
+      setEntryType(selectedLedger.ledger_type);
+      setAmount(String(selectedLedger.amount));
+      setCategory(selectedLedger.category);
+      setDate(selectedLedger.date);
+      setDescription(selectedLedger.description || "");
+    }
+  }, [selectedLedger, addMode]);
+
   const handleAddLedger = async () => {
     if (!amount || !category || !date) return;
 
@@ -644,7 +731,8 @@ export function Ledger({ onNavigate, language = "english" }: LedgerProps) {
               transition={{ delay: index * 0.05 }}
               className="bg-white rounded-xl p-4 shadow-sm hover:shadow-md transition-all cursor-pointer border border-gray-100"
             >
-              <div className="flex items-center justify-between">
+              <div className="flex items-start justify-between gap-3">
+                {/* LEFT SIDE */}
                 <div className="flex items-center gap-3">
                   <div
                     className={`w-10 h-10 rounded-lg flex items-center justify-center ${isIncome ? "bg-emerald-50" : "bg-red-50"
@@ -658,15 +746,11 @@ export function Ledger({ onNavigate, language = "english" }: LedgerProps) {
                   </div>
 
                   <div>
-                    <p className="text-sm mb-0.5 capitalize">
-                      {entry.category}
-                    </p>
+                    <p className="text-sm mb-0.5 capitalize">{entry.category}</p>
 
-                    <div className="flex items-center gap-2">
-                      <p className="text-xs text-gray-500">
-                        {new Date(entry.date).toLocaleDateString()}
-                      </p>
-                    </div>
+                    <p className="text-xs text-gray-500">
+                      {new Date(entry.date).toLocaleDateString()}
+                    </p>
 
                     {entry.description && (
                       <p className="text-xs text-gray-400 mt-0.5">
@@ -676,7 +760,9 @@ export function Ledger({ onNavigate, language = "english" }: LedgerProps) {
                   </div>
                 </div>
 
-                <div className="text-right">
+                {/* RIGHT SIDE */}
+                <div className="flex items-center gap-3">
+                  {/* Amount */}
                   <p
                     className={`text-sm font-medium ${isIncome ? "text-emerald-600" : "text-gray-900"
                       }`}
@@ -684,6 +770,33 @@ export function Ledger({ onNavigate, language = "english" }: LedgerProps) {
                     {isIncome ? "+" : "-"}₦
                     {Number(entry.amount).toLocaleString()}
                   </p>
+
+                  {/* Actions */}
+                  <div className="flex items-center gap-2 opacity-80 hover:opacity-100">
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setSelectedLedger(entry);
+                        setAddMode("manual"); // reuse manual modal
+                      }}
+                      className="p-1.5 rounded-lg hover:bg-gray-100"
+                    >
+                      <Pencil className="w-4 h-4 text-gray-600" />
+                    </button>
+
+                    <button
+  onClick={(e) => {
+    e.stopPropagation();
+    console.log("Clicked delete icon");
+    setDeleteId(entry.id);
+    setShowDeleteConfirm(true);
+  }}
+  className="p-1.5 rounded-lg hover:bg-red-50"
+>
+  <Trash2 className="w-4 h-4 text-red-500" />
+</button>
+
+                  </div>
                 </div>
               </div>
             </motion.div>
@@ -800,7 +913,10 @@ export function Ledger({ onNavigate, language = "english" }: LedgerProps) {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-end"
-            onClick={() => setAddMode("")}
+            onClick={() => {
+              setAddMode("");
+              setSelectedLedger(null);
+            }}
           >
             <motion.div
               initial={{ y: 900 }}
@@ -922,13 +1038,25 @@ export function Ledger({ onNavigate, language = "english" }: LedgerProps) {
 
                 {/* SAVE */}
                 <button
-                  onClick={handleAddLedger}
+                  onClick={() => {
+                    console.log("Selected Ledger:", selectedLedger);
+                  
+                    if (selectedLedger) {
+                      console.log("Running UPDATE");
+                      handleUpdateLedger();
+                    } else {
+                      console.log("Running CREATE");
+                      handleAddLedger();
+                    }
+                  }}                  
                   disabled={isProcessing}
                   className="w-full py-4 bg-emerald-600 text-white rounded-xl hover:bg-emerald-700 shadow-lg transition-all disabled:opacity-60"
                 >
                   {isProcessing
                     ? "Saving..."
-                    : translations[language].saveEntry}
+                    : selectedLedger
+                      ? "Update Entry"
+                      : translations[language].saveEntry}
                 </button>
               </div>
             </motion.div>
@@ -943,7 +1071,10 @@ export function Ledger({ onNavigate, language = "english" }: LedgerProps) {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             className="fixed inset-0 bg-black z-50"
-            onClick={() => setAddMode("")}
+            onClick={() => {
+              setAddMode("");
+              setSelectedLedger(null);
+            }}
           >
             <motion.div
               initial={{ y: 900 }}
@@ -956,7 +1087,10 @@ export function Ledger({ onNavigate, language = "english" }: LedgerProps) {
               <div className="p-4 border-b flex items-center justify-between">
                 <h3 className="text-lg font-medium">Scan Receipt</h3>
                 <button
-                  onClick={() => setAddMode("")}
+                  onClick={() => {
+                    setAddMode("");
+                    setSelectedLedger(null);
+                  }}
                   className="text-gray-500"
                 >
                   ✕
@@ -1092,7 +1226,8 @@ export function Ledger({ onNavigate, language = "english" }: LedgerProps) {
                   />
 
                   <button
-                    onClick={handleAddLedger}
+                    // onClick={handleAddLedger}
+                    onClick={selectedLedger ? handleUpdateLedger : handleAddLedger}
                     className="w-full py-4 bg-emerald-600 text-white rounded-xl"
                   >
                     Save Entry
@@ -1105,193 +1240,239 @@ export function Ledger({ onNavigate, language = "english" }: LedgerProps) {
       </AnimatePresence>
 
       <AnimatePresence>
-      {addMode === "voice" && (
-  <motion.div
-    initial={{ opacity: 0 }}
-    animate={{ opacity: 1 }}
-    exit={{ opacity: 0 }}
-    className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-end"
-    onClick={() => setAddMode("")}
-  >
-    <motion.div
-      initial={{ y: 800 }}
-      animate={{ y: 0 }}
-      exit={{ y: 800 }}
-      transition={{ type: "spring", damping: 30, stiffness: 300 }}
-      onClick={(e) => e.stopPropagation()}
-      className="bg-white rounded-t-3xl w-full max-w-[390px] mx-auto h-[90vh] flex flex-col"
-    >
-      {/* Header */}
-      <div className="p-4 border-b flex items-center justify-between">
-        <h3 className="text-lg font-medium">Voice Entry</h3>
-        <button onClick={() => setAddMode("")} className="text-gray-500">
-          ✕
-        </button>
-      </div>
-
-      {/* CONTENT */}
-      <div className="flex-1 flex flex-col justify-center px-6 text-center">
-
-        {/* READY / LISTENING */}
-        {recordingStep === "ready" || recordingStep === "listening" ? (
-          <>
-            {/* Animated Mic */}
-            <div className="relative mx-auto mb-6">
-              <div
-                className={`w-24 h-24 rounded-full flex items-center justify-center
-                ${isListening ? "bg-emerald-100 animate-pulse" : "bg-gray-100"}`}
-              >
-                <Mic
-                  className={`w-10 h-10 ${
-                    isListening ? "text-emerald-600" : "text-gray-500"
-                  }`}
-                />
-              </div>
-            </div>
-
-            <h4 className="text-base font-medium text-gray-900">
-              {isListening ? "Listening…" : "Add ledger with your voice"}
-            </h4>
-
-            <p className="mt-2 text-sm text-gray-500 max-w-xs mx-auto">
-              Say something like:
-              <br />
-              <span className="italic text-gray-400">
-                “I spent 5,000 naira on food”
-              </span>
-            </p>
-
-            {/* Action */}
-            <button
-              onClick={
-                isListening ? handleStopListening : handleStartListening
-              }
-              className={`mt-8 w-full py-4 rounded-xl text-white transition-all
-              ${isListening ? "bg-red-600" : "bg-emerald-600 hover:bg-emerald-700"}`}
+        {addMode === "voice" && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-end"
+            onClick={() => {
+              setAddMode("");
+              setSelectedLedger(null);
+            }}
+          >
+            <motion.div
+              initial={{ y: 800 }}
+              animate={{ y: 0 }}
+              exit={{ y: 800 }}
+              transition={{ type: "spring", damping: 30, stiffness: 300 }}
+              onClick={(e) => e.stopPropagation()}
+              className="bg-white rounded-t-3xl w-full max-w-[390px] mx-auto h-[90vh] flex flex-col"
             >
-              {isListening ? "Stop Listening" : "Start Speaking"}
-            </button>
-          </>
-        ) : null}
-
-        {/* PROCESSING */}
-        {recordingStep === "processing" && (
-          <div className="flex flex-col items-center space-y-5">
-            <div className="relative">
-              <div className="w-16 h-16 rounded-full border-4 border-emerald-100" />
-              <div className="absolute inset-0 w-16 h-16 rounded-full border-4 border-emerald-600 border-t-transparent animate-spin" />
-            </div>
-
-            <h4 className="text-base font-medium text-gray-900">
-              Processing voice input
-            </h4>
-
-            <p className="text-sm text-gray-500 max-w-xs">
-              We’re extracting the amount, category, and type from what you said.
-            </p>
-          </div>
-        )}
-
-        {/* REVIEW */}
-        {recordingStep === "review" && (
-          <div className="flex-1 overflow-y-auto text-left">
-            <h4 className="text-base font-medium text-gray-900 mb-1">
-              Review & confirm
-            </h4>
-
-            <p className="text-xs text-gray-500 mb-4">
-              Edit anything before saving
-            </p>
-
-            <div className="space-y-4">
-              {/* TYPE */}
-              <div className="grid grid-cols-2 gap-2">
-                <button
-                  onClick={() => setEntryType("income")}
-                  className={`py-2 rounded-lg text-sm border ${
-                    entryType === "income"
-                      ? "bg-emerald-50 border-emerald-600 text-emerald-600"
-                      : "bg-gray-100 border-transparent text-gray-600"
-                  }`}
-                >
-                  Income
-                </button>
-                <button
-                  onClick={() => setEntryType("expense")}
-                  className={`py-2 rounded-lg text-sm border ${
-                    entryType === "expense"
-                      ? "bg-red-50 border-red-600 text-red-600"
-                      : "bg-gray-100 border-transparent text-gray-600"
-                  }`}
-                >
-                  Expense
+              {/* Header */}
+              <div className="p-4 border-b flex items-center justify-between">
+                <h3 className="text-lg font-medium">Voice Entry</h3>
+                <button onClick={() => {
+                  setAddMode("");
+                  setSelectedLedger(null);
+                }}
+                  className="text-gray-500">
+                  ✕
                 </button>
               </div>
 
-              {/* AMOUNT */}
-              <input
-                type="number"
-                value={amount}
-                onChange={(e) => setAmount(e.target.value)}
-                placeholder="Amount"
-                className="w-full px-4 py-3 border rounded-xl"
-              />
+              {/* CONTENT */}
+              <div className="flex-1 flex flex-col justify-center px-6 text-center">
 
-              {/* CATEGORY */}
-              <select
-                value={category}
-                onChange={(e) => setCategory(e.target.value)}
-                className="w-full px-4 py-3 border rounded-xl"
-              >
-                <option value="">Select category</option>
-                {CATEGORY_MAP[entryType].map((cat) => (
-                  <option key={cat.value} value={cat.value}>
-                    {translations[language][cat.labelKey]}
-                  </option>
-                ))}
-              </select>
+                {/* READY / LISTENING */}
+                {recordingStep === "ready" || recordingStep === "listening" ? (
+                  <>
+                    {/* Animated Mic */}
+                    <div className="relative mx-auto mb-6">
+                      <div
+                        className={`w-24 h-24 rounded-full flex items-center justify-center
+                ${isListening ? "bg-emerald-100 animate-pulse" : "bg-gray-100"}`}
+                      >
+                        <Mic
+                          className={`w-10 h-10 ${isListening ? "text-emerald-600" : "text-gray-500"
+                            }`}
+                        />
+                      </div>
+                    </div>
 
-              {/* DATE */}
-              <input
-                type="date"
-                value={date}
-                onChange={(e) => setDate(e.target.value)}
-                className="w-full px-4 py-3 border rounded-xl"
-              />
+                    <h4 className="text-base font-medium text-gray-900">
+                      {isListening ? "Listening…" : "Add ledger with your voice"}
+                    </h4>
 
-              {/* NOTES */}
-              <textarea
-                rows={3}
-                value={description}
-                onChange={(e) => setDescription(e.target.value)}
-                placeholder="Notes"
-                className="w-full px-4 py-3 border rounded-xl resize-none"
-              />
+                    <p className="mt-2 text-sm text-gray-500 max-w-xs mx-auto">
+                      Say something like:
+                      <br />
+                      <span className="italic text-gray-400">
+                        “I spent 5,000 naira on food”
+                      </span>
+                    </p>
 
-              {/* ACTIONS */}
-              <div className="flex gap-2 pt-2">
-                <button
-                  onClick={handleTryAgain}
-                  className="flex-1 py-3 border rounded-xl text-sm"
-                >
-                  Try again
-                </button>
+                    {/* Action */}
+                    <button
+                      onClick={
+                        isListening ? handleStopListening : handleStartListening
+                      }
+                      className={`mt-8 w-full py-4 rounded-xl text-white transition-all
+              ${isListening ? "bg-red-600" : "bg-emerald-600 hover:bg-emerald-700"}`}
+                    >
+                      {isListening ? "Stop Listening" : "Start Speaking"}
+                    </button>
+                  </>
+                ) : null}
 
-                <button
-                  onClick={handleAddLedger}
-                  className="flex-1 py-3 bg-emerald-600 text-white rounded-xl"
-                >
-                  Save Entry
-                </button>
+                {/* PROCESSING */}
+                {recordingStep === "processing" && (
+                  <div className="flex flex-col items-center space-y-5">
+                    <div className="relative">
+                      <div className="w-16 h-16 rounded-full border-4 border-emerald-100" />
+                      <div className="absolute inset-0 w-16 h-16 rounded-full border-4 border-emerald-600 border-t-transparent animate-spin" />
+                    </div>
+
+                    <h4 className="text-base font-medium text-gray-900">
+                      Processing voice input
+                    </h4>
+
+                    <p className="text-sm text-gray-500 max-w-xs">
+                      We’re extracting the amount, category, and type from what you said.
+                    </p>
+                  </div>
+                )}
+
+                {/* REVIEW */}
+                {recordingStep === "review" && (
+                  <div className="flex-1 overflow-y-auto text-left">
+                    <h4 className="text-base font-medium text-gray-900 mb-1">
+                      Review & confirm
+                    </h4>
+
+                    <p className="text-xs text-gray-500 mb-4">
+                      Edit anything before saving
+                    </p>
+
+                    <div className="space-y-4">
+                      {/* TYPE */}
+                      <div className="grid grid-cols-2 gap-2">
+                        <button
+                          onClick={() => setEntryType("income")}
+                          className={`py-2 rounded-lg text-sm border ${entryType === "income"
+                            ? "bg-emerald-50 border-emerald-600 text-emerald-600"
+                            : "bg-gray-100 border-transparent text-gray-600"
+                            }`}
+                        >
+                          Income
+                        </button>
+                        <button
+                          onClick={() => setEntryType("expense")}
+                          className={`py-2 rounded-lg text-sm border ${entryType === "expense"
+                            ? "bg-red-50 border-red-600 text-red-600"
+                            : "bg-gray-100 border-transparent text-gray-600"
+                            }`}
+                        >
+                          Expense
+                        </button>
+                      </div>
+
+                      {/* AMOUNT */}
+                      <input
+                        type="number"
+                        value={amount}
+                        onChange={(e) => setAmount(e.target.value)}
+                        placeholder="Amount"
+                        className="w-full px-4 py-3 border rounded-xl"
+                      />
+
+                      {/* CATEGORY */}
+                      <select
+                        value={category}
+                        onChange={(e) => setCategory(e.target.value)}
+                        className="w-full px-4 py-3 border rounded-xl"
+                      >
+                        <option value="">Select category</option>
+                        {CATEGORY_MAP[entryType].map((cat) => (
+                          <option key={cat.value} value={cat.value}>
+                            {translations[language][cat.labelKey]}
+                          </option>
+                        ))}
+                      </select>
+
+                      {/* DATE */}
+                      <input
+                        type="date"
+                        value={date}
+                        onChange={(e) => setDate(e.target.value)}
+                        className="w-full px-4 py-3 border rounded-xl"
+                      />
+
+                      {/* NOTES */}
+                      <textarea
+                        rows={3}
+                        value={description}
+                        onChange={(e) => setDescription(e.target.value)}
+                        placeholder="Notes"
+                        className="w-full px-4 py-3 border rounded-xl resize-none"
+                      />
+
+                      {/* ACTIONS */}
+                      <div className="flex gap-2 pt-2">
+                        <button
+                          onClick={handleTryAgain}
+                          className="flex-1 py-3 border rounded-xl text-sm"
+                        >
+                          Try again
+                        </button>
+
+                        <button
+                          onClick={selectedLedger ? handleUpdateLedger : handleAddLedger}
+                          className="flex-1 py-3 bg-emerald-600 text-white rounded-xl"
+                        >
+                          Save Entry
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
-            </div>
-          </div>
+            </motion.div>
+          </motion.div>
         )}
-      </div>
-    </motion.div>
-  </motion.div>
-)}
       </AnimatePresence>
+
+      <AnimatePresence>
+        {showDeleteConfirm && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center px-6"
+            onClick={() => setShowDeleteConfirm(false)}
+          >
+            <motion.div
+              initial={{ scale: 0.9 }}
+              animate={{ scale: 1 }}
+              exit={{ scale: 0.9 }}
+              onClick={(e) => e.stopPropagation()}
+              className="bg-white rounded-2xl p-6 w-full max-w-sm"
+            >
+              <h3 className="text-lg mb-2">Delete ledger?</h3>
+              <p className="text-sm text-gray-600 mb-6">
+                This action cannot be undone.
+              </p>
+
+              <div className="flex flex-col gap-3">
+                <button
+                  onClick={() => setShowDeleteConfirm(false)}
+                  className="flex-1 py-3 border rounded-xl"
+                >
+                  Cancel
+                </button>
+                <button
+  onClick={handleConfirmDelete}
+  className="flex-1 py-3 bg-red-600 text-white rounded-xl"
+>
+  Delete
+</button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      <ToastContainer />
     </div>
   );
 }
