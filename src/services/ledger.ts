@@ -15,6 +15,7 @@ api.interceptors.request.use((config) => {
 
 export interface AddLedgerPayload {
   amount: number;
+  vat_amount: number,
   ledger_type: 'income' | 'expense';
   date: string; // YYYY-MM-DD
   category: string;

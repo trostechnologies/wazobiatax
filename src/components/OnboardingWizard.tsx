@@ -20,7 +20,9 @@ import {
 } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { onboardingTranslations, type LanguageKey } from '../translations/onboarding';
-import { toast } from 'sonner';
+import { ToastContainer, toast } from 'react-toastify';
+import Logo from '@/assets/wazobiatax-logo.png'
+import GoogleLogo from '@/assets/google-logo.webp'
 
 interface OnboardingWizardProps {
   onComplete: () => void;
@@ -105,40 +107,61 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
     try {
       setIsProcessing(true);
   
-      const response = await fetch('https://api.wazobiatax.ng/api/auth/login', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          email: formData.email,
-          password: formData.password,
-        }),
-      });
+      const response = await fetch(
+        'https://api.wazobiatax.ng/api/auth/login',
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            email: formData.email,
+            password: formData.password,
+          }),
+        }
+      );
   
       const text = await response.text();
       console.log('RAW RESPONSE TEXT:', text);
       console.log('STATUS:', response.status);
   
-      const data = text ? JSON.parse(text) : null;
-      console.log('PARSED DATA:', data);
+      let data: any = null;
   
-      if (!response.ok) {
-        throw new Error(data?.message || `Login failed (${response.status})`);
+      try {
+        data = text ? JSON.parse(text) : null;
+      } catch {
+        data = null;
       }
   
+      console.log('PARSED DATA:', data);
+  
+      // ✅ HANDLE ERRORS PROPERLY
+      if (!response.ok) {
+        const message =
+          data?.message ||
+          (response.status === 404
+            ? 'User not found'
+            : response.status === 400 || 401
+            ? 'Invalid email or password'
+            : response.status === 503
+            ? 'You are offline. Please check your internet connection.'
+            : 'Login failed. Please try again.');
+  
+        toast.error(message);
+        return;
+      }
+  
+      // ✅ SUCCESS
       localStorage.setItem('accessToken', data['access-token']);
       localStorage.setItem('refreshToken', data['refresh-token']);
       localStorage.setItem('userId', data.user_id);
-
       localStorage.setItem('onboardingComplete', 'true');
+
       window.location.href = '/dashboard';
-        
-      navigate('/dashboard');
-  
+      navigate('/dashboard'); // 🔥 keep only this
     } catch (error: any) {
       console.error('LOGIN ERROR:', error.message);
-      alert(error.message);
+      toast.error('Something went wrong. Please try again.');
     } finally {
       setIsProcessing(false);
     }
@@ -146,13 +169,15 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
 
   const handleRegister = async () => {
     if (formData.password !== formData.confirmPassword) {
-      alert(t.register.passwordMismatch);
+      toast.warning(t.register.passwordMismatch);
       return;
     }
   
-    setIsProcessing(true);
+    if (isProcessing) return;
   
     try {
+      setIsProcessing(true);
+  
       const response = await registerUser({
         email: formData.email,
         first_name: formData.firstName,
@@ -177,15 +202,18 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
     } catch (error: any) {
       console.error('REGISTER ERROR:', error);
   
+      // ✅ Extract the MOST specific message possible
       const message =
-        error?.response?.data?.message ||
-        'Registration failed. Please try again.';
+        error?.response?.data?.message || // axios standard
+        error?.response?.data?.error ||   // some APIs use this
+        error?.message ||                 // fetch/network errors
+        'Unable to complete registration at the moment. Please try again.'; // last resort
   
-      alert(message);
+      toast.error(message);
     } finally {
       setIsProcessing(false);
     }
-  };
+  };  
 
   const handleGoogleAuth = () => {
     setIsProcessing(true);
@@ -197,31 +225,31 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
 
   const handleVerifyEmail = async () => {
     const otp = verificationCode.join('');
-  
+
     if (otp.length !== 6) return;
-  
+
     setIsProcessing(true);
-  
+
     try {
       await verifyEmailOtp({
         email: formData.email,
         otp,
       });
-  
+
       // OTP verified → move forward
       setCurrentStep('subscription');
     } catch (error: any) {
       console.error(error);
-  
+
       const status = error?.response?.status;
-  
+
       let message = 'Verification failed. Please try again.';
-  
+
       if (status === 401) message = 'Invalid OTP';
       if (status === 410) message = 'OTP has expired';
       if (status === 404) message = 'No OTP request found for this email';
-  
-      alert(message);
+
+      toast.error(message);
     } finally {
       setIsProcessing(false);
     }
@@ -313,11 +341,10 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
             <ArrowLeft className="w-6 h-6 text-white" />
           </button>
         )}
-        <div className="flex items-center gap-2">
-          <div className="w-8 h-8 bg-white rounded-lg flex items-center justify-center">
-            <span className="text-emerald-600 text-xl">📊</span>
+        <div className="flex items-center justify-center gap-2">
+          <div className="flex justify-center items-center">
+            <img src={Logo} alt="logo" className='h-8 pointer-events-none select-none' />
           </div>
-          <span className="text-white text-lg">WazobiaTax.ng</span>
         </div>
         <div className="w-10" />
       </div>
@@ -369,8 +396,8 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
                     whileTap={{ scale: 0.98 }}
                     onClick={() => handleLanguageSelect(lang.id)}
                     className={`w-full p-4 rounded-2xl border-2 transition-all duration-300 ${selectedLanguage === lang.id
-                        ? 'border-emerald-600 bg-emerald-50 shadow-lg scale-105'
-                        : 'border-gray-200 bg-white hover:border-emerald-300 hover:shadow-md'
+                      ? 'border-emerald-600 bg-emerald-50 shadow-lg scale-105'
+                      : 'border-gray-200 bg-white hover:border-emerald-300 hover:shadow-md'
                       }`}
                   >
                     <div className="flex items-center justify-between">
@@ -399,8 +426,8 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
                 onClick={handleLanguageProceed}
                 disabled={!selectedLanguage}
                 className={`w-full py-4 rounded-xl transition-all duration-300 ${selectedLanguage
-                    ? 'bg-emerald-600 text-white shadow-lg hover:bg-emerald-700'
-                    : 'bg-gray-200 text-gray-400 cursor-not-allowed'
+                  ? 'bg-emerald-600 text-white shadow-lg hover:bg-emerald-700'
+                  : 'bg-gray-200 text-gray-400 cursor-not-allowed'
                   }`}
               >
                 {t.welcome.proceed}
@@ -433,7 +460,7 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
                 >
                   <div className="flex items-center gap-4">
                     <div className="w-12 h-12 bg-white rounded-lg border border-gray-200 flex items-center justify-center">
-                      <span className="text-2xl">🔵</span>
+                      <img src={GoogleLogo} alt="google_logo" className='h-10' />
                     </div>
                     <div className="flex-1 text-left">
                       <p className="text-lg mb-1">{t.authPath.google}</p>
@@ -543,8 +570,8 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
                 onClick={handleLogin}
                 disabled={isProcessing || !formData.email || !formData.password}
                 className={`w-full py-4 rounded-xl transition-all duration-300 flex items-center justify-center gap-2 ${!isProcessing && formData.email && formData.password
-                    ? 'bg-emerald-600 text-white hover:bg-emerald-700 shadow-lg'
-                    : 'bg-gray-200 text-gray-400 cursor-not-allowed'
+                  ? 'bg-emerald-600 text-white hover:bg-emerald-700 shadow-lg'
+                  : 'bg-gray-200 text-gray-400 cursor-not-allowed'
                   }`}
               >
                 {isProcessing ? (
@@ -712,8 +739,8 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
                 onClick={handleRegister}
                 disabled={isProcessing || !isFormValid}
                 className={`w-full py-4 rounded-xl transition-all duration-300 flex items-center justify-center gap-2 ${!isProcessing && isFormValid
-                    ? 'bg-emerald-600 text-white hover:bg-emerald-700 shadow-lg'
-                    : 'bg-gray-200 text-gray-400 cursor-not-allowed'
+                  ? 'bg-emerald-600 text-white hover:bg-emerald-700 shadow-lg'
+                  : 'bg-gray-200 text-gray-400 cursor-not-allowed'
                   }`}
               >
                 {isProcessing ? (
@@ -740,7 +767,7 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
             >
               <div className="text-center py-8">
                 <div className="w-20 h-20 bg-white border-2 border-gray-200 rounded-2xl flex items-center justify-center mx-auto mb-4">
-                  <span className="text-5xl">🔵</span>
+                  <img src={GoogleLogo} alt="google_logo" className='h-14' />
                 </div>
                 <h2 className="text-2xl mb-2">{t.googleAuth.title}</h2>
                 <p className="text-gray-600">{t.googleAuth.subtitle}</p>
@@ -774,8 +801,8 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
                 onClick={handleGoogleAuth}
                 disabled={isProcessing}
                 className={`w-full py-4 rounded-xl transition-all duration-300 flex items-center justify-center gap-2 ${!isProcessing
-                    ? 'bg-blue-600 text-white hover:bg-blue-700 shadow-lg'
-                    : 'bg-gray-200 text-gray-400 cursor-not-allowed'
+                  ? 'bg-blue-600 text-white hover:bg-blue-700 shadow-lg'
+                  : 'bg-gray-200 text-gray-400 cursor-not-allowed'
                   }`}
               >
                 {isProcessing ? (
@@ -785,7 +812,7 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
                   </>
                 ) : (
                   <>
-                    <span className="text-xl">🔵</span>
+                    <img src={GoogleLogo} alt="google_logo" className='h-6 rounded-full' />
                     {t.googleAuth.submit}
                   </>
                 )}
@@ -823,25 +850,25 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
                       value={digit}
                       onChange={(e) => {
                         const value = e.target.value;
-                      
+
                         if (!/^[0-9]?$/.test(value)) return; // allow only digits
-                      
+
                         const newCode = [...verificationCode];
                         newCode[index] = value;
                         setVerificationCode(newCode);
-                      
+
                         // Move to next input
                         if (value && index < 5) {
                           const nextInput =
                             e.target.parentElement?.children[index + 1] as HTMLInputElement;
                           nextInput?.focus();
                         }
-                      
+
                         // ✅ Auto-submit when last digit is entered
                         if (value && index === verificationCode.length - 1) {
                           handleVerifyEmail();
-                        }                        
-                      }}                      
+                        }
+                      }}
                       className="w-12 h-14 text-center text-xl border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none"
                     />
                   ))}
@@ -862,8 +889,8 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
                 onClick={handleVerifyEmail}
                 disabled={isProcessing || verificationCode.some(d => !d)}
                 className={`w-full py-4 rounded-xl transition-all duration-300 flex items-center justify-center gap-2 ${!isProcessing && verificationCode.every(d => d)
-                    ? 'bg-emerald-600 text-white hover:bg-emerald-700 shadow-lg'
-                    : 'bg-gray-200 text-gray-400 cursor-not-allowed'
+                  ? 'bg-emerald-600 text-white hover:bg-emerald-700 shadow-lg'
+                  : 'bg-gray-200 text-gray-400 cursor-not-allowed'
                   }`}
               >
                 {isProcessing ? (
@@ -907,8 +934,8 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: index * 0.1 }}
                     className={`rounded-2xl p-6 border-2 transition-all relative ${plan.id === 'premium'
-                        ? 'bg-gradient-to-br from-amber-50 to-orange-50 border-amber-200'
-                        : 'bg-white border-gray-200'
+                      ? 'bg-gradient-to-br from-amber-50 to-orange-50 border-amber-200'
+                      : 'bg-white border-gray-200'
                       }`}
                   >
                     {plan.popular && (
@@ -944,8 +971,8 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
                     <button
                       onClick={() => handleSubscriptionSelect(plan.id)}
                       className={`w-full py-3 rounded-xl transition-all ${plan.id === 'premium'
-                          ? 'bg-gradient-to-r from-amber-500 to-orange-600 text-white hover:shadow-lg'
-                          : 'bg-emerald-600 text-white hover:bg-emerald-700'
+                        ? 'bg-gradient-to-r from-amber-500 to-orange-600 text-white hover:shadow-lg'
+                        : 'bg-emerald-600 text-white hover:bg-emerald-700'
                         }`}
                     >
                       {plan.id === 'premium' ? t.subscription.startPremium : t.subscription.startBasic}
@@ -1057,8 +1084,8 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
                     onClick={handlePayment}
                     disabled={isProcessing}
                     className={`w-full py-4 rounded-xl transition-all duration-300 flex items-center justify-center gap-2 ${!isProcessing
-                        ? 'bg-emerald-600 text-white hover:bg-emerald-700 shadow-lg'
-                        : 'bg-gray-200 text-gray-400 cursor-not-allowed'
+                      ? 'bg-emerald-600 text-white hover:bg-emerald-700 shadow-lg'
+                      : 'bg-gray-200 text-gray-400 cursor-not-allowed'
                       }`}
                   >
                     {isProcessing ? (
@@ -1142,6 +1169,8 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
           )}
         </AnimatePresence>
       </div>
+
+      <ToastContainer />
     </div>
   );
 }

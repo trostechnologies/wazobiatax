@@ -16,6 +16,7 @@ import {
   ArrowLeft
 } from 'lucide-react';
 import { useState } from 'react';
+import Logo from '@/assets/wazobiatax-logo.png'
 
 interface OnboardingWizardProps {
   onComplete: () => void;
@@ -876,11 +877,10 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
             <ArrowLeft className="w-6 h-6 text-white" />
           </button>
         )}
-        <div className="flex items-center gap-2">
-          <div className="w-8 h-8 bg-white rounded-lg flex items-center justify-center">
-            <span className="text-emerald-600 text-xl">📊</span>
+        <div className="flex items-center justify-center gap-2">
+          <div className="flex justify-center items-center">
+            <img src={Logo} alt="logo" className='h-8 pointer-events-none select-none' />
           </div>
-          <span className="text-white text-lg">WazobiaTax.ng</span>
         </div>
         <div className="w-10" />
       </div>

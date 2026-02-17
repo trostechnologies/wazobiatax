@@ -64,6 +64,7 @@ const translations = {
     speakToAdd: "Speak to add entry",
     type: "Type",
     amount: "Amount",
+    vatAmount: "VAT Amount",
     category: "Category",
     selectCategory: "Select category",
     date: "Date",
@@ -108,6 +109,7 @@ const translations = {
     speakToAdd: "Talk to add entry",
     type: "Type",
     amount: "Amount",
+    vatAmount: "VAT Amount",
     category: "Category",
     selectCategory: "Choose category",
     date: "Date",
@@ -153,6 +155,7 @@ const translations = {
     speakToAdd: "Yi magana don ƙara shigarwa",
     type: "Nau'i",
     amount: "Adadi",
+    vatAmount: "Adadi VAT",
     category: "Rukuni",
     selectCategory: "Zaɓi rukuni",
     date: "Kwanan Wata",
@@ -198,6 +201,7 @@ const translations = {
     speakToAdd: "Sọ láti fikun ìforúkọsílẹ̀",
     type: "Iru",
     amount: "Iye",
+    vatAmount: "Iye VAT",
     category: "Ẹ̀ka",
     selectCategory: "Yan ẹ̀ka",
     date: "Ọjọ́",
@@ -243,6 +247,7 @@ const translations = {
     speakToAdd: "Kwuo ka itinye ndekọ",
     type: "Ụdị",
     amount: "Ego",
+    vatAmount: "Ego VAT",
     category: "Ngalaba",
     selectCategory: "Họrọ ngalaba",
     date: "Ụbọchị",
@@ -255,6 +260,7 @@ const translations = {
 type ExtractedLedgerData = {
   entryType: "expense" | "income";
   amount: string;
+  vatAmount: string;
   category: string;
   date: string;
   description: string;
@@ -277,6 +283,7 @@ export function Ledger({ onNavigate, language = "english" }: LedgerProps) {
   const [searchQuery, setSearchQuery] = useState("");
   const [filterType, setFilterType] = useState("all");
   const [amount, setAmount] = useState("");
+  const [vatAmount, setVatAmount] = useState("");
   const [category, setCategory] = useState("");
   const [description, setDescription] = useState("");
   const [date, setDate] = useState("");
@@ -325,6 +332,7 @@ export function Ledger({ onNavigate, language = "english" }: LedgerProps) {
     if (!selectedLedger) {
       // only reset form if NOT editing
       setAmount("");
+      setVatAmount("");
       setCategory("");
       setDescription("");
       setDate("");
@@ -376,6 +384,7 @@ export function Ledger({ onNavigate, language = "english" }: LedgerProps) {
       const extractedData: ExtractedLedgerData = {
         entryType: "expense",
         amount: "8500",
+        vatAmount: "850",
         category: "food",
         date: "2026-02-04",
         description: "Chicken Republic",
@@ -384,6 +393,7 @@ export function Ledger({ onNavigate, language = "english" }: LedgerProps) {
       // Populate shared ledger states
       setEntryType(extractedData.entryType);
       setAmount(extractedData.amount);
+      setVatAmount(extractedData.vatAmount);
       setCategory(extractedData.category);
       setDate(extractedData.date);
       setDescription(extractedData.description);
@@ -537,6 +547,7 @@ export function Ledger({ onNavigate, language = "english" }: LedgerProps) {
 
       setAddMode("");
       setAmount("");
+      setVatAmount("");
       setCategory("");
       setDescription("");
       setDate("");
@@ -574,6 +585,7 @@ export function Ledger({ onNavigate, language = "english" }: LedgerProps) {
     if (selectedLedger && addMode === "manual") {
       setEntryType(selectedLedger.ledger_type);
       setAmount(String(selectedLedger.amount));
+      setVatAmount(String(selectedLedger.vatAmount));
       setCategory(selectedLedger.category);
       setDate(selectedLedger.date);
       setDescription(selectedLedger.description || "");
@@ -581,13 +593,14 @@ export function Ledger({ onNavigate, language = "english" }: LedgerProps) {
   }, [selectedLedger, addMode]);
 
   const handleAddLedger = async () => {
-    if (!amount || !category || !date) return;
+    if (!amount || !category || !date || !description) return;
 
     try {
       setIsProcessing(true);
 
       const response = await addLedgerEntry({
         amount: Number(amount),
+        vat_amount: Number(vatAmount),
         ledger_type: entryType, // 'income' | 'expense'
         date,
         category,
@@ -605,6 +618,7 @@ export function Ledger({ onNavigate, language = "english" }: LedgerProps) {
 
       // ✅ Reset form
       setAmount("");
+      setVatAmount("");
       setCategory("");
       setDescription("");
       setDate("");
@@ -987,6 +1001,30 @@ export function Ledger({ onNavigate, language = "english" }: LedgerProps) {
                   </div>
                 </div>
 
+                {/* VAT AMOUNT */}
+                <div>
+                  <label className="block mb-2 text-sm text-gray-700">
+                    {translations[language].vatAmount}
+                  </label>
+                  <div className="relative">
+                    <span
+                      className={`absolute left-4 top-1/2 -translate-y-1/2 ${entryType === "income"
+                        ? "text-emerald-600"
+                        : "text-red-600"
+                        }`}
+                    >
+                      ₦
+                    </span>
+                    <input
+                      type="number"
+                      placeholder="0.00"
+                      value={vatAmount}
+                      onChange={(e) => setVatAmount(e.target.value)}
+                      className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-emerald-500 outline-none"
+                    />
+                  </div>
+                </div>
+
                 {/* CATEGORY */}
                 <div>
                   <label className="block mb-2 text-sm text-gray-700">
@@ -1196,6 +1234,14 @@ export function Ledger({ onNavigate, language = "english" }: LedgerProps) {
                     className="w-full px-4 py-3 border rounded-xl"
                   />
 
+                    {/* VAT Amount */}
+                    <input
+                    type="number"
+                    value={vatAmount}
+                    onChange={(e) => setVatAmount(e.target.value)}
+                    className="w-full px-4 py-3 border rounded-xl"
+                  />
+
                   {/* Category */}
                   <select
                     value={category}
@@ -1373,6 +1419,15 @@ export function Ledger({ onNavigate, language = "english" }: LedgerProps) {
                         value={amount}
                         onChange={(e) => setAmount(e.target.value)}
                         placeholder="Amount"
+                        className="w-full px-4 py-3 border rounded-xl"
+                      />
+
+                        {/* VAT AMOUNT */}
+                        <input
+                        type="number"
+                        value={vatAmount}
+                        onChange={(e) => setVatAmount(e.target.value)}
+                        placeholder="VAT Amount"
                         className="w-full px-4 py-3 border rounded-xl"
                       />
 
