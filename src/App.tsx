@@ -25,6 +25,11 @@ import { PrivacyPolicy } from './components/PrivacyPolicy';
 import { ScanReceipt } from './components/ScanReceipt';
 import { VoiceEntry } from './components/VoiceEntry';
 import type { LanguageKey } from './translations/profile';
+import type { ForgotPasswordLanguageKey } from './translations/forgotPassword';
+import { ForgotPasswordEmail } from './components/ForgotPasswordEmail';
+import { ForgotPasswordVerifyCode } from './components/ForgotPasswordVerifyCode';
+import { ForgotPasswordReset } from './components/ForgotPasswordReset';
+import { ForgotPasswordSuccess } from './components/ForgotPasswordSuccess';
 
 export default function App() {
   const location = useLocation();
@@ -37,12 +42,18 @@ export default function App() {
 
   const [isOffline, setIsOffline] = useState(false);
 
+  const [forgotPasswordEmail, setForgotPasswordEmail] = useState('');
+
   // Splash screen logic (only when not onboarded)
   if (!onboardingComplete && location.pathname === '/') {
     return <SplashScreen />;
   }
 
-  const navigateTo = (screen: string) => {
+  const navigateTo = (screen: string, data?: any) => {
+    // Handle forgot password flow data
+    if (screen === 'forgotPasswordVerify' && data?.email) {
+      setForgotPasswordEmail(data.email);
+    }
     setCurrentScreen(screen);
   };
 
@@ -99,6 +110,23 @@ export default function App() {
           <Route path="/privacy-policy" element={<PrivacyPolicy language={language as LanguageKey} />} />
           <Route path="/scan" element={<ScanReceipt language={language as LanguageKey} />} />
           <Route path="/voice" element={<VoiceEntry language={language as LanguageKey} />} />
+          <Route path="/forgot-password-email" element={<ForgotPasswordEmail onNavigate={navigateTo} language={language as ForgotPasswordLanguageKey} />} />
+          <Route path="/forgot-password-verify-code" element={<ForgotPasswordVerifyCode onNavigate={navigateTo} language={language as ForgotPasswordLanguageKey} email={forgotPasswordEmail} />} />
+          <Route path="/forgot-password-reset" element={<ForgotPasswordReset onNavigate={navigateTo} language={language as ForgotPasswordLanguageKey} />} />
+          <Route path="/forgot-password-success" element={<ForgotPasswordSuccess onNavigate={navigateTo} language={language as ForgotPasswordLanguageKey} />} />
+
+          <Route
+  path="/login"
+  element={
+    <OnboardingWizard
+      initialStep="login"
+      onComplete={() => {
+        localStorage.setItem('onboardingComplete', 'true');
+        setOnboardingComplete(true);
+      }}
+    />
+  }
+/>
 
           {/* Catch-all */}
           <Route

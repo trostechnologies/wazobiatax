@@ -7,6 +7,8 @@ const api = axios.create({
   },
 });
 
+const API_BASE = 'https://api.wazobiatax.ng';
+
 /* =======================
    TYPES
 ======================= */
@@ -109,4 +111,25 @@ export const updateUserProfile = async (
   });
 
   return response.data;
+};
+
+export const requestPasswordReset = (email: string) => {
+  return axios.post(`${API_BASE}/api/auth/request-password-reset`, {
+    email,
+  });
+};
+
+export const resetPassword = (
+  token: string,
+  password1: string,
+  password2: string
+) => {
+  const formData = new FormData();
+  formData.append('password1', password1);
+  formData.append('password2', password2);
+
+  return axios.post(
+    `${API_BASE}/api/auth/reset-password?token=${token}`,
+    formData
+  );
 };

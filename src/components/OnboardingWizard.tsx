@@ -26,10 +26,12 @@ import GoogleLogo from '@/assets/google-logo.webp'
 
 interface OnboardingWizardProps {
   onComplete: () => void;
+  onNavigate?: (screen: string) => void;
+  initialStep?: string;
 }
 
-export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
-  const [currentStep, setCurrentStep] = useState('language');
+export function OnboardingWizard({ onComplete, onNavigate, initialStep }: OnboardingWizardProps) {
+  const [currentStep, setCurrentStep] = useState(initialStep || 'language');
   const [selectedLanguage, setSelectedLanguage] = useState<LanguageKey>('english');
   const [authType, setAuthType] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -561,7 +563,7 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
                   </div>
                 </div>
 
-                <button className="text-sm text-emerald-600 hover:underline">
+                <button className="text-sm text-emerald-600 hover:underline" onClick={() => navigate('/forgot-password-email')}>
                   {t.login.forgotPassword}
                 </button>
               </div>
