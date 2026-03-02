@@ -18,12 +18,7 @@ export function SplashScreen() {
     <div className="h-screen w-full bg-gradient-to-br from-emerald-500 to-emerald-700 flex flex-col items-center justify-center relative overflow-hidden">
       {/* Status Bar */}
       <div className="absolute top-0 left-0 right-0 h-11 bg-emerald-600 flex items-center justify-between px-6 text-white text-sm">
-        <span>21:41</span>
-        <div className="flex items-center gap-1">
-          <div className="w-4 h-3 border border-white rounded-sm" />
-          <div className="w-4 h-3 border border-white rounded-sm" />
-          <span className="text-xs">70</span>
-        </div>
+
       </div>
 
       {/* Logo */}

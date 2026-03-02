@@ -20,32 +20,32 @@ export function PersonalInformation({ language = 'english' }: PersonalInformatio
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
 
-    // Mock user data - in production this would come from the onboarding flow/backend
+  // Mock user data - in production this would come from the onboarding flow/backend
 
 
-    const [userData, setUserData] = useState({
-      fullName: '',
-      email: '',
-      phone: '',
-      taxId: '',
-      businessName: '',
-      accountCreated: '',
-    });
-    
-    const [editedData, setEditedData] = useState(userData);
-    
-    useEffect(() => {
-      setEditedData(userData);
-    }, [userData]);     
+  const [userData, setUserData] = useState({
+    fullName: '',
+    email: '',
+    phone: '',
+    taxId: '',
+    businessName: '',
+    accountCreated: '',
+  });
+
+  const [editedData, setEditedData] = useState(userData);
+
+  useEffect(() => {
+    setEditedData(userData);
+  }, [userData]);
 
   useEffect(() => {
     const fetchProfile = async () => {
       try {
         const res = await getUserProfile();
         const data = res.data;
-  
+
         setCurrentUser(data);
-  
+
         setUserData({
           fullName: `${data.first_name} ${data.last_name}`,
           email: data.email,
@@ -58,7 +58,7 @@ export function PersonalInformation({ language = 'english' }: PersonalInformatio
             day: 'numeric',
           }), // until backend sends created_at
         });
-  
+
         console.log('user data', data);
       } catch (error) {
         console.error(error);
@@ -66,40 +66,40 @@ export function PersonalInformation({ language = 'english' }: PersonalInformatio
         setLoading(false);
       }
     };
-  
+
     fetchProfile();
   }, []);
 
-const handleSave = async () => {
-  try {
-    const [first_name, ...rest] = editedData.fullName.trim().split(' ');
-    const last_name = rest.join(' ') || '';
+  const handleSave = async () => {
+    try {
+      const [first_name, ...rest] = editedData.fullName.trim().split(' ');
+      const last_name = rest.join(' ') || '';
 
-    const payload = {
-      first_name,
-      last_name,
-      email: editedData.email,
-      phone_number: editedData.phone,
-      business_name: editedData.businessName === '—' ? null : editedData.businessName,
-    };
+      const payload = {
+        first_name,
+        last_name,
+        email: editedData.email,
+        phone_number: editedData.phone,
+        business_name: editedData.businessName === '—' ? null : editedData.businessName,
+      };
 
-    setSaving(true);
-    await updateUserProfile(payload);
-    setSaving(false);    
+      setSaving(true);
+      await updateUserProfile(payload);
+      setSaving(false);
 
-    // Update UI after successful save
-    setUserData(editedData);
-    setIsEditing(false);
+      // Update UI after successful save
+      setUserData(editedData);
+      setIsEditing(false);
 
-    toast.success(t.updatedSuccess);
-  } catch (error: any) {
-    console.error(error);
+      toast.success(t.updatedSuccess);
+    } catch (error: any) {
+      console.error(error);
 
-    toast.error(
-      error?.response?.data?.message || 'Failed to update profile'
-    );
-  }
-};
+      toast.error(
+        error?.response?.data?.message || 'Failed to update profile'
+      );
+    }
+  };
 
   const handleCancel = () => {
     setEditedData(userData);
@@ -119,14 +119,14 @@ const handleSave = async () => {
       label: t.email,
       value: isEditing ? editedData.email : userData.email,
       field: 'email',
-      editable: true
+      editable: false
     },
     {
       icon: Phone,
       label: t.phone,
       value: isEditing ? editedData.phone : userData.phone,
       field: 'phone',
-      editable: true
+      editable: false
     },
     {
       icon: Hash,
@@ -155,12 +155,7 @@ const handleSave = async () => {
     <div className="min-h-screen bg-gray-50 pb-20">
       {/* Status Bar */}
       <div className="h-11 bg-emerald-600 flex items-center justify-between px-6 text-white text-sm">
-        <span>21:41</span>
-        <div className="flex items-center gap-1">
-          <div className="w-4 h-3 border border-white rounded-sm" />
-          <div className="w-4 h-3 border border-white rounded-sm" />
-          <span className="text-xs">70</span>
-        </div>
+
       </div>
 
       {/* Header */}
@@ -199,7 +194,7 @@ const handleSave = async () => {
                 initial={{ opacity: 0, x: -20 }}
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ delay: index * 0.1 }}
-                className="space-y-2"
+                className="space-y-2 mb-6"
               >
                 <div className="flex items-center gap-2 text-xs text-gray-500 uppercase tracking-wide">
                   <field.icon className="w-4 h-4" />
@@ -225,7 +220,7 @@ const handleSave = async () => {
           <div className="p-6 border-t border-gray-100">
             {!isEditing ? (
               <button
-              disabled={loading}
+                disabled={loading}
                 onClick={() => setIsEditing(true)}
                 className="w-full py-4 bg-emerald-600 text-white rounded-xl hover:bg-emerald-700 transition-all flex items-center justify-center gap-2"
               >

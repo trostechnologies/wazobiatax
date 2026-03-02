@@ -68,12 +68,7 @@ export function VoiceEntry({ language = 'english' }: VoiceEntryProps) {
     <div className="min-h-screen bg-gradient-to-br from-blue-900 via-blue-800 to-blue-900 pb-20">
       {/* Status Bar */}
       <div className="h-11 bg-blue-900 flex items-center justify-between px-6 text-white text-sm">
-        <span>21:41</span>
-        <div className="flex items-center gap-1">
-          <div className="w-4 h-3 border border-white rounded-sm" />
-          <div className="w-4 h-3 border border-white rounded-sm" />
-          <span className="text-xs">70</span>
-        </div>
+
       </div>
 
       {/* Header */}

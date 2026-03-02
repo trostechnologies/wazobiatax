@@ -4,6 +4,8 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { forgotPasswordTranslations, type ForgotPasswordLanguageKey } from '../translations/forgotPassword';
 import Logo from '@/assets/wazobiatax-logo.png'
+import { requestPasswordReset } from '@/services/auth';
+import { toast, ToastContainer } from 'react-toastify';
 
 interface ForgotPasswordEmailProps {
     onNavigate: (screen: string, data?: { email: string }) => void;
@@ -18,27 +20,37 @@ export function ForgotPasswordEmail({ onNavigate, language }: ForgotPasswordEmai
 
   const navigate = useNavigate();
 
-    const handleSubmit = () => {
-        if (!email) return;
+  const handleSubmit = async () => {
+    if (!email) return;
+  
+    try {
+      setIsProcessing(true);
+  
+      const res = await requestPasswordReset(email);
+      
+      toast.success('Password Reset Email Sent!')
+  
+      const token = res.data?.token;
+  
+      // 🔥 STORE TOKEN FOR NEXT STEP
+      sessionStorage.setItem('reset_token', token);
+      sessionStorage.setItem('reset_email', email);
 
-        setIsProcessing(true);
-        // Simulate API call to send verification code
-        setTimeout(() => {
-            setIsProcessing(false);
-            navigate('/forgot-password-verify-code', { email });
-        }, 2000);
-    };
+  
+      navigate('/forgot-password-verify-code');
+    } catch (error: any) {
+      console.error(error);
+      toast.error(error?.response?.data?.message || error?.response?.data?.detail || 'Something went wrong');
+    } finally {
+      setIsProcessing(false);
+    }
+  };
 
     return (
         <div className="h-screen w-full bg-white flex flex-col">
             {/* Status Bar */}
             <div className="h-11 bg-emerald-600 flex items-center justify-between px-6 text-white text-sm">
-                <span>21:41</span>
-                <div className="flex items-center gap-1">
-                    <div className="w-4 h-3 border border-white rounded-sm" />
-                    <div className="w-4 h-3 border border-white rounded-sm" />
-                    <span className="text-xs">70</span>
-                </div>
+
             </div>
 
             {/* Header */}
@@ -121,6 +133,8 @@ export function ForgotPasswordEmail({ onNavigate, language }: ForgotPasswordEmai
                     </div>
                 </motion.div>
             </div>
+
+            <ToastContainer />
         </div>
     );
 }

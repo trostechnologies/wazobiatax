@@ -5,7 +5,7 @@ const urlsToCache = [
   // "/assets/logo-B1M8zBma.png",
   "/assets/index-BS8sXXEf.css",
   // "/assets/index-B9TTyRFC.js",
-  "/assets/index-DXzJCFna.js"
+  "/assets/index-C87DpEsd.js"
 ];
 
 // Install Service Worker
@@ -18,7 +18,7 @@ self.addEventListener("install", (event) => {
 });
 
 // Activate Service Worker
-self.addEventListener("activate", (event) => {
+self.addEventListener("activate", (event) => { 
   console.log("Service Worker activating...");
   event.waitUntil(
     caches.keys().then((keys) =>

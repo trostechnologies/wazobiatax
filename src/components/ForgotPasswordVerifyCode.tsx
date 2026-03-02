@@ -4,19 +4,21 @@ import { useState, useRef, useEffect } from 'react';
 import { forgotPasswordTranslations, type ForgotPasswordLanguageKey } from '../translations/forgotPassword';
 import { useNavigate } from 'react-router-dom';
 import Logo from '@/assets/wazobiatax-logo.png'
+import { resetPassword, verifyPasswordResetOtp } from '@/services/auth';
+import { toast, ToastContainer } from 'react-toastify';
 
 interface ForgotPasswordVerifyCodeProps {
   onNavigate: (screen: string) => void;
   language: ForgotPasswordLanguageKey;
-  email: string;
 }
 
-export function ForgotPasswordVerifyCode({ onNavigate, language, email }: ForgotPasswordVerifyCodeProps) {
+export function ForgotPasswordVerifyCode({ onNavigate, language }: ForgotPasswordVerifyCodeProps) {
   const [verificationCode, setVerificationCode] = useState(['', '', '', '', '', '']);
   const [isProcessing, setIsProcessing] = useState(false);
   const [isResending, setIsResending] = useState(false);
   const [resendSuccess, setResendSuccess] = useState(false);
   const [error, setError] = useState('');
+  const [email, setEmail] = useState('');
   const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
 
   const t = forgotPasswordTranslations[language];
@@ -64,55 +66,105 @@ export function ForgotPasswordVerifyCode({ onNavigate, language, email }: Forgot
     inputRefs.current[nextEmptyIndex]?.focus();
   };
 
-  const handleVerify = () => {
-    const code = verificationCode.join('');
-    if (code.length !== 6) return;
-
-    setIsProcessing(true);
-    setError('');
-
-    // Simulate API call
-    setTimeout(() => {
-      setIsProcessing(false);
-      // For demo, accept code "123456" as valid
-      if (code === '123456') {
-        navigate('/forgot-password-reset');
-      } else {
-        setError(t.verifyCode.invalidCode);
-      }
-    }, 2000);
+  const maskEmail = (email: string) => {
+    const [name, domain] = email.split('@');
+    if (!name) return email;
+  
+    const visible = name.slice(0, 3);
+    const masked = '*'.repeat(Math.max(name.length - 3, 0));
+  
+    return `${visible}${masked}@${domain}`;
   };
 
-  const handleResend = () => {
-    setIsResending(true);
-    setResendSuccess(false);
-    
-    // Simulate API call
-    setTimeout(() => {
-      setIsResending(false);
-      setResendSuccess(true);
+  const handleVerify = async () => {
+    const code = verificationCode.join('');
+    if (code.length !== 6) return;
+  
+    setIsProcessing(true);
+    setError('');
+  
+    try {
+      const email = sessionStorage.getItem('reset_email');
+  
+      if (!email) {
+        setError('Session expired. Please restart password reset.');
+        navigate('/forgot-password-email');
+        return;
+      }
+  
+      await verifyPasswordResetOtp({
+        email,
+        otp: code,
+      });
+  
+      // Mark OTP as verified
+      sessionStorage.setItem('reset_otp_verified', 'true');
+  
+      navigate('/forgot-password-reset');
+    } catch (error: any) {
+      console.error(error);
+      setError(
+        error?.response?.data?.error || t.verifyCode.invalidCode
+      );
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
+  const handleResend = async () => {
+    try {
+      setIsResending(true);
+      setResendSuccess(false);
+  
+      const email = sessionStorage.getItem('reset_email');
+  
+      if (!email) {
+        toast.error('Session expired. Please start again.');
+        navigate('/forgot-password-email');
+        return;
+      }
+  
+      // 🔥 call your forgot password API
+      // await resetPassword(email);
+  
+      // ✅ reset UI
       setVerificationCode(['', '', '', '', '', '']);
       inputRefs.current[0]?.focus();
-      
-      // Hide success message after 3 seconds
+      setResendSuccess(true);
+  
+      // hide success after 3s
       setTimeout(() => {
         setResendSuccess(false);
       }, 3000);
-    }, 1500);
+    } catch (error: any) {
+      console.error(error);
+      toast.error(
+        error?.response?.data?.message || 'Failed to resend OTP'
+      );
+    } finally {
+      setIsResending(false);
+    }
   };
 
   const isCodeComplete = verificationCode.every(digit => digit !== '');
+
+  useEffect(() => {
+    const storedEmail = sessionStorage.getItem('reset_email');
+  
+    if (!storedEmail) {
+      // user came here directly — send them back
+      navigate('/forgot-password-email');
+      return;
+    }
+  
+    setEmail(storedEmail);
+  }, []);
 
   return (
     <div className="h-screen w-full bg-white flex flex-col">
       {/* Status Bar */}
       <div className="h-11 bg-emerald-600 flex items-center justify-between px-6 text-white text-sm">
-        <span>21:41</span>
-        <div className="flex items-center gap-1">
-          <div className="w-4 h-3 border border-white rounded-sm" />
-          <div className="w-4 h-3 border border-white rounded-sm" />
-          <span className="text-xs">70</span>
-        </div>
+
       </div>
 
       {/* Header */}
@@ -146,7 +198,7 @@ export function ForgotPasswordVerifyCode({ onNavigate, language, email }: Forgot
             </div>
             <h1 className="text-2xl mb-2">{t.verifyCode.title}</h1>
             <p className="text-gray-600 mb-2">{t.verifyCode.subtitle}</p>
-            <p className="text-emerald-600">{email}</p>
+            <p className="text-emerald-600">{maskEmail(email)}</p>
           </div>
 
           {/* Verification Code Input */}
@@ -253,13 +305,15 @@ export function ForgotPasswordVerifyCode({ onNavigate, language, email }: Forgot
           </div>
 
           {/* Demo Hint */}
-          <div className="mt-6 p-4 bg-blue-50 border border-blue-200 rounded-xl">
+          {/* <div className="mt-6 p-4 bg-blue-50 border border-blue-200 rounded-xl">
             <p className="text-sm text-blue-800 text-center">
               <strong>Demo:</strong> Use code <strong>123456</strong> to verify
             </p>
-          </div>
+          </div> */}
         </motion.div>
       </div>
+
+      <ToastContainer />
     </div>
   );
 }

@@ -72,6 +72,27 @@ export const verifyEmailOtp = async ({
   return response.data;
 };
 
+export const verifyPasswordResetOtp = async ({
+  email,
+  otp,
+}: {
+  email: string;
+  otp: string;
+}) => {
+  const formData = new FormData();
+  formData.append('email', email);
+  formData.append('purpose', 'password_reset');
+  formData.append('otp', otp);
+
+  const response = await api.post('/api/auth/verify-otp', formData, {
+    headers: {
+      'Content-Type': 'multipart/form-data',
+    },
+  });
+
+  return response.data;
+};
+
 /* =======================
    GET USER PROFILE
 ======================= */

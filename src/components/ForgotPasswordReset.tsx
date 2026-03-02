@@ -1,9 +1,11 @@
 import { motion } from 'motion/react';
 import { Lock, Eye, EyeOff, ArrowLeft, Loader2, Check, X } from 'lucide-react';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { forgotPasswordTranslations, type ForgotPasswordLanguageKey } from '../translations/forgotPassword';
 import { useNavigate } from 'react-router-dom';
 import Logo from '@/assets/wazobiatax-logo.png'
+import { resetPassword } from '@/services/auth';
+import { toast, ToastContainer } from 'react-toastify';
 
 interface ForgotPasswordResetProps {
     onNavigate: (screen: string) => void;
@@ -32,16 +34,54 @@ export function ForgotPasswordReset({ onNavigate, language }: ForgotPasswordRese
     const isPasswordValid = hasMinLength && hasUpperCase && hasLowerCase && hasNumberOrSpecial;
     const canSubmit = isPasswordValid && passwordsMatch;
 
-    const handleSubmit = () => {
+    const handleSubmit = async () => {
         if (!canSubmit) return;
+      
+        try {
+          setIsProcessing(true);
+      
+          // ✅ NEW: verify OTP session exists
+          const otpVerified = sessionStorage.getItem('reset_otp_verified');
+      
+          if (!otpVerified) {
+            toast.error('Session expired. Please verify OTP again.');
+            navigate('/forgot-password-verify-code');
+            return;
+          }
+      
+          const token = sessionStorage.getItem('reset_token');
+      
+          if (!token) {
+            toast.error('Reset session expired. Please try again.');
+            navigate('/forgot-password-email');
+            return;
+          }
+      
+          await resetPassword(token, newPassword, confirmPassword);
+      
+          // ✅ cleanup after success
+          sessionStorage.removeItem('reset_token');
+          sessionStorage.removeItem('reset_email');
+          sessionStorage.removeItem('reset_otp_verified');
+      
+          toast.success('Password Reset Successfully!');
+      
+          navigate('/forgot-password-success');
+        } catch (error: any) {
+          console.error(error);
+          toast.error(error?.response?.data?.message || 'Password reset failed');
+        } finally {
+          setIsProcessing(false);
+        }
+      };
 
-        setIsProcessing(true);
-        // Simulate API call
-        setTimeout(() => {
-            setIsProcessing(false);
-            navigate('/forgot-password-success');
-        }, 2000);
-    };
+      useEffect(() => {
+        const otpVerified = sessionStorage.getItem('reset_otp_verified');
+    
+        if (!otpVerified) {
+          navigate('/forgot-password-verify-code');
+        }
+      }, [navigate]);
 
     const RequirementItem = ({ met, text }: { met: boolean; text: string }) => (
         <div className="flex items-center gap-2">
@@ -63,12 +103,7 @@ export function ForgotPasswordReset({ onNavigate, language }: ForgotPasswordRese
         <div className="h-screen w-full bg-white flex flex-col">
             {/* Status Bar */}
             <div className="h-11 bg-emerald-600 flex items-center justify-between px-6 text-white text-sm">
-                <span>21:41</span>
-                <div className="flex items-center gap-1">
-                    <div className="w-4 h-3 border border-white rounded-sm" />
-                    <div className="w-4 h-3 border border-white rounded-sm" />
-                    <span className="text-xs">70</span>
-                </div>
+
             </div>
 
             {/* Header */}
@@ -80,10 +115,10 @@ export function ForgotPasswordReset({ onNavigate, language }: ForgotPasswordRese
                     <ArrowLeft className="w-6 h-6 text-white" />
                 </button>
                 <div className="flex items-center justify-center gap-2">
-          <div className="flex justify-center items-center">
-            <img src={Logo} alt="logo" className='h-8 pointer-events-none select-none' />
-          </div>
-        </div>
+                    <div className="flex justify-center items-center">
+                        <img src={Logo} alt="logo" className='h-8 pointer-events-none select-none' />
+                    </div>
+                </div>
                 <div className="w-10" />
             </div>
 
@@ -208,6 +243,8 @@ export function ForgotPasswordReset({ onNavigate, language }: ForgotPasswordRese
                     </button>
                 </motion.div>
             </div>
+
+            <ToastContainer />
         </div>
     );
 }
