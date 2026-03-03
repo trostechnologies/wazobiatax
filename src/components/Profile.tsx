@@ -9,7 +9,8 @@ import {
   FileText,
   LogOut,
   Crown,
-  Sparkles
+  Sparkles,
+  Calendar
 } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { useLanguage } from "@/context/LanguageContext";
@@ -139,18 +140,37 @@ const translations = {
   },
 };
 
-export function Profile( { language = 'english' }: ProfileProps ) {
+type Subscription = 'basic' | 'premium' | 'trial';
+
+export function Profile({ language = 'english' }: ProfileProps) {
   const [copied, setCopied] = useState(false);
   const tin = '123456789-0001';
-  const subscription = 'basic'; // basic or premium
 
   // const { language } = useLanguage();
   const t = translations[language];
+  const sub = profileTranslations[language].subscription;
   const navigate = useNavigate();
   const user = getUser();
   const [currentUser, setCurrentUser] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+
+  // Subscription data
+  const subscription: Subscription =
+    currentUser?.subscription ?? 'basic'; // 'basic', 'premium', or 'trial'
+
+  const subscriptionLabels: Record<Subscription, string> = {
+    basic: 'Basic',
+    premium: 'Premium',
+    trial: 'Free Trial',
+  };
+
+  const subscriptionType = subscriptionLabels[subscription];
+
+  const subscriptionRenewalDate = 'March 15, 2026';
+  const subscriptionExpiryDate = 'March 10, 2026'; // For trial
+
+  const isTrial = subscription === 'trial';
 
   const handleCopyTIN = () => {
     setCopied(true);
@@ -206,7 +226,7 @@ export function Profile( { language = 'english' }: ProfileProps ) {
 
   useEffect(() => {
     let isMounted = true;
-  
+
     const fetchProfile = async () => {
       try {
         const res = await getUserProfile();
@@ -222,21 +242,21 @@ export function Profile( { language = 'english' }: ProfileProps ) {
         if (isMounted) setLoading(false);
       }
     };
-  
+
     fetchProfile();
-  
+
     return () => {
       isMounted = false;
     };
-  }, []);  
+  }, []);
 
-if (loading)
-  return (
-    <div className="flex flex-col items-center my-auto justify-center h-40 gap-3">
-      <div className="w-6 h-6 border-2 border-gray-300 border-t-gray-900 rounded-full animate-spin" />
-      <p className="text-sm text-gray-500">Loading your profile…</p>
-    </div>
-  );
+  if (loading)
+    return (
+      <div className="flex flex-col items-center my-auto justify-center h-40 gap-3">
+        <div className="w-6 h-6 border-2 border-gray-300 border-t-gray-900 rounded-full animate-spin" />
+        <p className="text-sm text-gray-500">Loading your profile…</p>
+      </div>
+    );
 
   if (error)
     return (
@@ -253,7 +273,7 @@ if (loading)
           </button>
         </div>
       </div>
-    );  
+    );
 
   return (
     <div className="min-h-screen bg-gray-50 pb-20">
@@ -271,11 +291,11 @@ if (loading)
             <User className="w-10 h-10 text-emerald-600" />
           </div>
           <div className="flex-1">
-          <h2 className="text-white text-xl mb-1">
-  {user
-    ? `${user.first_name} ${user.last_name}`
-    : `${currentUser.first_name} ${currentUser.last_name}`}
-</h2>            <p className="text-emerald-100 text-sm">{user?.business_name || currentUser.business_name}</p>
+            <h2 className="text-white text-xl mb-1">
+              {user
+                ? `${user.first_name} ${user.last_name}`
+                : `${currentUser.first_name} ${currentUser.last_name}`}
+            </h2>            <p className="text-emerald-100 text-sm">{user?.business_name || currentUser.business_name}</p>
 
             {/* Subscription Badge */}
             <div className="mt-2">
@@ -334,11 +354,104 @@ if (loading)
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: sectionIndex * 0.1 }}
+            className="space-y-4"
           >
+            {/* Section Title */}
             <h3 className="text-xs text-gray-500 uppercase tracking-wide mb-3 px-2">
               {translations[language][section.titleKey]}
             </h3>
 
+            {/* Subscription Card — Only for Settings */}
+            {section.titleKey === 'settings' && (
+              <motion.div
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.2 }}
+                className="mb-4"
+              >
+                <div className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100">
+                  <div className="flex items-center justify-between mb-4">
+                    <div className="flex items-center gap-3">
+                      <div
+                        className={`w-12 h-12 rounded-xl flex items-center justify-center ${subscription === 'premium'
+                            ? 'bg-gradient-to-br from-amber-400 to-orange-500'
+                            : subscription === 'trial'
+                              ? 'bg-blue-50'
+                              : 'bg-gray-50'
+                          }`}
+                      >
+                        <Crown
+                          className={`w-6 h-6 ${subscription === 'premium'
+                              ? 'text-white'
+                              : subscription === 'trial'
+                                ? 'text-blue-600'
+                                : 'text-gray-600'
+                            }`}
+                        />
+                      </div>
+                      <div>
+                        <p className="text-xs text-gray-600 mb-1">{sub.currentPlan}</p>
+                        <div className="flex items-center gap-2">
+                          <p className="text-lg">
+                            {subscription === 'premium'
+                              ? sub.premium
+                              : subscription === 'trial'
+                                ? sub.trial
+                                : sub.basic}
+                          </p>
+                          {subscription === 'premium' && (
+                            <span className="px-2 py-0.5 bg-gradient-to-r from-amber-400 to-orange-500 text-white rounded-full text-xs">
+                              {sub.active}
+                            </span>
+                          )}
+                          {subscription === 'trial' && (
+                            <span className="px-2 py-0.5 bg-blue-100 text-blue-700 rounded-full text-xs">
+                              {sub.trial}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                    {/* {subscription === 'basic' && (
+                      <button
+                        onClick={() => navigate('/settings')}
+                        className="px-4 py-2 bg-gradient-to-r from-amber-400 to-orange-500 text-white text-sm rounded-lg hover:shadow-md transition-all flex items-center gap-1"
+                      >
+                        <Crown className="w-4 h-4" />
+                        {sub.upgrade}
+                      </button>
+                    )} */}
+                  </div>
+
+                  {subscription === 'trial' && (
+                    <motion.div
+                      initial={{ opacity: 0, y: -5 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: 0.3 }}
+                      className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg"
+                    >
+                      <p className="text-xs text-blue-800">{sub.trialWarning}</p>
+                    </motion.div>
+                  )}
+
+                  <div className="pt-3 border-t border-gray-100">
+                    <div className="flex items-center gap-2">
+                      <Calendar className="w-4 h-4 text-gray-400" />
+                      <div>
+                        <p className="text-xs text-gray-600">
+                          {isTrial ? sub.trialExpires : sub.nextRenewal}
+                        </p>
+                        <p className="text-sm mt-0.5">
+                          {isTrial ? subscriptionExpiryDate : subscriptionRenewalDate}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </motion.div>
+            )}
+
+            {/* Section Items */}
             <div className="bg-white rounded-2xl overflow-hidden shadow-sm">
               {section.items.map((item, index) => (
                 <button
@@ -351,32 +464,24 @@ if (loading)
                 >
                   <div className="flex items-center gap-3">
                     <div
-                      className={`w-10 h-10 rounded-lg flex items-center justify-center
-                  ${item.premium
+                      className={`w-10 h-10 rounded-lg flex items-center justify-center ${item.premium
                           ? 'bg-gradient-to-br from-amber-400 to-orange-500'
                           : item.highlight
                             ? 'bg-emerald-50'
                             : 'bg-gray-50'
-                        }
-                `}
+                        }`}
                     >
                       <item.icon
-                        className={`w-5 h-5
-                    ${item.premium
+                        className={`w-5 h-5 ${item.premium
                             ? 'text-white'
                             : item.highlight
                               ? 'text-emerald-600'
                               : 'text-gray-600'
-                          }
-                  `}
+                          }`}
                       />
                     </div>
-
-                    <span className="text-sm">
-                      {translations[language][item.labelKey]}
-                    </span>
+                    <span className="text-sm">{translations[language][item.labelKey]}</span>
                   </div>
-
                   <ChevronRight className="w-5 h-5 text-gray-400" />
                 </button>
               ))}

@@ -24,6 +24,13 @@ import { ToastContainer, toast } from 'react-toastify';
 import Logo from '@/assets/wazobiatax-logo.png'
 import GoogleLogo from '@/assets/google-logo.webp'
 
+// temporary declaration for Paystack
+declare global {
+  interface Window {
+    PaystackPop: any;
+  }
+}
+
 interface OnboardingWizardProps {
   onComplete: () => void;
   onNavigate?: (screen: string) => void;
@@ -105,10 +112,10 @@ export function OnboardingWizard({ onComplete, onNavigate, initialStep }: Onboar
 
   const handleLogin = async () => {
     if (!formData.email || !formData.password || isProcessing) return;
-  
+
     try {
       setIsProcessing(true);
-  
+
       const response = await fetch(
         'https://api.wazobiatax.ng/api/auth/login',
         {
@@ -122,21 +129,21 @@ export function OnboardingWizard({ onComplete, onNavigate, initialStep }: Onboar
           }),
         }
       );
-  
+
       const text = await response.text();
       console.log('RAW RESPONSE TEXT:', text);
       console.log('STATUS:', response.status);
-  
+
       let data: any = null;
-  
+
       try {
         data = text ? JSON.parse(text) : null;
       } catch {
         data = null;
       }
-  
+
       console.log('PARSED DATA:', data);
-  
+
       // ✅ HANDLE ERRORS PROPERLY
       if (!response.ok) {
         const message =
@@ -144,15 +151,15 @@ export function OnboardingWizard({ onComplete, onNavigate, initialStep }: Onboar
           (response.status === 404
             ? 'User not found'
             : response.status === 400 || 401
-            ? 'Invalid email or password'
-            : response.status === 503
-            ? 'You are offline. Please check your internet connection.'
-            : 'Login failed. Please try again.');
-  
+              ? 'Invalid email or password'
+              : response.status === 503
+                ? 'You are offline. Please check your internet connection.'
+                : 'Login failed. Please try again.');
+
         toast.error(message);
         return;
       }
-  
+
       // ✅ SUCCESS
       localStorage.setItem('accessToken', data['access-token']);
       localStorage.setItem('refreshToken', data['refresh-token']);
@@ -167,19 +174,19 @@ export function OnboardingWizard({ onComplete, onNavigate, initialStep }: Onboar
     } finally {
       setIsProcessing(false);
     }
-  };  
+  };
 
   const handleRegister = async () => {
     if (formData.password !== formData.confirmPassword) {
       toast.warning(t.register.passwordMismatch);
       return;
     }
-  
+
     if (isProcessing) return;
-  
+
     try {
       setIsProcessing(true);
-  
+
       const response = await registerUser({
         email: formData.email,
         first_name: formData.firstName,
@@ -189,33 +196,35 @@ export function OnboardingWizard({ onComplete, onNavigate, initialStep }: Onboar
         password: formData.password,
         business_name: formData.businessName || undefined,
       });
-  
+
       console.log('REGISTER RESPONSE:', response);
-  
+
       // ✅ SAVE USER DATA
       if (response?.data) {
         saveUser(response.data);
+        const userEmail = response.data.email; // ✅ email from API response
+        localStorage.setItem('userEmail', userEmail);
         console.log('USER SAVED:', response.data);
       }
-  
+
       // ➡️ move to OTP screen
       setCurrentStep('emailVerify');
-  
+
     } catch (error: any) {
       console.error('REGISTER ERROR:', error);
-  
+
       // ✅ Extract the MOST specific message possible
       const message =
         error?.response?.data?.message || // axios standard
         error?.response?.data?.error ||   // some APIs use this
         error?.message ||                 // fetch/network errors
         'Unable to complete registration at the moment. Please try again.'; // last resort
-  
+
       toast.error(message);
     } finally {
       setIsProcessing(false);
     }
-  };  
+  };
 
   const handleGoogleAuth = () => {
     setIsProcessing(true);
@@ -273,16 +282,34 @@ export function OnboardingWizard({ onComplete, onNavigate, initialStep }: Onboar
   };
 
   const handlePayment = () => {
+    if (!window.PaystackPop) {
+      alert("Paystack not loaded");
+      return;
+    }
+
     setIsProcessing(true);
-    setPaymentError(false);
-    setTimeout(() => {
-      setIsProcessing(false);
-      if (Math.random() > 0.2) {
-        setCurrentStep('success');
-      } else {
-        setPaymentError(true);
-      }
-    }, 2500);
+
+    const handler = window.PaystackPop.setup({
+      key: "pk_test_fbd54421de2f1138866e21420f21d484cb269d7e", // your test public key
+      email: localStorage.getItem('userEmail') || 'test@example.com', // dynamic user email
+      amount: selectedPlan === "premium" ? 500 * 100 : 0, // amount in kobo
+      currency: "NGN",
+      ref: `REF-${Math.floor(Math.random() * 1000000000)}`, // unique reference
+      metadata: {
+        plan: selectedPlan,
+      },
+      callback: function (response: any) {
+        // payment successful
+        console.log("Payment complete! Reference:", response.reference);
+        setCurrentStep("success"); // move to success step
+      },
+      onClose: function () {
+        alert("Payment was not completed!");
+        setIsProcessing(false);
+      },
+    });
+
+    handler.openIframe();
   };
 
   const handleRetryPayment = () => {
@@ -1081,8 +1108,8 @@ export function OnboardingWizard({ onComplete, onNavigate, initialStep }: Onboar
                     onClick={handlePayment}
                     disabled={isProcessing}
                     className={`w-full py-4 rounded-xl transition-all duration-300 flex items-center justify-center gap-2 ${!isProcessing
-                      ? 'bg-emerald-600 text-white hover:bg-emerald-700 shadow-lg'
-                      : 'bg-gray-200 text-gray-400 cursor-not-allowed'
+                        ? "bg-emerald-600 text-white hover:bg-emerald-700 shadow-lg"
+                        : "bg-gray-200 text-gray-400 cursor-not-allowed"
                       }`}
                   >
                     {isProcessing ? (

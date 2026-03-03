@@ -19,6 +19,18 @@ export const profileTranslations = {
       basicPlan: 'Basic Plan',
       premiumPlan: 'Premium'
     },
+    subscription: {
+      sectionTitle: 'Subscription Information',
+      currentPlan: 'Current Plan',
+      trialExpires: 'Trial Expires',
+      nextRenewal: 'Next Renewal',
+      upgrade: 'Upgrade',
+      trialWarning: 'Your free trial expires soon. Upgrade to Premium to continue enjoying all features.',
+      basic: 'Basic',
+      premium: 'Premium',
+      trial: 'Free Trial',
+      active: 'Active'
+    },
     scanReceipt: {
       title: 'Scan Receipt',
       subtitle: 'Position receipt within the frame',
@@ -269,6 +281,18 @@ export const profileTranslations = {
       settingsSection: 'Settings',
       basicPlan: 'Basic Plan',
       premiumPlan: 'Premium'
+    },
+    subscription: {
+      sectionTitle: 'Subscription Informate',
+      currentPlan: 'Your Current Plan',
+      trialExpires: 'Trial Go Expire',
+      nextRenewal: 'When E Go Renew',
+      upgrade: 'Upgrade',
+      trialWarning: 'Your free trial go expire soon. Upgrade to Premium make you continue enjoy all the features.',
+      basic: 'Basic',
+      premium: 'Premium',
+      trial: 'Free Trial',
+      active: 'Dey Active'
     },
     scanReceipt: {
       title: 'Scan Receipt',
@@ -521,6 +545,18 @@ export const profileTranslations = {
       basicPlan: 'Tsarin Basic',
       premiumPlan: 'Premium'
     },
+    subscription: {
+      sectionTitle: 'Bayanan Biyan Kuɗi',
+      currentPlan: 'Tsarin Yanzu',
+      trialExpires: 'Gwaji Zai Ƙare',
+      nextRenewal: 'Sabuntawa Na Gaba',
+      upgrade: 'Haɓaka',
+      trialWarning: 'Gwajin ku na kyauta zai ƙare nan ba da jimawa ba. Haɓaka zuwa Premium don ci gaba da jin daɗin dukkan fasaloli.',
+      basic: 'Basic',
+      premium: 'Premium',
+      trial: 'Gwaji Kyauta',
+      active: 'Yana Aiki'
+    },
     scanReceipt: {
       title: 'Scan Rasit',
       subtitle: 'Sanya rasit a cikin firam',
@@ -772,6 +808,18 @@ export const profileTranslations = {
       basicPlan: 'Ètò Ìpìlẹ̀',
       premiumPlan: 'Premium'
     },
+    subscription: {
+      sectionTitle: 'Àlàyé Ìforúkọsílẹ̀',
+      currentPlan: 'Ètò Lọ́wọ́lọ́wọ́',
+      trialExpires: 'Ìgbàdánwò Yóò Parí',
+      nextRenewal: 'Ìsọdọ̀tun Tókàn',
+      upgrade: 'Gbé Sókè',
+      trialWarning: 'Ìgbàdánwò ọ̀fẹ́ rẹ yóò parí láìpẹ́. Gbé sókè sí Premium láti tẹ̀síwájú láti gbádùn gbogbo àwọn ẹ̀yà.',
+      basic: 'Ìpìlẹ̀',
+      premium: 'Premium',
+      trial: 'Ìgbàdánwò Ọ̀fẹ́',
+      active: 'Ń Ṣiṣẹ́'
+    },
     scanReceipt: {
       title: 'Ṣàyẹ̀wò Rísítì',
       subtitle: 'Gbé rísítì sí inú fireemu',
@@ -1022,6 +1070,18 @@ export const profileTranslations = {
       settingsSection: 'Ntọala',
       basicPlan: 'Atụmatụ Isi',
       premiumPlan: 'Premium'
+    },
+    subscription: {
+      sectionTitle: 'Ozi Ndebanye Aha',
+      currentPlan: 'Atụmatụ Ugbu A',
+      trialExpires: 'Nnwale Ga-agwụ',
+      nextRenewal: 'Mmelite Ọzọ',
+      upgrade: 'Kwalite',
+      trialWarning: 'Nnwale gị n\'efu ga-agwụ n\'oge na-adịghị anya. Kwalite na Premium iji gaa n\'ihu na-enwe obi ụtọ na njirimara niile.',
+      basic: 'Isi',
+      premium: 'Premium',
+      trial: 'Nnwale N\'efu',
+      active: 'Na-arụ Ọrụ'
     },
     scanReceipt: {
       title: 'Nyochaa Risiti',

@@ -14,7 +14,9 @@ import {
   BarChart3,
   Clock,
   CheckCircle2,
-  AlertCircle
+  AlertCircle,
+  Crown,
+  Calendar
 } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { useLanguage } from "@/context/LanguageContext";
@@ -23,6 +25,8 @@ import { profileTranslations, type LanguageKey } from '../translations/profile';
 interface DashboardProps {
   language?: LanguageKey;
 }
+
+type Subscription = 'basic' | 'premium' | 'trial';
 
 const translations = {
   english: {
@@ -191,16 +195,35 @@ const translations = {
   },
 };
 
-export function Dashboard( { language = 'english' }: DashboardProps ) {
+export function Dashboard({ language = 'english' }: DashboardProps) {
   const [notificationCount] = useState(3);
   const complianceScore = 50;
   const pendingTasks = 3;
   // const { language } = useLanguage();
   const t = translations[language];
+  const sub = profileTranslations[language].subscription;
   const navigate = useNavigate();
   const user = getUser();
   const [currentUser, setCurrentUser] = useState(null);
   const [loading, setLoading] = useState(true);
+
+  // Subscription data
+  const subscription: Subscription =
+    currentUser?.subscription ?? 'basic'; // 'basic', 'premium', or 'trial'
+
+  const subscriptionLabels: Record<Subscription, string> = {
+    basic: 'Basic',
+    premium: 'Premium',
+    trial: 'Free Trial',
+  };
+
+  const subscriptionType = subscriptionLabels[subscription];
+
+  const subscriptionRenewalDate = 'March 15, 2026';
+  const subscriptionExpiryDate = 'March 10, 2026'; // For trial
+
+  const isTrial = subscription === 'trial';
+
 
   const quickActions = [
     { id: 'file', labelKey: 'fileReturn', icon: FileText, color: 'bg-blue-50 text-blue-600', screen: '/file-returns' },
@@ -511,6 +534,90 @@ export function Dashboard( { language = 'english' }: DashboardProps ) {
                 </div>
               </motion.div>
             ))}
+          </div>
+        </motion.div>
+
+        {/* Subscription Information */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.4 }}
+        >
+          <h3 className="text-lg mb-3">{sub.sectionTitle}</h3>
+          <div className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100">
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-3">
+                <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${subscription === 'premium'
+                  ? 'bg-gradient-to-br from-amber-400 to-orange-500'
+                  : subscription === 'trial'
+                    ? 'bg-blue-50'
+                    : 'bg-gray-50'
+                  }`}>
+                  <Crown className={`w-6 h-6 ${subscription === 'premium'
+                    ? 'text-white'
+                    : subscription === 'trial'
+                      ? 'text-blue-600'
+                      : 'text-gray-600'
+                    }`} />
+                </div>
+                <div>
+                  <p className="text-xs text-gray-600 mb-1">{sub.currentPlan}</p>
+                  <div className="flex items-center gap-2">
+                    <p className="text-lg">
+                      {subscription === 'premium' ? sub.premium : subscription === 'trial' ? sub.trial : sub.basic}
+                    </p>
+                    {subscription === 'premium' && (
+                      <span className="px-2 py-0.5 bg-gradient-to-r from-amber-400 to-orange-500 text-white rounded-full text-xs">
+                        {sub.premium}
+                      </span>
+                    )}
+                    {subscription === 'trial' && (
+                      <span className="px-2 py-0.5 bg-blue-100 text-blue-700 rounded-full text-xs">
+                        {sub.trial}
+                      </span>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="pt-3 border-t border-gray-100">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Calendar className="w-5 h-5 text-gray-400" />
+                  <div>
+                    <p className="text-xs text-gray-600">
+                      {isTrial ? sub.trialExpires : sub.nextRenewal}
+                    </p>
+                    <p className="text-sm mt-0.5">
+                      {isTrial ? subscriptionExpiryDate : subscriptionRenewalDate}
+                    </p>
+                  </div>
+                </div>
+                {subscription === 'basic' && (
+                  <button
+                    onClick={() => navigate('/settings')}
+                    className="px-4 py-2 bg-gradient-to-r from-amber-400 to-orange-500 text-white text-sm rounded-lg hover:shadow-md transition-all flex items-center gap-1"
+                  >
+                    <Crown className="w-4 h-4" />
+                    {sub.upgrade}
+                  </button>
+                )}
+              </div>
+            </div>
+
+            {subscription === 'trial' && (
+              <motion.div
+                initial={{ opacity: 0, y: -5 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.5 }}
+                className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg"
+              >
+                <p className="text-xs text-blue-800">
+                  {sub.trialWarning}
+                </p>
+              </motion.div>
+            )}
           </div>
         </motion.div>
       </div>
