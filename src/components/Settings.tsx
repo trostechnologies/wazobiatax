@@ -1,7 +1,8 @@
 import { motion } from 'motion/react';
 import { ArrowLeft, Crown, Check, Sparkles } from 'lucide-react';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useLanguage } from "@/context/LanguageContext";
+import { getPlans, Plan } from '../services/subscriptions';
 import { useNavigate } from 'react-router-dom';
 import { profileTranslations, type LanguageKey } from '../translations/profile';
 
@@ -29,12 +30,39 @@ const translations = {
 
 export function Settings({ language = 'english' }: SettingsProps) {
   const [selectedPlan, setSelectedPlan] = useState('basic');
+  const [apiPlans, setApiPlans] = useState<Plan[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchPlans = async () => {
+      try {
+        const res = await getPlans();
+        setApiPlans(res.data);
+      } catch (err) {
+        console.error('Failed to fetch plans:', err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchPlans();
+  }, []);
+
+  const getDynamicPrice = (planType: 'basic' | 'premium', defaultPrice: number) => {
+    const plan = apiPlans.find(p => p.name.toLowerCase().includes(planType));
+    return plan ? parseFloat(plan.price) : defaultPrice;
+  };
+
+  const getDynamicPeriod = (planType: 'basic' | 'premium', defaultPeriod: string) => {
+    const plan = apiPlans.find(p => p.name.toLowerCase().includes(planType));
+    if (!plan) return defaultPeriod;
+    return plan.billing_interval === 'free' ? 'Free Forever' : `per ${plan.billing_interval}`;
+  };
 
   const plans = {
     basic: {
       name: 'Basic',
-      price: 500,
-      period: 'Free Forever',
+      price: getDynamicPrice('basic', 500),
+      period: getDynamicPeriod('basic', 'Free Forever'),
       features: [
         'Unlimited ledger entries',
         'Basic tax calculations',
@@ -50,8 +78,8 @@ export function Settings({ language = 'english' }: SettingsProps) {
     },
     premium: {
       name: 'Premium',
-      price: 2500,
-      period: 'per month',
+      price: getDynamicPrice('premium', 2500),
+      period: getDynamicPeriod('premium', 'per month'),
       features: [
         'Everything in Basic',
         'Unlimited tax returns',
@@ -99,8 +127,12 @@ export function Settings({ language = 'english' }: SettingsProps) {
               <p className="text-xs text-gray-600 mb-1">Current Plan</p>
               <p className="text-lg">Basic</p>
             </div>
-            <div className="px-4 py-2 bg-white rounded-lg border border-gray-200">
-              <p className="text-sm">₦500</p>
+            <div className="px-4 py-2 bg-white rounded-lg border border-gray-200 min-w-[80px] flex items-center justify-center">
+              {loading ? (
+                <div className="w-4 h-4 border-2 border-gray-200 border-t-emerald-600 rounded-full animate-spin" />
+              ) : (
+                <p className="text-sm">₦{plans.basic.price.toLocaleString('en-NG')}</p>
+              )}
             </div>
           </div>
         </div>
@@ -121,7 +153,11 @@ export function Settings({ language = 'english' }: SettingsProps) {
           <div className="flex items-start justify-between mb-4">
             <div>
               <h3 className="text-lg mb-1">{plans.basic.name}</h3>
-              <p className="text-2xl">₦{plans.basic.price}</p>
+              {loading ? (
+                <div className="h-8 w-24 bg-gray-100 animate-pulse rounded-lg mb-1" />
+              ) : (
+                <p className="text-2xl">₦{plans.basic.price.toLocaleString('en-NG')}</p>
+              )}
               <p className="text-sm text-gray-600">{plans.basic.period}</p>
             </div>
             {selectedPlan === 'basic' && (
@@ -172,8 +208,14 @@ export function Settings({ language = 'english' }: SettingsProps) {
                 <h3 className="text-lg">{plans.premium.name}</h3>
               </div>
               <div className="flex items-baseline gap-1">
-                <p className="text-2xl">₦{plans.premium.price.toLocaleString('en-NG')}</p>
-                <p className="text-sm text-gray-600">{plans.premium.period}</p>
+                {loading ? (
+                  <div className="h-8 w-32 bg-amber-100/50 animate-pulse rounded-lg mb-1" />
+                ) : (
+                  <>
+                    <p className="text-2xl">₦{plans.premium.price.toLocaleString('en-NG')}</p>
+                    <p className="text-sm text-gray-600">{plans.premium.period}</p>
+                  </>
+                )}
               </div>
             </div>
             {selectedPlan === 'premium' && (

@@ -109,17 +109,17 @@ export const SubscriptionPlans: React.FC<SubscriptionPlansProps> = ({ language =
                                 animate={{ opacity: 1, y: 0 }}
                                 transition={{ delay: index * 0.1 }}
                                 className={`relative bg-white rounded-3xl p-6 shadow-sm border-2 transition-all ${plan.name.toLowerCase().includes('premium')
-                                    ? 'border-emerald-500 bg-emerald-50/10'
+                                    ? 'border-emerald-100 bg-emerald-50/10'
                                     : 'border-gray-100'
                                     }`}
                             >
                                 {plan.name.toLowerCase().includes('premium') && (
-                                    <div className="absolute -top-3 right-6 px-3 py-1 bg-emerald-500 text-white text-[10px] font-bold uppercase tracking-wider rounded-full">
+                                    <div className="absolute top-1 right-1 px-3 py-1 bg-emerald-500 text-white text-[10px] font-bold uppercase tracking-wider rounded-full">
                                         Most Popular
                                     </div>
                                 )}
 
-                                <div className="flex justify-between items-start mb-4">
+                                <div className="flex justify-between items-start mt-6 mb-6">
                                     <div>
                                         <h3 className="text-lg font-bold text-gray-900">{plan.name}</h3>
                                         <p className="text-sm text-gray-500 mt-1">{plan.description}</p>

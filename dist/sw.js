@@ -1,11 +1,11 @@
 const CACHE_NAME = "wazobia-v1";
 const urlsToCache = [
-  "/", 
+  "/",
   "/index.html",
   "/assets/google-logo-2dnLSC2z.webp",
   "/assets/index-BS8sXXEf.css",
   "/assets/wazobiatax-logo-B1M8zBma.png",
-  "/assets/index-CZRrOl9U.js"
+  "/assets/index-B52pv594.js"
 ];
 
 // Install Service Worker
@@ -18,7 +18,7 @@ self.addEventListener("install", (event) => {
 });
 
 // Activate Service Worker
-self.addEventListener("activate", (event) => { 
+self.addEventListener("activate", (event) => {
   console.log("Service Worker activating...");
   event.waitUntil(
     caches.keys().then((keys) =>
