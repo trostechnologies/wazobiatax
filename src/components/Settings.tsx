@@ -27,13 +27,13 @@ const translations = {
   }
 }
 
-export function Settings( { language = 'english' }: SettingsProps ) {
+export function Settings({ language = 'english' }: SettingsProps) {
   const [selectedPlan, setSelectedPlan] = useState('basic');
 
   const plans = {
     basic: {
       name: 'Basic',
-      price: 0,
+      price: 500,
       period: 'Free Forever',
       features: [
         'Unlimited ledger entries',
@@ -50,7 +50,7 @@ export function Settings( { language = 'english' }: SettingsProps ) {
     },
     premium: {
       name: 'Premium',
-      price: 500,
+      price: 2500,
       period: 'per month',
       features: [
         'Everything in Basic',
@@ -100,7 +100,7 @@ export function Settings( { language = 'english' }: SettingsProps ) {
               <p className="text-lg">Basic</p>
             </div>
             <div className="px-4 py-2 bg-white rounded-lg border border-gray-200">
-              <p className="text-sm">Free</p>
+              <p className="text-sm">₦500</p>
             </div>
           </div>
         </div>
@@ -113,8 +113,8 @@ export function Settings( { language = 'english' }: SettingsProps ) {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           className={`bg-white rounded-2xl p-6 border-2 transition-all ${selectedPlan === 'basic'
-              ? 'border-emerald-600 shadow-lg'
-              : 'border-gray-200 hover:border-gray-300'
+            ? 'border-emerald-600 shadow-lg'
+            : 'border-gray-200 hover:border-gray-300'
             }`}
           onClick={() => setSelectedPlan('basic')}
         >
@@ -152,8 +152,8 @@ export function Settings( { language = 'english' }: SettingsProps ) {
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.1 }}
           className={`bg-gradient-to-br from-amber-50 to-orange-50 rounded-2xl p-6 border-2 transition-all relative overflow-hidden ${selectedPlan === 'premium'
-              ? 'border-amber-600 shadow-2xl'
-              : 'border-amber-200 hover:border-amber-300'
+            ? 'border-amber-600 shadow-2xl'
+            : 'border-amber-200 hover:border-amber-300'
             }`}
           onClick={() => setSelectedPlan('premium')}
         >
@@ -172,7 +172,7 @@ export function Settings( { language = 'english' }: SettingsProps ) {
                 <h3 className="text-lg">{plans.premium.name}</h3>
               </div>
               <div className="flex items-baseline gap-1">
-                <p className="text-2xl">₦{plans.premium.price}</p>
+                <p className="text-2xl">₦{plans.premium.price.toLocaleString('en-NG')}</p>
                 <p className="text-sm text-gray-600">{plans.premium.period}</p>
               </div>
             </div>
@@ -194,7 +194,10 @@ export function Settings( { language = 'english' }: SettingsProps ) {
           </div>
 
           <button
-            onClick={() => setSelectedPlan('premium')}
+            onClick={() => {
+              setSelectedPlan('premium')
+              navigate('/subscriptions')
+            }}
             className="w-full py-3 bg-gradient-to-r from-amber-500 to-orange-600 text-white rounded-xl hover:shadow-lg transition-all text-sm"
           >
             Upgrade to Premium
@@ -214,9 +217,6 @@ export function Settings( { language = 'english' }: SettingsProps ) {
             </div>
             <div className="px-3 py-1 bg-white rounded-lg text-xs text-gray-700 border border-blue-200">
               Flutterwave
-            </div>
-            <div className="px-3 py-1 bg-white rounded-lg text-xs text-gray-700 border border-blue-200">
-              Bank Transfer
             </div>
           </div>
         </div>

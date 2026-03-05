@@ -211,7 +211,7 @@ export function Profile({ language = 'english' }: ProfileProps) {
           id: 'subscription',
           labelKey: 'upgradeToPremium',
           icon: Crown,
-          screen: '/settings',
+          screen: '/subscriptions',
           premium: true,
         },
         {
@@ -374,18 +374,18 @@ export function Profile({ language = 'english' }: ProfileProps) {
                     <div className="flex items-center gap-3">
                       <div
                         className={`w-12 h-12 rounded-xl flex items-center justify-center ${subscription === 'premium'
-                            ? 'bg-gradient-to-br from-amber-400 to-orange-500'
-                            : subscription === 'trial'
-                              ? 'bg-blue-50'
-                              : 'bg-gray-50'
+                          ? 'bg-gradient-to-br from-amber-400 to-orange-500'
+                          : subscription === 'trial'
+                            ? 'bg-blue-50'
+                            : 'bg-gray-50'
                           }`}
                       >
                         <Crown
                           className={`w-6 h-6 ${subscription === 'premium'
-                              ? 'text-white'
-                              : subscription === 'trial'
-                                ? 'text-blue-600'
-                                : 'text-gray-600'
+                            ? 'text-white'
+                            : subscription === 'trial'
+                              ? 'text-blue-600'
+                              : 'text-gray-600'
                             }`}
                         />
                       </div>
@@ -465,18 +465,18 @@ export function Profile({ language = 'english' }: ProfileProps) {
                   <div className="flex items-center gap-3">
                     <div
                       className={`w-10 h-10 rounded-lg flex items-center justify-center ${item.premium
-                          ? 'bg-gradient-to-br from-amber-400 to-orange-500'
-                          : item.highlight
-                            ? 'bg-emerald-50'
-                            : 'bg-gray-50'
+                        ? 'bg-gradient-to-br from-amber-400 to-orange-500'
+                        : item.highlight
+                          ? 'bg-emerald-50'
+                          : 'bg-gray-50'
                         }`}
                     >
                       <item.icon
                         className={`w-5 h-5 ${item.premium
-                            ? 'text-white'
-                            : item.highlight
-                              ? 'text-emerald-600'
-                              : 'text-gray-600'
+                          ? 'text-white'
+                          : item.highlight
+                            ? 'text-emerald-600'
+                            : 'text-gray-600'
                           }`}
                       />
                     </div>

@@ -30,6 +30,7 @@ import { ForgotPasswordEmail } from './components/ForgotPasswordEmail';
 import { ForgotPasswordVerifyCode } from './components/ForgotPasswordVerifyCode';
 import { ForgotPasswordReset } from './components/ForgotPasswordReset';
 import { ForgotPasswordSuccess } from './components/ForgotPasswordSuccess';
+import { SubscriptionPlans } from './components/SubscriptionPlans';
 
 export default function App() {
   const location = useLocation();
@@ -111,22 +112,23 @@ export default function App() {
           <Route path="/scan" element={<ScanReceipt language={language as LanguageKey} />} />
           <Route path="/voice" element={<VoiceEntry language={language as LanguageKey} />} />
           <Route path="/forgot-password-email" element={<ForgotPasswordEmail onNavigate={navigateTo} language={language as ForgotPasswordLanguageKey} />} />
-          <Route path="/forgot-password-verify-code" element={<ForgotPasswordVerifyCode onNavigate={navigateTo} language={language as ForgotPasswordLanguageKey} email={forgotPasswordEmail} />} />
+          <Route path="/forgot-password-verify-code" element={<ForgotPasswordVerifyCode onNavigate={navigateTo} language={language as ForgotPasswordLanguageKey} />} />
           <Route path="/forgot-password-reset" element={<ForgotPasswordReset onNavigate={navigateTo} language={language as ForgotPasswordLanguageKey} />} />
           <Route path="/forgot-password-success" element={<ForgotPasswordSuccess onNavigate={navigateTo} language={language as ForgotPasswordLanguageKey} />} />
+          <Route path="/subscriptions" element={<SubscriptionPlans language={language} />} />
 
           <Route
-  path="/login"
-  element={
-    <OnboardingWizard
-      initialStep="login"
-      onComplete={() => {
-        localStorage.setItem('onboardingComplete', 'true');
-        setOnboardingComplete(true);
-      }}
-    />
-  }
-/>
+            path="/login"
+            element={
+              <OnboardingWizard
+                initialStep="login"
+                onComplete={() => {
+                  localStorage.setItem('onboardingComplete', 'true');
+                  setOnboardingComplete(true);
+                }}
+              />
+            }
+          />
 
           {/* Catch-all */}
           <Route
