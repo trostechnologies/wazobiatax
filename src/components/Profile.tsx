@@ -17,6 +17,7 @@ import { useLanguage } from "@/context/LanguageContext";
 import { useNavigate } from 'react-router-dom';
 import { getUser } from '@/utils/storage';
 import { getUserProfile } from '../services/auth';
+import { getUserSubscription, UserSubscriptionResponse } from '../services/subscriptions';
 import { profileTranslations, type LanguageKey } from '../translations/profile';
 
 interface ProfileProps {
@@ -152,12 +153,13 @@ export function Profile({ language = 'english' }: ProfileProps) {
   const navigate = useNavigate();
   const user = getUser();
   const [currentUser, setCurrentUser] = useState(null);
+  const [userSubscription, setUserSubscription] = useState<UserSubscriptionResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
   // Subscription data
-  const subscription: Subscription =
-    currentUser?.subscription ?? 'basic'; // 'basic', 'premium', or 'trial'
+  const subscriptionStatus = userSubscription?.plan?.name.toLowerCase().includes('premium') ? 'premium' :
+    userSubscription?.trial?.is_trial ? 'trial' : 'basic';
 
   const subscriptionLabels: Record<Subscription, string> = {
     basic: 'Basic',
@@ -165,12 +167,12 @@ export function Profile({ language = 'english' }: ProfileProps) {
     trial: 'Free Trial',
   };
 
-  const subscriptionType = subscriptionLabels[subscription];
+  const subscriptionType = subscriptionLabels[subscriptionStatus];
 
   const subscriptionRenewalDate = 'March 15, 2026';
   const subscriptionExpiryDate = 'March 10, 2026'; // For trial
 
-  const isTrial = subscription === 'trial';
+  const isTrial = subscriptionStatus === 'trial';
 
   const handleCopyTIN = () => {
     setCopied(true);
@@ -227,11 +229,16 @@ export function Profile({ language = 'english' }: ProfileProps) {
   useEffect(() => {
     let isMounted = true;
 
-    const fetchProfile = async () => {
+    const fetchData = async () => {
       try {
-        const res = await getUserProfile();
+        const [profileRes, subRes] = await Promise.all([
+          getUserProfile(),
+          getUserSubscription()
+        ]);
+
         if (isMounted) {
-          setCurrentUser(res.data);
+          setCurrentUser(profileRes.data);
+          setUserSubscription(subRes);
         }
       } catch (err) {
         console.error(err);
@@ -243,7 +250,7 @@ export function Profile({ language = 'english' }: ProfileProps) {
       }
     };
 
-    fetchProfile();
+    fetchData();
 
     return () => {
       isMounted = false;
@@ -299,14 +306,18 @@ export function Profile({ language = 'english' }: ProfileProps) {
 
             {/* Subscription Badge */}
             <div className="mt-2">
-              {subscription === 'basic' ? (
-                <div className="inline-flex items-center gap-1 px-3 py-1 bg-white/20 text-white rounded-full text-xs">
-                  {translations[language].basicPlan}
-                </div>
-              ) : (
+              {subscriptionStatus === 'premium' ? (
                 <div className="inline-flex items-center gap-1 px-3 py-1 bg-gradient-to-r from-amber-400 to-orange-500 text-white rounded-full text-xs">
                   <Crown className="w-3 h-3" />
                   {translations[language].premium}
+                </div>
+              ) : subscriptionStatus === 'trial' ? (
+                <div className="inline-flex items-center gap-1 px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-xs">
+                  {translations[language].basicPlan} (Trial)
+                </div>
+              ) : (
+                <div className="inline-flex items-center gap-1 px-3 py-1 bg-white/20 text-white rounded-full text-xs">
+                  {translations[language].basicPlan}
                 </div>
               )}
             </div>
@@ -373,17 +384,17 @@ export function Profile({ language = 'english' }: ProfileProps) {
                   <div className="flex items-center justify-between mb-4">
                     <div className="flex items-center gap-3">
                       <div
-                        className={`w-12 h-12 rounded-xl flex items-center justify-center ${subscription === 'premium'
+                        className={`w-12 h-12 rounded-xl flex items-center justify-center ${subscriptionStatus === 'premium'
                           ? 'bg-gradient-to-br from-amber-400 to-orange-500'
-                          : subscription === 'trial'
+                          : subscriptionStatus === 'trial'
                             ? 'bg-blue-50'
                             : 'bg-gray-50'
                           }`}
                       >
                         <Crown
-                          className={`w-6 h-6 ${subscription === 'premium'
+                          className={`w-6 h-6 ${subscriptionStatus === 'premium'
                             ? 'text-white'
-                            : subscription === 'trial'
+                            : subscriptionStatus === 'trial'
                               ? 'text-blue-600'
                               : 'text-gray-600'
                             }`}
@@ -393,18 +404,18 @@ export function Profile({ language = 'english' }: ProfileProps) {
                         <p className="text-xs text-gray-600 mb-1">{sub.currentPlan}</p>
                         <div className="flex items-center gap-2">
                           <p className="text-lg">
-                            {subscription === 'premium'
+                            {subscriptionStatus === 'premium'
                               ? sub.premium
-                              : subscription === 'trial'
+                              : subscriptionStatus === 'trial'
                                 ? sub.trial
                                 : sub.basic}
                           </p>
-                          {subscription === 'premium' && (
+                          {subscriptionStatus === 'premium' && (
                             <span className="px-2 py-0.5 bg-gradient-to-r from-amber-400 to-orange-500 text-white rounded-full text-xs">
                               {sub.active}
                             </span>
                           )}
-                          {subscription === 'trial' && (
+                          {subscriptionStatus === 'trial' && (
                             <span className="px-2 py-0.5 bg-blue-100 text-blue-700 rounded-full text-xs">
                               {sub.trial}
                             </span>
@@ -423,7 +434,7 @@ export function Profile({ language = 'english' }: ProfileProps) {
                     )} */}
                   </div>
 
-                  {subscription === 'trial' && (
+                  {subscriptionStatus === 'trial' && (
                     <motion.div
                       initial={{ opacity: 0, y: -5 }}
                       animate={{ opacity: 1, y: 0 }}

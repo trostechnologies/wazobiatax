@@ -2,7 +2,7 @@ import { motion } from 'motion/react';
 import { ArrowLeft, Crown, Check, Sparkles } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { useLanguage } from "@/context/LanguageContext";
-import { getPlans, Plan } from '../services/subscriptions';
+import { getPlans, Plan, getUserSubscription, UserSubscriptionResponse } from '../services/subscriptions';
 import { useNavigate } from 'react-router-dom';
 import { profileTranslations, type LanguageKey } from '../translations/profile';
 
@@ -32,6 +32,8 @@ export function Settings({ language = 'english' }: SettingsProps) {
   const [selectedPlan, setSelectedPlan] = useState('basic');
   const [apiPlans, setApiPlans] = useState<Plan[]>([]);
   const [loading, setLoading] = useState(true);
+  const [userSubscription, setUserSubscription] = useState<UserSubscriptionResponse | null>(null);
+  const [subscriptionLoading, setSubscriptionLoading] = useState(true);
 
   useEffect(() => {
     const fetchPlans = async () => {
@@ -44,7 +46,25 @@ export function Settings({ language = 'english' }: SettingsProps) {
         setLoading(false);
       }
     };
+
+    const fetchSubscription = async () => {
+      try {
+        const res = await getUserSubscription();
+        console.log(res);
+        setUserSubscription(res);
+        if (res.plan) {
+          const isPremium = res.plan.name.toLowerCase().includes('premium');
+          setSelectedPlan(isPremium ? 'premium' : 'basic');
+        }
+      } catch (err) {
+        console.error('Failed to fetch subscription:', err);
+      } finally {
+        setSubscriptionLoading(false);
+      }
+    };
+
     fetchPlans();
+    fetchSubscription();
   }, []);
 
   const getDynamicPrice = (planType: 'basic' | 'premium', defaultPrice: number) => {
@@ -125,16 +145,22 @@ export function Settings({ language = 'english' }: SettingsProps) {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-xs text-gray-600 mb-1">Current Plan</p>
-              <p className="text-lg">Basic</p>
+              <p className="text-lg">{userSubscription?.plan?.name || 'Basic'}</p>
             </div>
             <div className="px-4 py-2 bg-white rounded-lg border border-gray-200 min-w-[80px] flex items-center justify-center">
-              {loading ? (
+              {subscriptionLoading || loading ? (
                 <div className="w-4 h-4 border-2 border-gray-200 border-t-emerald-600 rounded-full animate-spin" />
               ) : (
-                <p className="text-sm">₦{plans.basic.price.toLocaleString('en-NG')}</p>
+                <p className="text-sm">₦{(userSubscription?.plan?.price || plans.basic.price).toLocaleString('en-NG')}</p>
               )}
             </div>
           </div>
+          {userSubscription?.subscription?.status === 'past_due' && (
+            <div className="mt-3 px-3 py-2 bg-red-50 text-red-600 text-xs rounded-lg flex items-center gap-2 border border-red-100">
+              <span className="w-2 h-2 bg-red-600 rounded-full animate-pulse" />
+              Subscription past due. Please update payment.
+            </div>
+          )}
         </div>
       </div>
 

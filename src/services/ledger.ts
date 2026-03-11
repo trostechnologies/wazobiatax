@@ -26,6 +26,7 @@ export interface UpdateLedgerPayload {
   title?: string;
   ledger_type: 'income' | 'expense';
   amount?: number;
+  vat_amount?: number;
   category?: string;
   description?: string;
   date?: string;
@@ -53,7 +54,7 @@ export const getLedgerRecords = async () => {
   const response = await api.get('/api/ledger/entry');
   return response.data;
 };
-  
+
 export const updateLedgerEntry = async (
   ledgerId: string,
   payload: UpdateLedgerPayload

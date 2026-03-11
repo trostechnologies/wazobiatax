@@ -25,6 +25,29 @@ export interface SubscribeResponse {
     authorization_url: string;
 }
 
+export interface UserSubscriptionResponse {
+    has_subscription: boolean;
+    subscription: {
+        status: string;
+        start_date: string;
+        cancel_at_period_end: boolean;
+    } | null;
+    plan: {
+        name: string;
+        price: number;
+        billing_interval: string;
+    } | null;
+    trial: {
+        is_trial: boolean;
+        trial_end: string | null;
+    };
+    billing: {
+        current_period_start: string | null;
+        next_billing_date: string | null;
+        days_remaining: number | null;
+    };
+}
+
 /**
  * Fetch available subscription plans
  */
@@ -51,6 +74,25 @@ export const subscribeUser = async (planId: string): Promise<SubscribeResponse> 
         headers: {
             'Authorization': `Bearer ${token}`,
             'Content-Type': 'application/x-www-form-urlencoded',
+        },
+    });
+
+    return response.data;
+};
+
+/**
+ * Get current user's subscription details
+ */
+export const getUserSubscription = async (): Promise<UserSubscriptionResponse> => {
+    const token = localStorage.getItem('accessToken');
+
+    if (!token) {
+        throw new Error('No access token found. Please log in.');
+    }
+
+    const response = await api.get<UserSubscriptionResponse>('/api/subscribe', {
+        headers: {
+            'Authorization': `Bearer ${token}`,
         },
     });
 

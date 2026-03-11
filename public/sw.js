@@ -5,7 +5,7 @@ const urlsToCache = [
   "/assets/google-logo-2dnLSC2z.webp",
   "/assets/index-BS8sXXEf.css",
   "/assets/wazobiatax-logo-B1M8zBma.png",
-  "/assets/index-BuGQiyoS.js"
+  "/assets/index-eXnldMOE.js"
 ];
 
 // Install Service Worker

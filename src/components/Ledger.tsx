@@ -17,11 +17,13 @@ import {
   Save,
   Square,
   CameraIcon,
+  Calculator,
 } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useMemo } from "react";
 import { useLanguage } from "@/context/LanguageContext";
 import { useNavigate } from "react-router-dom";
 import { addLedgerEntry, deleteLedgerEntry, getLedgerRecords, updateLedgerEntry } from "@/services/ledger";
+import { getTaxCalculation, type TaxCalculationResponse } from "@/services/tax";
 import { ToastContainer, toast } from 'react-toastify';
 import { profileTranslations, type LanguageKey } from "../translations/profile";
 import { useCameraPermissions } from "@/hooks/useCameraPermissions";
@@ -291,9 +293,11 @@ export function Ledger({ onNavigate, language = "english" }: LedgerProps) {
 
   const [selectedLedger, setSelectedLedger] = useState<any | null>(null);
   const [deleteId, setDeleteId] = useState<string | null>(null);
-  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);  
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
   const [updating, setUpdating] = useState(false);
+  const [taxData, setTaxData] = useState<TaxCalculationResponse['data'] | null>(null);
+  const [isCalculating, setIsCalculating] = useState(false);
 
 
   // Scan Receipt States
@@ -466,6 +470,34 @@ export function Ledger({ onNavigate, language = "english" }: LedgerProps) {
     }, 1000);
   };
 
+  const handleCalculateTax = async () => {
+    if (!amount) {
+      toast.info("Please enter an amount first");
+      return;
+    }
+
+    setIsCalculating(true);
+    try {
+      // Fetch current tax status
+      const res = await getTaxCalculation();
+      setTaxData(res.data);
+
+      // Nigeria VAT is 7.5% as of 2024/2025
+      // If the API supports params in the future, we'd pass 'amount' here.
+      // For now, we calculate it locally based on standard 7.5% rate
+      // or 10% as suggested in FileReturns.tsx
+      const calculatedVat = (Number(amount) * 0.075).toFixed(2);
+      setVatAmount(calculatedVat);
+
+      toast.success("Tax calculation updated");
+    } catch (err) {
+      console.error("Tax calculation failed:", err);
+      toast.error("Failed to fetch tax data");
+    } finally {
+      setIsCalculating(false);
+    }
+  };
+
   const CATEGORY_MAP = {
     income: [
       { labelKey: "salesRevenue", value: "sales revenue" },
@@ -535,6 +567,7 @@ export function Ledger({ onNavigate, language = "english" }: LedgerProps) {
 
       await updateLedgerEntry(selectedLedger.id || selectedLedger.entry_id, {
         amount: Number(amount),
+        vat_amount: Number(vatAmount),
         ledger_type: entryType,
         date,
         category,
@@ -561,31 +594,31 @@ export function Ledger({ onNavigate, language = "english" }: LedgerProps) {
 
   const handleConfirmDelete = async () => {
     if (!deleteId) return;
-  
+
     try {
       await deleteLedgerEntry(deleteId);
-  
+
       setEntries((prev: any[]) =>
         prev.filter((entry) => entry.id !== deleteId)
       );
-  
+
       setShowDeleteConfirm(false);
       setDeleteId(null);
-  
+
       toast.success("Ledger deleted successfully");
     } catch (error) {
       console.error("Delete failed:", error);
       toast.error("Failed to delete ledger");
     }
   };
-  
-  
+
+
 
   useEffect(() => {
     if (selectedLedger && addMode === "manual") {
       setEntryType(selectedLedger.ledger_type);
       setAmount(String(selectedLedger.amount));
-      setVatAmount(String(selectedLedger.vatAmount));
+      setVatAmount(String(selectedLedger.vat_amount || ""));
       setCategory(selectedLedger.category);
       setDate(selectedLedger.date);
       setDescription(selectedLedger.description || "");
@@ -608,7 +641,7 @@ export function Ledger({ onNavigate, language = "english" }: LedgerProps) {
       });
 
       console.log("LEDGER CREATED:", response);
-      alert("LEDGER CREATED.");
+      toast.success("LEDGER CREATED.");
 
       // ✅ Optional: add immediately to UI list
       // setEntries((prev) => [response.data, ...prev]);
@@ -617,6 +650,7 @@ export function Ledger({ onNavigate, language = "english" }: LedgerProps) {
       await fetchLedgerRecords();
 
       // ✅ Reset form
+      setAddMode("");
       setAmount("");
       setVatAmount("");
       setCategory("");
@@ -628,11 +662,30 @@ export function Ledger({ onNavigate, language = "english" }: LedgerProps) {
       const message =
         error?.response?.data?.message || "Failed to add ledger entry";
 
-      alert(message);
+      toast.error(message);
     } finally {
       setIsProcessing(false);
     }
   };
+
+  const filteredEntries = useMemo(() => {
+    return entries.filter((entry: any) => {
+      // Handle both ledger_type and type, and make case-insensitive
+      const entryType = (entry.ledger_type || entry.type || "").toLowerCase();
+      const matchesType = filterType === "all" || entryType === filterType.toLowerCase();
+
+      const category = (entry.category || "").toLowerCase();
+      const description = (entry.description || "").toLowerCase();
+      const query = searchQuery.toLowerCase();
+
+      const matchesSearch =
+        category.includes(query) ||
+        description.includes(query) ||
+        String(entry.amount).includes(query);
+
+      return matchesType && matchesSearch;
+    });
+  }, [entries, filterType, searchQuery]);
 
   useEffect(() => {
     fetchLedgerRecords();
@@ -684,6 +737,13 @@ export function Ledger({ onNavigate, language = "english" }: LedgerProps) {
           <button className="p-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-all">
             <Filter className="w-5 h-5 text-gray-600" />
           </button>
+          <button
+            onClick={() => handleAddClick("manual")}
+            className="p-2 border border-emerald-200 bg-emerald-50 rounded-lg hover:bg-emerald-100 transition-all"
+            title="Tax Calculator"
+          >
+            <Calculator className="w-5 h-5 text-emerald-600" />
+          </button>
         </div>
 
         {/* Filter Chips */}
@@ -721,15 +781,17 @@ export function Ledger({ onNavigate, language = "english" }: LedgerProps) {
         <p className="text-center text-sm text-gray-500">Loading records...</p>
       )}
 
-      {!isLoadingLedger && entries.length === 0 && (
-        <p className="text-center text-sm text-gray-500">
-          No ledger records yet
+      {!isLoadingLedger && filteredEntries.length === 0 && (
+        <p className="text-center text-sm text-gray-500 py-10">
+          {searchQuery || filterType !== 'all'
+            ? "No matches found for your current filters"
+            : "No ledger records yet"}
         </p>
       )}
 
       {/* Ledger Entries */}
-      <div className="p-6 space-y-3">
-        {entries.map((entry, index) => {
+      <div className="p-6 space-y-3 pb-32">
+        {filteredEntries.map((entry: any, index: number) => {
           const isIncome = entry.ledger_type === "income";
 
           return (
@@ -794,16 +856,16 @@ export function Ledger({ onNavigate, language = "english" }: LedgerProps) {
                     </button>
 
                     <button
-  onClick={(e) => {
-    e.stopPropagation();
-    console.log("Clicked delete icon");
-    setDeleteId(entry.id);
-    setShowDeleteConfirm(true);
-  }}
-  className="p-1.5 rounded-lg hover:bg-red-50"
->
-  <Trash2 className="w-4 h-4 text-red-500" />
-</button>
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        console.log("Clicked delete icon");
+                        setDeleteId(entry.id);
+                        setShowDeleteConfirm(true);
+                      }}
+                      className="p-1.5 rounded-lg hover:bg-red-50"
+                    >
+                      <Trash2 className="w-4 h-4 text-red-500" />
+                    </button>
 
                   </div>
                 </div>
@@ -998,9 +1060,23 @@ export function Ledger({ onNavigate, language = "english" }: LedgerProps) {
 
                 {/* VAT AMOUNT */}
                 <div>
-                  <label className="block mb-2 text-sm text-gray-700">
-                    {translations[language].vatAmount}
-                  </label>
+                  <div className="flex justify-between items-center mb-2">
+                    <label className="text-sm text-gray-700">
+                      {translations[language].vatAmount}
+                    </label>
+                    <button
+                      onClick={handleCalculateTax}
+                      disabled={isCalculating}
+                      className="px-3 py-1 bg-emerald-600 text-white text-[10px] rounded-full font-bold shadow-sm hover:bg-emerald-700 transition-all flex items-center gap-1"
+                    >
+                      {isCalculating ? (
+                        <RefreshCw className="w-3 h-3 animate-spin" />
+                      ) : (
+                        <Zap className="w-3 h-3" />
+                      )}
+                      CALCULATE
+                    </button>
+                  </div>
                   <div className="relative">
                     <span
                       className={`absolute left-4 top-1/2 -translate-y-1/2 ${entryType === "income"
@@ -1019,6 +1095,34 @@ export function Ledger({ onNavigate, language = "english" }: LedgerProps) {
                     />
                   </div>
                 </div>
+
+                {/* TAX IMPACT PREVIEW */}
+                {taxData && (
+                  <div className="bg-emerald-50 rounded-xl p-4 border border-emerald-100">
+                    <div className="flex items-center gap-2 mb-2">
+                      <Zap className="w-4 h-4 text-emerald-600" />
+                      <span className="text-xs font-semibold text-emerald-700 uppercase tracking-wider">Tax Impact Preview</span>
+                    </div>
+                    <div className="space-y-1">
+                      <div className="flex justify-between text-xs">
+                        <span className="text-gray-600">Current Net VAT</span>
+                        <span className="font-medium text-gray-900">₦{taxData.net_vat.toLocaleString()}</span>
+                      </div>
+                      <div className="flex justify-between text-xs font-medium">
+                        <span className="text-gray-600">New Entry VAT</span>
+                        <span className={entryType === 'income' ? 'text-emerald-600' : 'text-red-600'}>
+                          {entryType === 'income' ? '+' : '-'} ₦{Number(vatAmount).toLocaleString()}
+                        </span>
+                      </div>
+                      <div className="pt-2 border-t border-emerald-200 mt-2 flex justify-between text-sm font-bold">
+                        <span className="text-gray-900">Projected Net VAT</span>
+                        <span className="text-emerald-700">
+                          ₦{(taxData.net_vat + (entryType === 'income' ? Number(vatAmount) : -Number(vatAmount))).toLocaleString()}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                )}
 
                 {/* CATEGORY */}
                 <div>
@@ -1073,7 +1177,7 @@ export function Ledger({ onNavigate, language = "english" }: LedgerProps) {
                 <button
                   onClick={() => {
                     console.log("Selected Ledger:", selectedLedger);
-                  
+
                     if (selectedLedger) {
                       console.log("Running UPDATE");
                       handleUpdateLedger();
@@ -1081,7 +1185,7 @@ export function Ledger({ onNavigate, language = "english" }: LedgerProps) {
                       console.log("Running CREATE");
                       handleAddLedger();
                     }
-                  }}                  
+                  }}
                   disabled={isProcessing}
                   className="w-full py-4 bg-emerald-600 text-white rounded-xl hover:bg-emerald-700 shadow-lg transition-all disabled:opacity-60"
                 >
@@ -1226,16 +1330,63 @@ export function Ledger({ onNavigate, language = "english" }: LedgerProps) {
                     type="number"
                     value={amount}
                     onChange={(e) => setAmount(e.target.value)}
+                    placeholder="Amount"
                     className="w-full px-4 py-3 border rounded-xl"
                   />
 
-                    {/* VAT Amount */}
+                  {/* VAT Amount */}
+                  <div>
+                    <div className="flex justify-between items-center mb-2">
+                      <label className="text-xs text-gray-500 uppercase tracking-wider font-semibold">VAT Amount</label>
+                      <button
+                        onClick={handleCalculateTax}
+                        disabled={isCalculating}
+                        className="px-3 py-1 bg-emerald-600 text-white text-[10px] rounded-full font-bold shadow-sm hover:bg-emerald-700 transition-all flex items-center gap-1"
+                      >
+                        {isCalculating ? (
+                          <RefreshCw className="w-3 h-3 animate-spin" />
+                        ) : (
+                          <Zap className="w-3 h-3" />
+                        )}
+                        CALCULATE
+                      </button>
+                    </div>
                     <input
-                    type="number"
-                    value={vatAmount}
-                    onChange={(e) => setVatAmount(e.target.value)}
-                    className="w-full px-4 py-3 border rounded-xl"
-                  />
+                      type="number"
+                      value={vatAmount}
+                      onChange={(e) => setVatAmount(e.target.value)}
+                      placeholder="0.00"
+                      className="w-full px-4 py-3 border rounded-xl"
+                    />
+                  </div>
+
+                  {/* TAX IMPACT PREVIEW */}
+                  {taxData && (
+                    <div className="bg-emerald-50 rounded-xl p-4 border border-emerald-100">
+                      <div className="flex items-center gap-2 mb-2">
+                        <Zap className="w-4 h-4 text-emerald-600" />
+                        <span className="text-[10px] font-bold text-emerald-700 uppercase tracking-wider">Tax Impact Preview</span>
+                      </div>
+                      <div className="space-y-1">
+                        <div className="flex justify-between text-[10px]">
+                          <span className="text-gray-600">Current Net VAT</span>
+                          <span className="font-medium text-gray-900">₦{taxData.net_vat.toLocaleString()}</span>
+                        </div>
+                        <div className="flex justify-between text-[10px] font-medium">
+                          <span className="text-gray-600">New Entry VAT</span>
+                          <span className={entryType === 'income' ? 'text-emerald-600' : 'text-red-600'}>
+                            {entryType === 'income' ? '+' : '-'} ₦{Number(vatAmount).toLocaleString()}
+                          </span>
+                        </div>
+                        <div className="pt-1 border-t border-emerald-200 mt-1 flex justify-between text-xs font-bold">
+                          <span className="text-gray-900">Projected Net VAT</span>
+                          <span className="text-emerald-700">
+                            ₦{(taxData.net_vat + (entryType === 'income' ? Number(vatAmount) : -Number(vatAmount))).toLocaleString()}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  )}
 
                   {/* Category */}
                   <select
@@ -1417,14 +1568,59 @@ export function Ledger({ onNavigate, language = "english" }: LedgerProps) {
                         className="w-full px-4 py-3 border rounded-xl"
                       />
 
-                        {/* VAT AMOUNT */}
+                      {/* VAT AMOUNT */}
+                      <div>
+                        <div className="flex justify-between items-center mb-2">
+                          <label className="text-xs text-gray-500 uppercase tracking-wider font-semibold">VAT Amount</label>
+                          <button
+                            onClick={handleCalculateTax}
+                            disabled={isCalculating}
+                            className="px-3 py-1 bg-emerald-600 text-white text-[10px] rounded-full font-bold shadow-sm hover:bg-emerald-700 transition-all flex items-center gap-1"
+                          >
+                            {isCalculating ? (
+                              <RefreshCw className="w-3 h-3 animate-spin" />
+                            ) : (
+                              <Zap className="w-3 h-3" />
+                            )}
+                            CALCULATE
+                          </button>
+                        </div>
                         <input
-                        type="number"
-                        value={vatAmount}
-                        onChange={(e) => setVatAmount(e.target.value)}
-                        placeholder="VAT Amount"
-                        className="w-full px-4 py-3 border rounded-xl"
-                      />
+                          type="number"
+                          value={vatAmount}
+                          onChange={(e) => setVatAmount(e.target.value)}
+                          placeholder="0.00"
+                          className="w-full px-4 py-3 border rounded-xl"
+                        />
+                      </div>
+
+                      {/* TAX IMPACT PREVIEW */}
+                      {taxData && (
+                        <div className="bg-emerald-50 rounded-xl p-4 border border-emerald-100">
+                          <div className="flex items-center gap-2 mb-2">
+                            <Zap className="w-4 h-4 text-emerald-600" />
+                            <span className="text-[10px] font-bold text-emerald-700 uppercase tracking-wider">Tax Impact Preview</span>
+                          </div>
+                          <div className="space-y-1">
+                            <div className="flex justify-between text-[10px]">
+                              <span className="text-gray-600">Current Net VAT</span>
+                              <span className="font-medium text-gray-900">₦{taxData.net_vat.toLocaleString()}</span>
+                            </div>
+                            <div className="flex justify-between text-[10px] font-medium">
+                              <span className="text-gray-600">New Entry VAT</span>
+                              <span className={entryType === 'income' ? 'text-emerald-600' : 'text-red-600'}>
+                                {entryType === 'income' ? '+' : '-'} ₦{Number(vatAmount).toLocaleString()}
+                              </span>
+                            </div>
+                            <div className="pt-1 border-t border-emerald-200 mt-1 flex justify-between text-xs font-bold">
+                              <span className="text-gray-900">Projected Net VAT</span>
+                              <span className="text-emerald-700">
+                                ₦{(taxData.net_vat + (entryType === 'income' ? Number(vatAmount) : -Number(vatAmount))).toLocaleString()}
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+                      )}
 
                       {/* CATEGORY */}
                       <select
@@ -1511,11 +1707,11 @@ export function Ledger({ onNavigate, language = "english" }: LedgerProps) {
                   Cancel
                 </button>
                 <button
-  onClick={handleConfirmDelete}
-  className="flex-1 py-3 bg-red-600 text-white rounded-xl"
->
-  Delete
-</button>
+                  onClick={handleConfirmDelete}
+                  className="flex-1 py-3 bg-red-600 text-white rounded-xl"
+                >
+                  Delete
+                </button>
               </div>
             </motion.div>
           </motion.div>
