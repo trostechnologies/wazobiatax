@@ -119,6 +119,10 @@ export function Settings({ language = 'english' }: SettingsProps) {
   const t = translations[language];
   const navigate = useNavigate();
 
+  const currentPlan = userSubscription?.plan?.name?.toLowerCase().includes('premium')
+    ? 'premium'
+    : 'basic';
+
   return (
     <div className="min-h-screen bg-gray-50 pb-20">
       {/* Status Bar */}
@@ -203,8 +207,14 @@ export function Settings({ language = 'english' }: SettingsProps) {
             ))}
           </div>
 
-          <button className="w-full py-3 bg-gray-100 text-gray-600 rounded-xl text-sm">
-            Current Plan
+          <button
+            disabled={currentPlan === 'basic'}
+            className={`w-full py-3 rounded-xl text-sm ${currentPlan === 'basic'
+              ? 'bg-gray-100 text-gray-600'
+              : 'bg-white border border-gray-300 hover:bg-gray-50'
+              }`}
+          >
+            {currentPlan === 'basic' ? 'Current Plan' : 'Downgrade to Basic'}
           </button>
         </motion.div>
 
@@ -262,13 +272,17 @@ export function Settings({ language = 'english' }: SettingsProps) {
           </div>
 
           <button
+            disabled={currentPlan === 'premium'}
             onClick={() => {
               setSelectedPlan('premium')
               navigate('/subscriptions')
             }}
-            className="w-full py-3 bg-gradient-to-r from-amber-500 to-orange-600 text-white rounded-xl hover:shadow-lg transition-all text-sm"
+            className={`w-full py-3 rounded-xl transition-all text-sm ${currentPlan === 'premium'
+                ? 'bg-gray-100 text-gray-600'
+                : 'bg-gradient-to-r from-amber-500 to-orange-600 text-white hover:shadow-lg'
+              }`}
           >
-            Upgrade to Premium
+            {currentPlan === 'premium' ? 'Current Plan' : 'Upgrade to Premium'}
           </button>
         </motion.div>
       </div>

@@ -10,7 +10,8 @@ import {
     Zap
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import { getPlans, subscribeUser, Plan } from '../services/subscriptions';
+import { getPlans, subscribeUser, Plan, getUserSubscription, UserSubscriptionResponse } from '../services/subscriptions';
+
 
 interface SubscriptionPlansProps {
     language?: string;
@@ -22,6 +23,10 @@ export const SubscriptionPlans: React.FC<SubscriptionPlansProps> = ({ language =
     const [loading, setLoading] = useState(true);
     const [subscribing, setSubscribing] = useState<string | null>(null);
     const [error, setError] = useState<string | null>(null);
+    const [apiPlans, setApiPlans] = useState<Plan[]>([]);
+    const [selectedPlan, setSelectedPlan] = useState('basic');
+    const [userSubscription, setUserSubscription] = useState<UserSubscriptionResponse | null>(null);
+    const [subscriptionLoading, setSubscriptionLoading] = useState(true);
 
     useEffect(() => {
         const fetchPlans = async () => {
@@ -39,6 +44,37 @@ export const SubscriptionPlans: React.FC<SubscriptionPlansProps> = ({ language =
         fetchPlans();
     }, []);
 
+    useEffect(() => {
+        const fetchSubscription = async () => {
+            try {
+                const res = await getUserSubscription();
+                console.log(res);
+                setUserSubscription(res);
+                if (res.plan) {
+                    const isPremium = res.plan.name.toLowerCase().includes('premium');
+                    setSelectedPlan(isPremium ? 'premium' : 'basic');
+                }
+            } catch (err) {
+                console.error('Failed to fetch subscription:', err);
+            } finally {
+                setSubscriptionLoading(false);
+            }
+        };
+
+        fetchSubscription();
+    }, []);
+
+    const getDynamicPrice = (planType: 'basic' | 'premium', defaultPrice: number) => {
+        const plan = apiPlans.find(p => p.name.toLowerCase().includes(planType));
+        return plan ? parseFloat(plan.price) : defaultPrice;
+    };
+
+    const getDynamicPeriod = (planType: 'basic' | 'premium', defaultPeriod: string) => {
+        const plan = apiPlans.find(p => p.name.toLowerCase().includes(planType));
+        if (!plan) return defaultPeriod;
+        return plan.billing_interval === 'free' ? 'Free Forever' : `per ${plan.billing_interval}`;
+    };
+
     const handleSubscribe = async (planId: string) => {
         setSubscribing(planId);
         setError(null);
@@ -52,7 +88,7 @@ export const SubscriptionPlans: React.FC<SubscriptionPlansProps> = ({ language =
             }
         } catch (err: any) {
             console.error('Subscription error:', err);
-            setError(err.response?.data?.message || 'Failed to initiate subscription. Please check your connection.');
+            setError(err.response?.data?.error || 'Failed to initiate subscription. Please check your connection.');
         } finally {
             setSubscribing(null);
         }
@@ -143,17 +179,20 @@ export const SubscriptionPlans: React.FC<SubscriptionPlansProps> = ({ language =
 
                                 <button
                                     onClick={() => handleSubscribe(plan.id)}
-                                    disabled={subscribing !== null}
+                                    disabled={userSubscription?.has_subscription === true}
                                     className={`w-full py-4 rounded-2xl font-bold flex items-center justify-center gap-2 transition-all ${plan.name.toLowerCase().includes('premium')
                                         ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-200 hover:bg-emerald-700'
                                         : 'bg-gray-100 text-gray-900 hover:bg-gray-200'
-                                        } ${subscribing === plan.id ? 'opacity-70 cursor-not-allowed' : ''}`}
+                                        } ${userSubscription?.has_subscription === true ? 'opacity-70 cursor-not-allowed ' : ''}`}
                                 >
-                                    {subscribing === plan.id ? (
-                                        <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                                    {userSubscription?.has_subscription === true ? (
+                                        <>
+                                            <span className='text-sm font-medium'>A Subscription Is Active</span>
+                                            <ArrowRight className="w-4 h-4" />
+                                        </>
                                     ) : (
                                         <>
-                                            <span>Get Started</span>
+                                            <span className='text-sm font-medium'>Get Started</span>
                                             <ArrowRight className="w-4 h-4" />
                                         </>
                                     )}

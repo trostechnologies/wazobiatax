@@ -20,6 +20,7 @@ import {
 } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { useLanguage } from "@/context/LanguageContext";
+import { getPlans, Plan, getUserSubscription, UserSubscriptionResponse } from '../services/subscriptions';
 import { profileTranslations, type LanguageKey } from '../translations/profile';
 
 interface DashboardProps {
@@ -206,6 +207,10 @@ export function Dashboard({ language = 'english' }: DashboardProps) {
   const user = getUser();
   const [currentUser, setCurrentUser] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [apiPlans, setApiPlans] = useState<Plan[]>([]);
+  const [selectedPlan, setSelectedPlan] = useState('basic');
+  const [userSubscription, setUserSubscription] = useState<UserSubscriptionResponse | null>(null);
+  const [subscriptionLoading, setSubscriptionLoading] = useState(true);
 
   // Subscription data
   const subscription: Subscription =
@@ -261,6 +266,37 @@ export function Dashboard({ language = 'english' }: DashboardProps) {
 
     fetchProfile();
   }, []);
+
+  useEffect(() => {
+    const fetchSubscription = async () => {
+      try {
+        const res = await getUserSubscription();
+        console.log(res);
+        setUserSubscription(res);
+        if (res.plan) {
+          const isPremium = res.plan.name.toLowerCase().includes('premium');
+          setSelectedPlan(isPremium ? 'premium' : 'basic');
+        }
+      } catch (err) {
+        console.error('Failed to fetch subscription:', err);
+      } finally {
+        setSubscriptionLoading(false);
+      }
+    };
+
+    fetchSubscription();
+  }, []);
+
+  const getDynamicPrice = (planType: 'basic' | 'premium', defaultPrice: number) => {
+    const plan = apiPlans.find(p => p.name.toLowerCase().includes(planType));
+    return plan ? parseFloat(plan.price) : defaultPrice;
+  };
+
+  const getDynamicPeriod = (planType: 'basic' | 'premium', defaultPeriod: string) => {
+    const plan = apiPlans.find(p => p.name.toLowerCase().includes(planType));
+    if (!plan) return defaultPeriod;
+    return plan.billing_interval === 'free' ? 'Free Forever' : `per ${plan.billing_interval}`;
+  };
 
   // if (loading) return <p className='italic'>Loading...</p>;
 
@@ -563,14 +599,7 @@ export function Dashboard({ language = 'english' }: DashboardProps) {
                 <div>
                   <p className="text-xs text-gray-600 mb-1">{sub.currentPlan}</p>
                   <div className="flex items-center gap-2">
-                    <p className="text-lg">
-                      {subscription === 'premium' ? sub.premium : subscription === 'trial' ? sub.trial : sub.basic}
-                    </p>
-                    {subscription === 'premium' && (
-                      <span className="px-2 py-0.5 bg-gradient-to-r from-amber-400 to-orange-500 text-white rounded-full text-xs">
-                        {sub.premium}
-                      </span>
-                    )}
+                    <p className="text-lg">{userSubscription?.plan?.name || 'Basic'}</p>
                     {subscription === 'trial' && (
                       <span className="px-2 py-0.5 bg-blue-100 text-blue-700 rounded-full text-xs">
                         {sub.trial}
@@ -590,11 +619,16 @@ export function Dashboard({ language = 'english' }: DashboardProps) {
                       {isTrial ? sub.trialExpires : sub.nextRenewal}
                     </p>
                     <p className="text-sm mt-0.5">
-                      {isTrial ? subscriptionExpiryDate : subscriptionRenewalDate}
+                      {userSubscription?.billing?.next_billing_date
+                        ? new Date(userSubscription.billing.next_billing_date).toLocaleDateString(
+                          "en-US",
+                          { year: "numeric", month: "long", day: "numeric" }
+                        )
+                        : "March 15, 2026"}
                     </p>
                   </div>
                 </div>
-                {subscription === 'basic' && (
+                {userSubscription?.plan?.name !== 'Premium Plan' && (
                   <button
                     onClick={() => navigate('/settings')}
                     className="px-4 py-2 bg-gradient-to-r from-amber-400 to-orange-500 text-white text-sm rounded-lg hover:shadow-md transition-all flex items-center gap-1"

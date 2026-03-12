@@ -24,6 +24,15 @@ interface ProfileProps {
   language?: LanguageKey;
 }
 
+type MenuItem = {
+  id: string;
+  labelKey: string;
+  icon: any;
+  screen: string;
+  highlight?: boolean;
+  premium?: boolean;
+};
+
 const translations = {
   english: {
     account: "Account",
@@ -179,7 +188,7 @@ export function Profile({ language = 'english' }: ProfileProps) {
     setTimeout(() => setCopied(false), 2000);
   };
 
-  const menuSections = [
+  const menuSections: { titleKey: string; items: MenuItem[] }[] = [
     {
       titleKey: 'account',
       items: [
@@ -453,7 +462,12 @@ export function Profile({ language = 'english' }: ProfileProps) {
                           {isTrial ? sub.trialExpires : sub.nextRenewal}
                         </p>
                         <p className="text-sm mt-0.5">
-                          {isTrial ? subscriptionExpiryDate : subscriptionRenewalDate}
+                          {userSubscription?.billing?.next_billing_date
+                            ? new Date(userSubscription.billing.next_billing_date).toLocaleDateString(
+                              "en-US",
+                              { year: "numeric", month: "long", day: "numeric" }
+                            )
+                            : "March 15, 2026"}
                         </p>
                       </div>
                     </div>
@@ -464,38 +478,40 @@ export function Profile({ language = 'english' }: ProfileProps) {
 
             {/* Section Items */}
             <div className="bg-white rounded-2xl overflow-hidden shadow-sm">
-              {section.items.map((item, index) => (
-                <button
-                  key={item.id}
-                  onClick={() => navigate(item.screen)}
-                  className={`w-full px-4 py-4 flex items-center justify-between hover:bg-gray-50 transition-all
-              ${index !== section.items.length - 1 ? 'border-b border-gray-100' : ''}
-              ${item.premium ? 'bg-gradient-to-r from-amber-50 to-orange-50' : ''}
-            `}
-                >
-                  <div className="flex items-center gap-3">
-                    <div
-                      className={`w-10 h-10 rounded-lg flex items-center justify-center ${item.premium
-                        ? 'bg-gradient-to-br from-amber-400 to-orange-500'
-                        : item.highlight
-                          ? 'bg-emerald-50'
-                          : 'bg-gray-50'
-                        }`}
-                    >
-                      <item.icon
-                        className={`w-5 h-5 ${item.premium
-                          ? 'text-white'
+              {section.items
+                .filter((item) => !(subscriptionStatus === 'premium' && item.id === 'subscription'))
+                .map((item, index) => (
+                  <button
+                    key={item.id}
+                    onClick={() => navigate(item.screen)}
+                    className={`w-full px-4 py-4 flex items-center justify-between hover:bg-gray-50 transition-all
+        ${index !== section.items.length - 1 ? 'border-b border-gray-100' : ''}
+        ${item.premium ? 'bg-gradient-to-r from-amber-50 to-orange-50' : ''}
+      `}
+                  >
+                    <div className="flex items-center gap-3">
+                      <div
+                        className={`w-10 h-10 rounded-lg flex items-center justify-center ${item.premium
+                          ? 'bg-gradient-to-br from-amber-400 to-orange-500'
                           : item.highlight
-                            ? 'text-emerald-600'
-                            : 'text-gray-600'
+                            ? 'bg-emerald-50'
+                            : 'bg-gray-50'
                           }`}
-                      />
+                      >
+                        <item.icon
+                          className={`w-5 h-5 ${item.premium
+                            ? 'text-white'
+                            : item.highlight
+                              ? 'text-emerald-600'
+                              : 'text-gray-600'
+                            }`}
+                        />
+                      </div>
+                      <span className="text-sm">{translations[language][item.labelKey]}</span>
                     </div>
-                    <span className="text-sm">{translations[language][item.labelKey]}</span>
-                  </div>
-                  <ChevronRight className="w-5 h-5 text-gray-400" />
-                </button>
-              ))}
+                    <ChevronRight className="w-5 h-5 text-gray-400" />
+                  </button>
+                ))}
             </div>
           </motion.div>
         ))}
