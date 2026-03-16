@@ -34,6 +34,7 @@ export function Settings({ language = 'english' }: SettingsProps) {
   const [loading, setLoading] = useState(true);
   const [userSubscription, setUserSubscription] = useState<UserSubscriptionResponse | null>(null);
   const [subscriptionLoading, setSubscriptionLoading] = useState(true);
+  const [billingCycle, setBillingCycle] = useState<'monthly' | 'yearly'>('monthly');
 
   useEffect(() => {
     const fetchPlans = async () => {
@@ -55,6 +56,7 @@ export function Settings({ language = 'english' }: SettingsProps) {
         if (res.plan) {
           const isPremium = res.plan.name.toLowerCase().includes('premium');
           setSelectedPlan(isPremium ? 'premium' : 'basic');
+          setBillingCycle(res.plan.billing_interval === 'year' ? 'yearly' : 'monthly');
         }
       } catch (err) {
         console.error('Failed to fetch subscription:', err);
@@ -68,21 +70,31 @@ export function Settings({ language = 'english' }: SettingsProps) {
   }, []);
 
   const getDynamicPrice = (planType: 'basic' | 'premium', defaultPrice: number) => {
-    const plan = apiPlans.find(p => p.name.toLowerCase().includes(planType));
+    const plan = apiPlans.find(p => {
+      const name = p.name.toLowerCase();
+      const isTypeMatch = name.includes(planType);
+      const isAnnualMatch = name.includes('annual') || p.billing_interval === 'year';
+      return isTypeMatch && (billingCycle === 'yearly' ? isAnnualMatch : !isAnnualMatch);
+    });
     return plan ? parseFloat(plan.price) : defaultPrice;
   };
 
   const getDynamicPeriod = (planType: 'basic' | 'premium', defaultPeriod: string) => {
-    const plan = apiPlans.find(p => p.name.toLowerCase().includes(planType));
+    const plan = apiPlans.find(p => {
+      const name = p.name.toLowerCase();
+      const isTypeMatch = name.includes(planType);
+      const isAnnualMatch = name.includes('annual') || p.billing_interval === 'year';
+      return isTypeMatch && (billingCycle === 'yearly' ? isAnnualMatch : !isAnnualMatch);
+    });
     if (!plan) return defaultPeriod;
     return plan.billing_interval === 'free' ? 'Free Forever' : `per ${plan.billing_interval}`;
   };
 
   const plans = {
     basic: {
-      name: 'Basic',
-      price: getDynamicPrice('basic', 500),
-      period: getDynamicPeriod('basic', 'Free Forever'),
+      name: billingCycle === 'yearly' ? 'Basic Annual' : 'Basic',
+      price: getDynamicPrice('basic', billingCycle === 'yearly' ? 5000 : 500),
+      period: getDynamicPeriod('basic', billingCycle === 'yearly' ? 'per year' : 'Free Forever'),
       features: [
         'Unlimited ledger entries',
         'Basic tax calculations',
@@ -97,9 +109,9 @@ export function Settings({ language = 'english' }: SettingsProps) {
       ]
     },
     premium: {
-      name: 'Premium',
-      price: getDynamicPrice('premium', 2500),
-      period: getDynamicPeriod('premium', 'per month'),
+      name: billingCycle === 'yearly' ? 'Premium Annual' : 'Premium',
+      price: getDynamicPrice('premium', billingCycle === 'yearly' ? 25000 : 2500),
+      period: getDynamicPeriod('premium', billingCycle === 'yearly' ? 'per year' : 'per month'),
       features: [
         'Everything in Basic',
         'Unlimited tax returns',
@@ -140,6 +152,30 @@ export function Settings({ language = 'english' }: SettingsProps) {
             <ArrowLeft className="w-6 h-6 text-gray-700" />
           </button>
           <h1 className="text-lg">Subscription Plans</h1>
+        </div>
+      </div>
+
+      {/* Billing Toggle */}
+      <div className="px-6 pt-8 flex justify-center">
+        <div className="bg-gray-200/50 p-1.5 rounded-2xl flex items-center gap-1 w-full max-w-[300px]">
+          <button
+            onClick={() => setBillingCycle('monthly')}
+            className={`flex-1 py-3 px-4 rounded-xl text-sm font-bold transition-all relative ${billingCycle === 'monthly'
+              ? 'bg-white text-emerald-600 shadow-sm'
+              : 'text-gray-500 hover:text-gray-700'
+              }`}
+          >
+            Monthly
+          </button>
+          <button
+            onClick={() => setBillingCycle('yearly')}
+            className={`flex-1 py-3 px-4 rounded-xl text-sm font-bold transition-all relative ${billingCycle === 'yearly'
+              ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-200'
+              : 'text-gray-500 hover:text-gray-700'
+              }`}
+          >
+            Annual
+          </button>
         </div>
       </div>
 
@@ -188,7 +224,7 @@ export function Settings({ language = 'english' }: SettingsProps) {
               ) : (
                 <p className="text-2xl">₦{plans.basic.price.toLocaleString('en-NG')}</p>
               )}
-              <p className="text-sm text-gray-600">{plans.basic.period}</p>
+              <p className="text-sm text-gray-600 capitalize">{plans.basic.period}</p>
             </div>
             {selectedPlan === 'basic' && (
               <div className="w-6 h-6 bg-emerald-600 rounded-full flex items-center justify-center">
@@ -201,20 +237,23 @@ export function Settings({ language = 'english' }: SettingsProps) {
             <p className="text-xs text-gray-600 uppercase tracking-wide">Features</p>
             {plans.basic.features.map((feature, index) => (
               <div key={index} className="flex items-start gap-2 text-sm">
-                <Check className="w-4 h-4 text-emerald-600 mt-0.5 flex-shrink-0" />
+                <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ delay: index * 0.05 }}>
+                  <Check className="w-4 h-4 text-emerald-600 mt-0.5 flex-shrink-0" />
+                </motion.div>
                 <span className="text-gray-700">{feature}</span>
               </div>
             ))}
           </div>
 
           <button
-            disabled={currentPlan === 'basic'}
-            className={`w-full py-3 rounded-xl text-sm ${currentPlan === 'basic'
-              ? 'bg-gray-100 text-gray-600'
-              : 'bg-white border border-gray-300 hover:bg-gray-50'
+            disabled={currentPlan === 'basic' && (userSubscription?.plan?.billing_interval === (billingCycle === 'yearly' ? 'year' : 'month') || billingCycle === 'monthly')}
+            onClick={() => navigate('/subscriptions')}
+            className={`w-full py-3 rounded-xl text-sm font-bold transition-all ${currentPlan === 'basic' && (userSubscription?.plan?.billing_interval === (billingCycle === 'yearly' ? 'year' : 'month') || billingCycle === 'monthly')
+              ? 'bg-gray-100 text-gray-600 cursor-not-allowed'
+              : 'bg-white border-2 border-emerald-600 text-emerald-600 hover:bg-emerald-50 shadow-sm'
               }`}
           >
-            {currentPlan === 'basic' ? 'Current Plan' : 'Downgrade to Basic'}
+            {currentPlan === 'basic' && (userSubscription?.plan?.billing_interval === (billingCycle === 'yearly' ? 'year' : 'month') || billingCycle === 'monthly') ? 'Current Plan' : 'Downgrade to Basic'}
           </button>
         </motion.div>
 
@@ -223,66 +262,65 @@ export function Settings({ language = 'english' }: SettingsProps) {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.1 }}
-          className={`bg-gradient-to-br from-amber-50 to-orange-50 rounded-2xl p-6 border-2 transition-all relative overflow-hidden ${selectedPlan === 'premium'
-            ? 'border-amber-600 shadow-2xl'
-            : 'border-amber-200 hover:border-amber-300'
+          className={`bg-white rounded-2xl p-6 border-2 transition-all relative overflow-hidden ${selectedPlan === 'premium'
+            ? 'border-emerald-600 shadow-xl'
+            : 'border-gray-100 hover:border-gray-200'
             }`}
           onClick={() => setSelectedPlan('premium')}
         >
           {/* Badge */}
-          <div className="absolute top-4 right-4">
-            <div className="px-3 py-1 bg-gradient-to-r from-amber-400 to-orange-500 text-white rounded-full text-xs flex items-center gap-1">
+          <div className="absolute top-1 right-1">
+            <div className="px-3 py-1 bg-emerald-500 text-white rounded-full text-[10px] font-bold uppercase tracking-wider flex items-center gap-1">
               <Sparkles className="w-3 h-3" />
               {plans.premium.badge}
             </div>
           </div>
 
-          <div className="flex items-start justify-between mb-4">
+          <div className="flex items-start justify-between my-4">
             <div>
               <div className="flex items-center gap-2 mb-1">
-                <Crown className="w-5 h-5 text-amber-600" />
-                <h3 className="text-lg">{plans.premium.name}</h3>
+                <Crown className="w-5 h-5 text-emerald-600" />
+                <h3 className="text-lg font-bold">{plans.premium.name}</h3>
               </div>
               <div className="flex items-baseline gap-1">
                 {loading ? (
-                  <div className="h-8 w-32 bg-amber-100/50 animate-pulse rounded-lg mb-1" />
+                  <div className="h-8 w-32 bg-emerald-50 animate-pulse rounded-lg mb-1" />
                 ) : (
                   <>
-                    <p className="text-2xl">₦{plans.premium.price.toLocaleString('en-NG')}</p>
-                    <p className="text-sm text-gray-600">{plans.premium.period}</p>
+                    <p className="text-2xl font-bold">₦{plans.premium.price.toLocaleString('en-NG')}</p>
+                    <p className="text-sm text-gray-400 capitalize">{plans.premium.period}</p>
                   </>
                 )}
               </div>
             </div>
             {selectedPlan === 'premium' && (
-              <div className="w-6 h-6 bg-amber-600 rounded-full flex items-center justify-center">
+              <div className="w-6 h-6 bg-emerald-600 rounded-full flex items-center justify-center">
                 <Check className="w-4 h-4 text-white" />
               </div>
             )}
           </div>
 
           <div className="space-y-2 mb-4">
-            <p className="text-xs text-amber-900 uppercase tracking-wide">Premium Features</p>
+            <p className="text-xs text-gray-400 uppercase tracking-wide">Premium Features</p>
             {plans.premium.features.map((feature, index) => (
               <div key={index} className="flex items-start gap-2 text-sm">
-                <Check className="w-4 h-4 text-amber-600 mt-0.5 flex-shrink-0" />
+                <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ delay: index * 0.05 + 0.1 }}>
+                  <Check className="w-4 h-4 text-emerald-600 mt-0.5 flex-shrink-0" />
+                </motion.div>
                 <span className="text-gray-700">{feature}</span>
               </div>
             ))}
           </div>
 
           <button
-            disabled={currentPlan === 'premium'}
-            onClick={() => {
-              setSelectedPlan('premium')
-              navigate('/subscriptions')
-            }}
-            className={`w-full py-3 rounded-xl transition-all text-sm ${currentPlan === 'premium'
-                ? 'bg-gray-100 text-gray-600'
-                : 'bg-gradient-to-r from-amber-500 to-orange-600 text-white hover:shadow-lg'
+            disabled={currentPlan === 'premium' && (userSubscription?.plan?.billing_interval === (billingCycle === 'yearly' ? 'year' : 'month'))}
+            onClick={() => navigate('/subscriptions')}
+            className={`w-full py-4 rounded-2xl font-bold transition-all text-sm ${currentPlan === 'premium' && (userSubscription?.plan?.billing_interval === (billingCycle === 'yearly' ? 'year' : 'month'))
+              ? 'bg-gray-100 text-gray-600 cursor-not-allowed'
+              : 'bg-emerald-600 text-white shadow-lg shadow-emerald-200 hover:bg-emerald-700'
               }`}
           >
-            {currentPlan === 'premium' ? 'Current Plan' : 'Upgrade to Premium'}
+            {currentPlan === 'premium' && (userSubscription?.plan?.billing_interval === (billingCycle === 'yearly' ? 'year' : 'month')) ? 'Current Plan' : 'Upgrade to Premium'}
           </button>
         </motion.div>
       </div>

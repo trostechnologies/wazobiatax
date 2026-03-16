@@ -23,6 +23,7 @@ import { onboardingTranslations, type LanguageKey } from '../translations/onboar
 import { ToastContainer, toast } from 'react-toastify';
 import Logo from '@/assets/wazobiatax-logo.png'
 import GoogleLogo from '@/assets/google-logo.webp'
+import { getPlans, subscribeUser, type Plan } from '../services/subscriptions';
 
 // temporary declaration for Paystack
 declare global {
@@ -45,6 +46,9 @@ export function OnboardingWizard({ onComplete, onNavigate, initialStep }: Onboar
   const [isProcessing, setIsProcessing] = useState(false);
   const [verificationCode, setVerificationCode] = useState(['', '', '', '', '', '']);
   const [selectedPlan, setSelectedPlan] = useState('');
+  const [apiPlans, setApiPlans] = useState<Plan[]>([]);
+  const [loadingPlans, setLoadingPlans] = useState(true);
+  const [billingCycle, setBillingCycle] = useState<'monthly' | 'yearly'>('monthly');
   const [paymentError, setPaymentError] = useState(false);
   const [formData, setFormData] = useState({
     email: '',
@@ -97,6 +101,37 @@ export function OnboardingWizard({ onComplete, onNavigate, initialStep }: Onboar
     if (selectedLanguage) {
       setCurrentStep('authPath');
     }
+  };
+
+  useEffect(() => {
+    const fetchPlans = async () => {
+      try {
+        setLoadingPlans(true);
+        const res = await getPlans();
+        setApiPlans(res.data);
+      } catch (err) {
+        console.error('Failed to fetch plans:', err);
+        toast.error('Could not load subscription plans.');
+      } finally {
+        setLoadingPlans(false);
+      }
+    };
+
+    if (currentStep === 'subscription') {
+      fetchPlans();
+    }
+  }, [currentStep]);
+
+  // Map API plans to translation features
+  const getPlanFeatures = (planName: string) => {
+    const name = planName.toLowerCase();
+    if (name.includes('premium')) return t.subscription.premiumFeatures;
+    return t.subscription.basicFeatures;
+  };
+
+  const getPlanPriceLabel = (plan: Plan) => {
+    if (plan.billing_interval === 'free') return t.subscription.freeForever;
+    return `per ${plan.billing_interval}`;
   };
 
   const handleAuthPathSelect = (type: string) => {
@@ -229,6 +264,9 @@ export function OnboardingWizard({ onComplete, onNavigate, initialStep }: Onboar
   const handleGoogleAuth = () => {
     setIsProcessing(true);
     setTimeout(() => {
+      // Mock social auth token for development
+      localStorage.setItem('accessToken', 'mock-google-token-' + Date.now());
+      localStorage.setItem('userEmail', formData.email || 'google-user@example.com');
       setIsProcessing(false);
       setCurrentStep('subscription');
     }, 2000);
@@ -242,12 +280,44 @@ export function OnboardingWizard({ onComplete, onNavigate, initialStep }: Onboar
     setIsProcessing(true);
 
     try {
-      await verifyEmailOtp({
+      const response = await verifyEmailOtp({
         email: formData.email,
         otp,
       });
 
-      // OTP verified → move forward
+      // ✅ SAVE TOKENS IF RETURNED
+      if (response?.['access-token']) {
+        localStorage.setItem('accessToken', response['access-token']);
+        localStorage.setItem('refreshToken', response['refresh-token']);
+      }
+
+      if (response?.user_id) {
+        localStorage.setItem('userId', response.user_id);
+      }
+
+      // OTP verified → Attempt Auto-Login
+      try {
+        const loginRes = await fetch('https://api.wazobiatax.ng/api/auth/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            email: formData.email,
+            password: formData.password,
+          }),
+        });
+
+        if (loginRes.ok) {
+          const authData = await loginRes.json();
+          localStorage.setItem('accessToken', authData['access-token']);
+          localStorage.setItem('refreshToken', authData['refresh-token']);
+          localStorage.setItem('userId', authData.user_id);
+          console.log('AUTO-LOGIN SUCCESS');
+        }
+      } catch (loginErr) {
+        console.error('Auto-login failed:', loginErr);
+        // We don't block the flow, but the user might hit "No access token" later
+      }
+
       setCurrentStep('subscription');
     } catch (error: any) {
       console.error(error);
@@ -273,43 +343,43 @@ export function OnboardingWizard({ onComplete, onNavigate, initialStep }: Onboar
 
   const handleSubscriptionSelect = (planId: string) => {
     setSelectedPlan(planId);
-    if (planId === 'basic') {
+    const plan = apiPlans.find(p => p.id === planId);
+
+    if (plan?.billing_interval === 'free' || parseFloat(plan?.price || '0') === 0) {
       setCurrentStep('login');
-      toast.success("LOGIN NOW TO CONTINUE!")
+      toast.success("LOGIN NOW TO CONTINUE!");
     } else {
       setCurrentStep('payment');
     }
   };
 
-  const handlePayment = () => {
-    if (!window.PaystackPop) {
-      alert("Paystack not loaded");
+  const handlePayment = async () => {
+    if (isProcessing) return;
+
+    const currentPlan = apiPlans.find(p => p.id === selectedPlan);
+    if (!currentPlan) {
+      toast.error("Please select a valid plan");
       return;
     }
 
     setIsProcessing(true);
 
-    const handler = window.PaystackPop.setup({
-      key: "pk_test_fbd54421de2f1138866e21420f21d484cb269d7e", // your test public key
-      email: localStorage.getItem('userEmail') || 'test@example.com', // dynamic user email
-      amount: selectedPlan === "premium" ? 500 * 100 : 0, // amount in kobo
-      currency: "NGN",
-      ref: `REF-${Math.floor(Math.random() * 1000000000)}`, // unique reference
-      metadata: {
-        plan: selectedPlan,
-      },
-      callback: function (response: any) {
-        // payment successful
-        console.log("Payment complete! Reference:", response.reference);
-        setCurrentStep("success"); // move to success step
-      },
-      onClose: function () {
-        alert("Payment was not completed!");
-        setIsProcessing(false);
-      },
-    });
-
-    handler.openIframe();
+    try {
+      const res = await subscribeUser(currentPlan.id);
+      if (res.authorization_url) {
+        // Redirect to Paystack secure checkout
+        window.location.href = res.authorization_url;
+      } else {
+        toast.error('Subscription failed. No payment URL received.');
+      }
+    } catch (err: any) {
+      console.error('Subscription error:', err);
+      const message = err.response?.data?.error || err.message || 'Failed to initiate subscription.';
+      toast.error(message);
+      setPaymentError(true);
+    } finally {
+      setIsProcessing(false);
+    }
   };
 
   const handleRetryPayment = () => {
@@ -950,60 +1020,107 @@ export function OnboardingWizard({ onComplete, onNavigate, initialStep }: Onboar
                 <p className="text-gray-600">{t.subscription.subtitle}</p>
               </div>
 
-              <div className="space-y-4">
-                {plans.map((plan, index) => (
-                  <motion.div
-                    key={plan.id}
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: index * 0.1 }}
-                    className={`rounded-2xl p-6 border-2 transition-all relative ${plan.id === 'premium'
-                      ? 'bg-gradient-to-br from-amber-50 to-orange-50 border-amber-200'
-                      : 'bg-white border-gray-200'
-                      }`}
-                  >
-                    {plan.popular && (
-                      <div className="absolute -top-3 left-1/2 -translate-x-1/2">
-                        <div className="px-4 py-1 bg-gradient-to-r from-amber-400 to-orange-500 text-white rounded-full text-xs flex items-center gap-1">
-                          <Sparkles className="w-3 h-3" />
-                          {t.subscription.popular}
-                        </div>
-                      </div>
-                    )}
-
-                    <div className="flex items-center justify-between mb-4">
-                      <div className="flex items-center gap-2">
-                        {plan.id === 'premium' && <Crown className="w-6 h-6 text-amber-600" />}
-                        <h3 className="text-xl">{plan.name}</h3>
-                      </div>
-                      <div className="text-right">
-                        <p className="text-2xl">₦{plan.price}</p>
-                        <p className="text-xs text-gray-600">{plan.period}</p>
-                      </div>
+              {loadingPlans ? (
+                <div className="flex flex-col items-center justify-center py-12 gap-3">
+                  <Loader2 className="w-8 h-8 animate-spin text-emerald-600" />
+                  <p className="text-sm text-gray-500">Fetching latest plans...</p>
+                </div>
+              ) : (
+                <div className="space-y-6">
+                  {/* Billing Toggle */}
+                  <div className="flex justify-center">
+                    <div className="bg-gray-100 p-1 rounded-xl flex items-center gap-1 w-full max-w-[280px]">
+                      <button
+                        onClick={() => setBillingCycle('monthly')}
+                        className={`flex-1 py-2 px-4 rounded-lg text-sm font-medium transition-all ${billingCycle === 'monthly'
+                          ? 'bg-white text-emerald-600 shadow-sm'
+                          : 'text-gray-500 hover:text-gray-700'
+                          }`}
+                      >
+                        Monthly
+                      </button>
+                      <button
+                        onClick={() => setBillingCycle('yearly')}
+                        className={`flex-1 py-2 px-4 rounded-lg text-sm font-medium transition-all ${billingCycle === 'yearly'
+                          ? 'bg-emerald-600 text-white shadow-sm'
+                          : 'text-gray-500 hover:text-gray-700'
+                          }`}
+                      >
+                        Yearly
+                      </button>
                     </div>
+                  </div>
 
-                    <div className="space-y-2 mb-6">
-                      {plan.features.map((feature, idx) => (
-                        <div key={idx} className="flex items-start gap-2">
-                          <Check className={`w-4 h-4 mt-0.5 flex-shrink-0 ${plan.id === 'premium' ? 'text-amber-600' : 'text-emerald-600'
-                            }`} />
-                          <span className="text-sm text-gray-700">{feature}</span>
-                        </div>
-                      ))}
-                    </div>
+                  <div className="space-y-4">
+                    {apiPlans
+                      .filter(plan => {
+                        const name = plan.name.toLowerCase();
+                        if (billingCycle === 'yearly') {
+                          return name.includes('annual') || plan.billing_interval === 'year';
+                        } else {
+                          return !name.includes('annual') && plan.billing_interval !== 'year';
+                        }
+                      })
+                      .map((plan, index) => {
+                        const isPremium = plan.name.toLowerCase().includes('premium');
+                        const features = getPlanFeatures(plan.name);
 
-                    <button
-                      onClick={() => handleSubscriptionSelect(plan.id)}
-                      className={`w-full py-3 rounded-xl transition-all ${plan.id === 'premium'
-                        ? 'bg-gradient-to-r from-amber-500 to-orange-600 text-white hover:shadow-lg'
-                        : 'bg-emerald-600 text-white hover:bg-emerald-700'
-                        }`}
-                    >
-                      {plan.id === 'premium' ? t.subscription.startPremium : t.subscription.startBasic}
-                    </button>
-                  </motion.div>
-                ))}
-              </div>
+                        return (
+                          <motion.div
+                            key={plan.id}
+                            initial={{ opacity: 0, y: 20 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{ delay: index * 0.1 }}
+                            className={`rounded-2xl p-6 border-2 transition-all relative ${isPremium
+                              ? 'bg-gradient-to-br from-amber-50 to-orange-50 border-amber-200'
+                              : 'bg-white border-gray-200'
+                              }`}
+                          >
+                            {isPremium && (
+                              <div className="absolute top-1 left-1/2 -translate-x-1/2">
+                                <div className="px-4 py-1 bg-gradient-to-r from-amber-400 to-orange-500 text-white rounded-full text-xs flex items-center gap-1">
+                                  <Sparkles className="w-3 h-3" />
+                                  {t.subscription.popular}
+                                </div>
+                              </div>
+                            )}
+
+                            <div className="flex items-center justify-between mb-4">
+                              <div className="flex items-center gap-2">
+                                {isPremium && <Crown className="w-6 h-6 text-amber-600" />}
+                                <h3 className="text-xl">{plan.name}</h3>
+                              </div>
+                              <div className="text-right">
+                                <p className="text-2xl">₦{parseFloat(plan.price).toLocaleString()}</p>
+                                <p className="text-xs text-gray-600">{getPlanPriceLabel(plan)}</p>
+                              </div>
+                            </div>
+
+                            <div className="space-y-2 mb-6">
+                              {features.map((feature, idx) => (
+                                <div key={idx} className="flex items-start gap-2">
+                                  <Check className={`w-4 h-4 mt-0.5 flex-shrink-0 ${isPremium ? 'text-amber-600' : 'text-emerald-600'
+                                    }`} />
+                                  <span className="text-sm text-gray-700">{feature}</span>
+                                </div>
+                              ))}
+                            </div>
+
+                            <button
+                              onClick={() => handleSubscriptionSelect(plan.id)}
+                              className={`w-full py-3 rounded-xl transition-all ${isPremium
+                                ? 'bg-gradient-to-r from-amber-500 to-orange-600 text-white hover:shadow-lg'
+                                : 'bg-emerald-600 text-white hover:bg-emerald-700'
+                                }`}
+                            >
+                              {isPremium ? t.subscription.startPremium : t.subscription.startBasic}
+                            </button>
+                          </motion.div>
+                        );
+                      })}
+                  </div>
+                </div>
+              )}
 
               <div className="bg-blue-50 border border-blue-200 rounded-xl p-4">
                 <p className="text-xs text-blue-900 text-center">
@@ -1028,10 +1145,18 @@ export function OnboardingWizard({ onComplete, onNavigate, initialStep }: Onboar
                 <p className="text-gray-600">{t.payment.subtitle}</p>
               </div>
 
-              <div className="bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-2xl p-6 text-white">
-                <p className="text-emerald-100 text-sm mb-2">{t.payment.planLabel}</p>
-                <p className="text-3xl mb-2">₦500</p>
-                <p className="text-emerald-100 text-sm">{t.payment.billingNote}</p>
+              <div className="bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-2xl p-6 text-white text-center">
+                <p className="text-emerald-100 text-sm mb-2">
+                  {apiPlans.find(p => p.id === selectedPlan)?.name || 'Selected'} Plan
+                </p>
+                <p className="text-4xl font-bold mb-2">
+                  ₦{parseFloat(apiPlans.find(p => p.id === selectedPlan)?.price || '0').toLocaleString()}
+                </p>
+                <p className="text-emerald-100 text-sm">
+                  {apiPlans.find(p => p.id === selectedPlan)?.billing_interval === 'yearly'
+                    ? 'Billed annually'
+                    : 'Billed monthly'}, cancel anytime
+                </p>
               </div>
 
               {paymentError ? (
@@ -1064,43 +1189,10 @@ export function OnboardingWizard({ onComplete, onNavigate, initialStep }: Onboar
                 </motion.div>
               ) : (
                 <>
-                  <div className="space-y-4">
-                    <div>
-                      <label className="block mb-2 text-gray-700">{t.payment.cardNumber}</label>
-                      <div className="relative">
-                        <CreditCard className="w-5 h-5 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-                        <input
-                          type="text"
-                          placeholder={t.payment.cardPlaceholder}
-                          className="w-full pl-11 pr-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none"
-                        />
-                      </div>
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-3">
-                      <div>
-                        <label className="block mb-2 text-gray-700 text-sm">{t.payment.expiry}</label>
-                        <input
-                          type="text"
-                          placeholder={t.payment.expiryPlaceholder}
-                          className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none"
-                        />
-                      </div>
-                      <div>
-                        <label className="block mb-2 text-gray-700 text-sm">{t.payment.cvv}</label>
-                        <input
-                          type="text"
-                          placeholder={t.payment.cvvPlaceholder}
-                          className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none"
-                        />
-                      </div>
-                    </div>
-                  </div>
-
                   <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 flex items-center gap-3">
                     <Shield className="w-8 h-8 text-blue-600 flex-shrink-0" />
                     <p className="text-xs text-blue-900">
-                      🔒 {t.payment.security}
+                      {t.payment.security}
                     </p>
                   </div>
 
@@ -1108,8 +1200,8 @@ export function OnboardingWizard({ onComplete, onNavigate, initialStep }: Onboar
                     onClick={handlePayment}
                     disabled={isProcessing}
                     className={`w-full py-4 rounded-xl transition-all duration-300 flex items-center justify-center gap-2 ${!isProcessing
-                        ? "bg-emerald-600 text-white hover:bg-emerald-700 shadow-lg"
-                        : "bg-gray-200 text-gray-400 cursor-not-allowed"
+                      ? "bg-emerald-600 text-white hover:bg-emerald-700 shadow-lg"
+                      : "bg-gray-200 text-gray-400 cursor-not-allowed"
                       }`}
                   >
                     {isProcessing ? (
@@ -1120,10 +1212,14 @@ export function OnboardingWizard({ onComplete, onNavigate, initialStep }: Onboar
                     ) : (
                       <>
                         <CreditCard className="w-5 h-5" />
-                        {t.payment.submit}
+                        Pay Now
                       </>
                     )}
                   </button>
+
+                  <p className="text-xs text-center text-gray-400">
+                    You will be redirected to Paystack's secure payment portal
+                  </p>
                 </>
               )}
             </motion.div>

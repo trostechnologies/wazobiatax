@@ -628,7 +628,7 @@ export function Dashboard({ language = 'english' }: DashboardProps) {
                     </p>
                   </div>
                 </div>
-                {userSubscription?.plan?.name !== 'Premium Plan' && (
+                {userSubscription?.plan?.name !== 'Premium Plan' && userSubscription?.plan?.name !== 'Premium Plan (Annual)' && (
                   <button
                     onClick={() => navigate('/settings')}
                     className="px-4 py-2 bg-gradient-to-r from-amber-400 to-orange-500 text-white text-sm rounded-lg hover:shadow-md transition-all flex items-center gap-1"

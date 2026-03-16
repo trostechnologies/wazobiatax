@@ -27,6 +27,7 @@ export const SubscriptionPlans: React.FC<SubscriptionPlansProps> = ({ language =
     const [selectedPlan, setSelectedPlan] = useState('basic');
     const [userSubscription, setUserSubscription] = useState<UserSubscriptionResponse | null>(null);
     const [subscriptionLoading, setSubscriptionLoading] = useState(true);
+    const [billingCycle, setBillingCycle] = useState<'monthly' | 'yearly'>('monthly');
 
     useEffect(() => {
         const fetchPlans = async () => {
@@ -53,6 +54,7 @@ export const SubscriptionPlans: React.FC<SubscriptionPlansProps> = ({ language =
                 if (res.plan) {
                     const isPremium = res.plan.name.toLowerCase().includes('premium');
                     setSelectedPlan(isPremium ? 'premium' : 'basic');
+                    setBillingCycle(res.plan.billing_interval === 'year' ? 'yearly' : 'monthly');
                 }
             } catch (err) {
                 console.error('Failed to fetch subscription:', err);
@@ -63,6 +65,15 @@ export const SubscriptionPlans: React.FC<SubscriptionPlansProps> = ({ language =
 
         fetchSubscription();
     }, []);
+
+    const filteredPlans = plans.filter(plan => {
+        const name = plan.name.toLowerCase();
+        if (billingCycle === 'yearly') {
+            return name.includes('annual') || plan.billing_interval === 'year';
+        } else {
+            return !name.includes('annual') && plan.billing_interval !== 'year';
+        }
+    });
 
     const getDynamicPrice = (planType: 'basic' | 'premium', defaultPrice: number) => {
         const plan = apiPlans.find(p => p.name.toLowerCase().includes(planType));
@@ -116,7 +127,31 @@ export const SubscriptionPlans: React.FC<SubscriptionPlansProps> = ({ language =
                         <Crown className="w-8 h-8 text-emerald-600" />
                     </div>
                     <h2 className="text-2xl font-bold text-gray-900 mb-2">Upgrade to Premium</h2>
-                    <p className="text-gray-500">Choose a plan that fits your business needs and unlock powerful features.</p>
+                    <p className="text-gray-500 mb-8">Choose a plan that fits your business needs and unlock powerful features.</p>
+                </div>
+
+                {/* Billing Toggle */}
+                <div className="flex justify-center mb-[20px]">
+                    <div className="bg-gray-200/50 p-1.5 rounded-2xl flex items-center gap-1 w-full max-w-[300px]">
+                        <button
+                            onClick={() => setBillingCycle('monthly')}
+                            className={`flex-1 py-3 px-4 rounded-xl text-sm font-bold transition-all relative ${billingCycle === 'monthly'
+                                ? 'bg-white text-emerald-600 shadow-sm'
+                                : 'text-gray-500 hover:text-gray-700'
+                                }`}
+                        >
+                            Monthly
+                        </button>
+                        <button
+                            onClick={() => setBillingCycle('yearly')}
+                            className={`flex-1 py-3 px-4 rounded-xl text-sm font-bold transition-all relative ${billingCycle === 'yearly'
+                                ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-200'
+                                : 'text-gray-500 hover:text-gray-700'
+                                }`}
+                        >
+                            Annual
+                        </button>
+                    </div>
                 </div>
 
                 {error && (
@@ -138,7 +173,7 @@ export const SubscriptionPlans: React.FC<SubscriptionPlansProps> = ({ language =
                     </div>
                 ) : (
                     <div className="space-y-6">
-                        {plans.map((plan, index) => (
+                        {filteredPlans.map((plan, index) => (
                             <motion.div
                                 key={plan.id}
                                 initial={{ opacity: 0, y: 20 }}
@@ -156,9 +191,9 @@ export const SubscriptionPlans: React.FC<SubscriptionPlansProps> = ({ language =
                                 )}
 
                                 <div className="flex justify-between items-start mt-6 mb-6">
-                                    <div>
+                                    <div className="flex-1 pr-4">
                                         <h3 className="text-lg font-bold text-gray-900">{plan.name}</h3>
-                                        <p className="text-sm text-gray-500 mt-1">{plan.description}</p>
+                                        <p className="text-xs leading-relaxed text-gray-500 mt-1">{plan.description}</p>
                                     </div>
                                     <div className="text-right">
                                         <span className="text-2xl font-bold text-gray-900">₦{parseFloat(plan.price).toLocaleString()}</span>
@@ -179,15 +214,15 @@ export const SubscriptionPlans: React.FC<SubscriptionPlansProps> = ({ language =
 
                                 <button
                                     onClick={() => handleSubscribe(plan.id)}
-                                    disabled={userSubscription?.has_subscription === true}
+                                    disabled={userSubscription?.has_subscription === true && userSubscription.plan?.id === plan.id}
                                     className={`w-full py-4 rounded-2xl font-bold flex items-center justify-center gap-2 transition-all ${plan.name.toLowerCase().includes('premium')
                                         ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-200 hover:bg-emerald-700'
                                         : 'bg-gray-100 text-gray-900 hover:bg-gray-200'
-                                        } ${userSubscription?.has_subscription === true ? 'opacity-70 cursor-not-allowed ' : ''}`}
+                                        } ${(userSubscription?.has_subscription === true && userSubscription.plan?.id === plan.id) ? 'opacity-70 cursor-not-allowed ' : ''}`}
                                 >
-                                    {userSubscription?.has_subscription === true ? (
+                                    {(userSubscription?.has_subscription === true && userSubscription.plan?.id === plan.id) ? (
                                         <>
-                                            <span className='text-sm font-medium'>A Subscription Is Active</span>
+                                            <span className='text-sm font-medium'>Currently Active</span>
                                             <ArrowRight className="w-4 h-4" />
                                         </>
                                     ) : (

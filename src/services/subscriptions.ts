@@ -33,6 +33,7 @@ export interface UserSubscriptionResponse {
         cancel_at_period_end: boolean;
     } | null;
     plan: {
+        id: string;
         name: string;
         price: number;
         billing_interval: string;
