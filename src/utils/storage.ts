@@ -12,3 +12,15 @@ export const getUser = () => {
 export const clearUser = () => {
   localStorage.removeItem(USER_KEY);
 };
+
+export const logout = () => {
+  const keysToRemove = [
+    'accessToken',
+    'refreshToken',
+    'userId',
+    'userEmail',
+    'onboardingComplete',
+    USER_KEY
+  ];
+  keysToRemove.forEach(key => localStorage.removeItem(key));
+};

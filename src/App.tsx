@@ -32,6 +32,11 @@ import { ForgotPasswordReset } from './components/ForgotPasswordReset';
 import { ForgotPasswordSuccess } from './components/ForgotPasswordSuccess';
 import { SubscriptionPlans } from './components/SubscriptionPlans';
 
+function ProtectedRoute({ children }: { children: React.ReactNode }) {
+  const isAuthenticated = !!localStorage.getItem('accessToken');
+  return isAuthenticated ? <>{children}</> : <Navigate to="/login" replace />;
+}
+
 export default function App() {
   const location = useLocation();
   const [currentScreen, setCurrentScreen] = useState('splash');
@@ -93,24 +98,24 @@ export default function App() {
           />
 
           {/* Main App Routes */}
-          <Route path="/dashboard" element={<Dashboard language={language as LanguageKey} />} />
-          <Route path="/file-returns" element={<FileReturns language={language as LanguageKey} />} />
-          <Route path="/pay-tax" element={<PayTax language={language as LanguageKey} />} />
-          <Route path="/ledger" element={<Ledger onNavigate={navigateTo} language={language as LanguageKey} />} />
-          <Route path="/profile" element={<Profile language={language as LanguageKey} />} />
-          <Route path="/deadlines" element={<UpcomingDeadlines language={language as LanguageKey} />} />
-          <Route path="/activity" element={<RecentActivity language={language as LanguageKey} />} />
-          <Route path="/notifications" element={<Notifications language={language as LanguageKey} />} />
-          <Route path="/education" element={<EducationModule language={language as LanguageKey} />} />
-          <Route path="/tax-clearance" element={<TaxClearance language={language as LanguageKey} />} />
-          <Route path="/settings" element={<Settings language={language as LanguageKey} />} />
-          <Route path="/personal-information" element={<PersonalInformation language={language as LanguageKey} />} />
-          <Route path="/language-and-voice" element={<LanguageAndVoice language={language as LanguageKey} onLanguageChange={(lang) => setLanguage(lang)} />} />
-          <Route path="/security-and-privacy" element={<SecurityAndPrivacy language={language as LanguageKey} />} />
-          <Route path="/two-factor-auth" element={<TwoFactorAuth language={language as LanguageKey} />} />
-          <Route path="/privacy-policy" element={<PrivacyPolicy language={language as LanguageKey} />} />
-          <Route path="/scan" element={<ScanReceipt language={language as LanguageKey} />} />
-          <Route path="/voice" element={<VoiceEntry language={language as LanguageKey} />} />
+          <Route path="/dashboard" element={<ProtectedRoute><Dashboard language={language as LanguageKey} /></ProtectedRoute>} />
+          <Route path="/file-returns" element={<ProtectedRoute><FileReturns language={language as LanguageKey} /></ProtectedRoute>} />
+          <Route path="/pay-tax" element={<ProtectedRoute><PayTax language={language as LanguageKey} /></ProtectedRoute>} />
+          <Route path="/ledger" element={<ProtectedRoute><Ledger onNavigate={navigateTo} language={language as LanguageKey} /></ProtectedRoute>} />
+          <Route path="/profile" element={<ProtectedRoute><Profile language={language as LanguageKey} /></ProtectedRoute>} />
+          <Route path="/deadlines" element={<ProtectedRoute><UpcomingDeadlines language={language as LanguageKey} /></ProtectedRoute>} />
+          <Route path="/activity" element={<ProtectedRoute><RecentActivity language={language as LanguageKey} /></ProtectedRoute>} />
+          <Route path="/notifications" element={<ProtectedRoute><Notifications language={language as LanguageKey} /></ProtectedRoute>} />
+          <Route path="/education" element={<ProtectedRoute><EducationModule language={language as LanguageKey} /></ProtectedRoute>} />
+          <Route path="/tax-clearance" element={<ProtectedRoute><TaxClearance language={language as LanguageKey} /></ProtectedRoute>} />
+          <Route path="/settings" element={<ProtectedRoute><Settings language={language as LanguageKey} /></ProtectedRoute>} />
+          <Route path="/personal-information" element={<ProtectedRoute><PersonalInformation language={language as LanguageKey} /></ProtectedRoute>} />
+          <Route path="/language-and-voice" element={<ProtectedRoute><LanguageAndVoice language={language as LanguageKey} onLanguageChange={(lang) => setLanguage(lang)} /></ProtectedRoute>} />
+          <Route path="/security-and-privacy" element={<ProtectedRoute><SecurityAndPrivacy language={language as LanguageKey} /></ProtectedRoute>} />
+          <Route path="/two-factor-auth" element={<ProtectedRoute><TwoFactorAuth language={language as LanguageKey} /></ProtectedRoute>} />
+          <Route path="/privacy-policy" element={<ProtectedRoute><PrivacyPolicy language={language as LanguageKey} /></ProtectedRoute>} />
+          <Route path="/scan" element={<ProtectedRoute><ScanReceipt language={language as LanguageKey} /></ProtectedRoute>} />
+          <Route path="/voice" element={<ProtectedRoute><VoiceEntry language={language as LanguageKey} /></ProtectedRoute>} />
           <Route path="/forgot-password-email" element={<ForgotPasswordEmail onNavigate={navigateTo} language={language as ForgotPasswordLanguageKey} />} />
           <Route path="/forgot-password-verify-code" element={<ForgotPasswordVerifyCode onNavigate={navigateTo} language={language as ForgotPasswordLanguageKey} />} />
           <Route path="/forgot-password-reset" element={<ForgotPasswordReset onNavigate={navigateTo} language={language as ForgotPasswordLanguageKey} />} />

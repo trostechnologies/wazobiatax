@@ -273,7 +273,7 @@ export function Dashboard({ language = 'english' }: DashboardProps) {
         const res = await getUserSubscription();
         console.log(res);
         setUserSubscription(res);
-        if (res.plan) {
+        if (res.plan && res.plan.name) {
           const isPremium = res.plan.name.toLowerCase().includes('premium');
           setSelectedPlan(isPremium ? 'premium' : 'basic');
         }
@@ -298,7 +298,8 @@ export function Dashboard({ language = 'english' }: DashboardProps) {
     return plan.billing_interval === 'free' ? 'Free Forever' : `per ${plan.billing_interval}`;
   };
 
-  // if (loading) return <p className='italic'>Loading...</p>;
+  if (loading && !user) return null;
+  if (!user && !currentUser) return null;
 
   return (
     <div className="min-h-screen bg-gray-50 pb-20">
@@ -315,7 +316,7 @@ export function Dashboard({ language = 'english' }: DashboardProps) {
           </div>
           <div>
             <h1 className="text-lg">wazobiatax.ng</h1>
-            <p className="text-xs text-gray-500">{loading ? "Loading..." : user?.business_name || currentUser.business_name}</p>
+            <p className="text-xs text-gray-500">{loading ? "Loading..." : user?.business_name || currentUser?.business_name}</p>
           </div>
         </div>
         <button
@@ -620,7 +621,7 @@ export function Dashboard({ language = 'english' }: DashboardProps) {
                     </p>
                     <p className="text-sm mt-0.5">
                       {userSubscription?.billing?.next_billing_date
-                        ? new Date(userSubscription.billing.next_billing_date).toLocaleDateString(
+                        ? new Date(userSubscription.billing.next_billing_date || "").toLocaleDateString(
                           "en-US",
                           { year: "numeric", month: "long", day: "numeric" }
                         )

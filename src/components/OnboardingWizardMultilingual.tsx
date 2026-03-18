@@ -1,12 +1,12 @@
 import { motion, AnimatePresence } from 'motion/react';
-import { 
-  Eye, 
-  EyeOff, 
-  Mail, 
-  Lock, 
-  User, 
-  Check, 
-  Loader2, 
+import {
+  Eye,
+  EyeOff,
+  Mail,
+  Lock,
+  User,
+  Check,
+  Loader2,
   Shield,
   Crown,
   Sparkles,
@@ -102,7 +102,7 @@ const translations = {
       basic: 'Basic',
       premium: 'Premium',
       freeForever: 'Free Forever',
-      perMonth: 'per month',
+      perMonth: 'monthly',
       popular: 'Most Popular',
       basicFeatures: [
         'Unlimited ledger entries',
@@ -855,7 +855,7 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
       {/* Header with Logo */}
       <div className="bg-gradient-to-r from-emerald-500 to-emerald-600 px-6 py-4 flex items-center justify-between">
         {currentStep !== 'language' && currentStep !== 'authPath' && (
-          <button 
+          <button
             onClick={() => {
               if (currentStep === 'login' || currentStep === 'register' || currentStep === 'googleAuth') {
                 setCurrentStep('authPath');
@@ -926,11 +926,10 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
                     whileHover={{ scale: 1.02 }}
                     whileTap={{ scale: 0.98 }}
                     onClick={() => handleLanguageSelect(lang.id)}
-                    className={`w-full p-4 rounded-2xl border-2 transition-all duration-300 ${
-                      selectedLanguage === lang.id
+                    className={`w-full p-4 rounded-2xl border-2 transition-all duration-300 ${selectedLanguage === lang.id
                         ? 'border-emerald-600 bg-emerald-50 shadow-lg scale-105'
                         : 'border-gray-200 bg-white hover:border-emerald-300 hover:shadow-md'
-                    }`}
+                      }`}
                   >
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-4">
@@ -957,11 +956,10 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
               <button
                 onClick={handleLanguageProceed}
                 disabled={!selectedLanguage}
-                className={`w-full py-4 rounded-xl transition-all duration-300 ${
-                  selectedLanguage
+                className={`w-full py-4 rounded-xl transition-all duration-300 ${selectedLanguage
                     ? 'bg-emerald-600 text-white shadow-lg hover:bg-emerald-700'
                     : 'bg-gray-200 text-gray-400 cursor-not-allowed'
-                }`}
+                  }`}
               >
                 {t.welcome.proceed}
               </button>

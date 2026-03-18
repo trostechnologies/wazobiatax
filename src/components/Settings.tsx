@@ -53,7 +53,7 @@ export function Settings({ language = 'english' }: SettingsProps) {
         const res = await getUserSubscription();
         console.log(res);
         setUserSubscription(res);
-        if (res.plan) {
+        if (res.plan && res.plan.name) {
           const isPremium = res.plan.name.toLowerCase().includes('premium');
           setSelectedPlan(isPremium ? 'premium' : 'basic');
           setBillingCycle(res.plan.billing_interval === 'year' ? 'yearly' : 'monthly');
@@ -87,14 +87,14 @@ export function Settings({ language = 'english' }: SettingsProps) {
       return isTypeMatch && (billingCycle === 'yearly' ? isAnnualMatch : !isAnnualMatch);
     });
     if (!plan) return defaultPeriod;
-    return plan.billing_interval === 'free' ? 'Free Forever' : `per ${plan.billing_interval}`;
+    return plan.billing_interval === 'free' ? 'Free Forever' : `${plan.billing_interval}`;
   };
 
   const plans = {
     basic: {
       name: billingCycle === 'yearly' ? 'Basic Annual' : 'Basic',
       price: getDynamicPrice('basic', billingCycle === 'yearly' ? 5000 : 500),
-      period: getDynamicPeriod('basic', billingCycle === 'yearly' ? 'per year' : 'Free Forever'),
+      period: getDynamicPeriod('basic', billingCycle === 'yearly' ? 'yearly' : 'Free Forever'),
       features: [
         'Unlimited ledger entries',
         'Basic tax calculations',
@@ -111,7 +111,7 @@ export function Settings({ language = 'english' }: SettingsProps) {
     premium: {
       name: billingCycle === 'yearly' ? 'Premium Annual' : 'Premium',
       price: getDynamicPrice('premium', billingCycle === 'yearly' ? 25000 : 2500),
-      period: getDynamicPeriod('premium', billingCycle === 'yearly' ? 'per year' : 'per month'),
+      period: getDynamicPeriod('premium', billingCycle === 'yearly' ? 'yearly' : 'monthly'),
       features: [
         'Everything in Basic',
         'Unlimited tax returns',

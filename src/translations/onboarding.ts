@@ -80,7 +80,7 @@ export const onboardingTranslations = {
       basic: 'Basic',
       premium: 'Premium',
       freeForever: 'Free Forever',
-      perMonth: 'per month',
+      perMonth: 'monthly',
       popular: 'Most Popular',
       basicFeatures: [
         'Unlimited ledger entries',

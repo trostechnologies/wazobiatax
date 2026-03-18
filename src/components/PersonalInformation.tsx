@@ -47,11 +47,11 @@ export function PersonalInformation({ language = 'english' }: PersonalInformatio
         setCurrentUser(data);
 
         setUserData({
-          fullName: `${data.first_name} ${data.last_name}`,
-          email: data.email,
-          phone: data.phone_number,
-          taxId: data.tax_identification_number,
-          businessName: data.business_name || '—',
+          fullName: `${data?.first_name || ""} ${data?.last_name || ""}`,
+          email: data?.email || "",
+          phone: data?.phone_number || "",
+          taxId: data?.tax_identification_number || "",
+          businessName: data?.business_name || '—',
           accountCreated: new Date().toLocaleDateString('en-NG', {
             year: 'numeric',
             month: 'long',

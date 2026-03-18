@@ -15,7 +15,7 @@ import {
 import { useEffect, useState } from 'react';
 import { useLanguage } from "@/context/LanguageContext";
 import { useNavigate } from 'react-router-dom';
-import { getUser } from '@/utils/storage';
+import { getUser, logout } from '@/utils/storage';
 import { getUserProfile } from '../services/auth';
 import { getUserSubscription, UserSubscriptionResponse } from '../services/subscriptions';
 import { profileTranslations, type LanguageKey } from '../translations/profile';
@@ -163,11 +163,14 @@ export function Profile({ language = 'english' }: ProfileProps) {
   const user = getUser();
   const [currentUser, setCurrentUser] = useState(null);
   const [userSubscription, setUserSubscription] = useState<UserSubscriptionResponse | null>(null);
+
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
+
+
   // Subscription data
-  const subscriptionStatus = userSubscription?.plan?.name.toLowerCase().includes('premium') ? 'premium' :
+  const subscriptionStatus = userSubscription?.plan?.name?.toLowerCase().includes('premium') ? 'premium' :
     userSubscription?.trial?.is_trial ? 'trial' : 'basic';
 
   const subscriptionLabels: Record<Subscription, string> = {
@@ -310,8 +313,8 @@ export function Profile({ language = 'english' }: ProfileProps) {
             <h2 className="text-white text-xl mb-1">
               {user
                 ? `${user.first_name} ${user.last_name}`
-                : `${currentUser.first_name} ${currentUser.last_name}`}
-            </h2>            <p className="text-emerald-100 text-sm">{user?.business_name || currentUser.business_name}</p>
+                : `${currentUser?.first_name} ${currentUser?.last_name}`}
+            </h2>            <p className="text-emerald-100 text-sm">{user?.business_name || currentUser?.business_name}</p>
 
             {/* Subscription Badge */}
             <div className="mt-2">
@@ -463,7 +466,7 @@ export function Profile({ language = 'english' }: ProfileProps) {
                         </p>
                         <p className="text-sm mt-0.5">
                           {userSubscription?.billing?.next_billing_date
-                            ? new Date(userSubscription.billing.next_billing_date).toLocaleDateString(
+                            ? new Date(userSubscription.billing.next_billing_date || "").toLocaleDateString(
                               "en-US",
                               { year: "numeric", month: "long", day: "numeric" }
                             )
@@ -520,7 +523,10 @@ export function Profile({ language = 'english' }: ProfileProps) {
       {/* Logout Button */}
       <div className="px-6 mt-6">
         <button
-          onClick={() => navigate('/onboarding')}
+          onClick={() => {
+            logout();
+            window.location.href = '/login';
+          }}
           className="w-full py-4 bg-white border border-gray-200 rounded-2xl hover:bg-gray-50 transition-all flex items-center justify-center gap-2 text-red-600">
           <LogOut className="w-5 h-5" />
           {translations[language].logOut}

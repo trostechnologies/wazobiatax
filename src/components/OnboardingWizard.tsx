@@ -131,7 +131,7 @@ export function OnboardingWizard({ onComplete, onNavigate, initialStep }: Onboar
 
   const getPlanPriceLabel = (plan: Plan) => {
     if (plan.billing_interval === 'free') return t.subscription.freeForever;
-    return `per ${plan.billing_interval}`;
+    return `${plan.billing_interval}`;
   };
 
   const handleAuthPathSelect = (type: string) => {
