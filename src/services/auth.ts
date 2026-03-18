@@ -154,3 +154,16 @@ export const resetPassword = (
     formData
   );
 };
+
+export const resendVerificationEmail = async (email: string) => {
+  const formData = new FormData();
+  formData.append('email', email);
+
+  const response = await api.post('/api/auth/resend-verification-email', formData, {
+    headers: {
+      'Content-Type': 'multipart/form-data',
+    },
+  });
+
+  return response.data;
+};

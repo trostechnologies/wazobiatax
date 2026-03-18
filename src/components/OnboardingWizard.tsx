@@ -1,5 +1,5 @@
 import { motion, AnimatePresence } from 'motion/react';
-import { registerUser, verifyEmailOtp } from '../services/auth';
+import { registerUser, verifyEmailOtp, resendVerificationEmail } from '../services/auth';
 import { saveUser } from '@/utils/storage';
 import { useNavigate } from 'react-router-dom';
 import {
@@ -130,7 +130,7 @@ export function OnboardingWizard({ onComplete, onNavigate, initialStep }: Onboar
 
   const getPlanPriceLabel = (plan: Plan) => {
     if (plan.billing_interval === 'free') return t.subscription.freeForever;
-    return `${plan.billing_interval}`;
+    return `/ ${plan.billing_interval}`;
   };
 
   const handleAuthPathSelect = (type: string) => {
@@ -335,9 +335,20 @@ export function OnboardingWizard({ onComplete, onNavigate, initialStep }: Onboar
     }
   };
 
-  const handleResendCode = () => {
-    setVerificationCode(['', '', '', '', '', '']);
-    // Resend verification code logic
+  const handleResendCode = async () => {
+    if (!formData.email || isProcessing) return;
+
+    try {
+      setIsProcessing(true);
+      await resendVerificationEmail(formData.email);
+      setVerificationCode(['', '', '', '', '', '']);
+      toast.success('Verification code resent successfully!');
+    } catch (error: any) {
+      console.error('Failed to resend code:', error);
+      toast.error(error?.response?.data?.message || 'Failed to resend verification code.');
+    } finally {
+      setIsProcessing(false);
+    }
   };
 
   const handleSubscriptionSelect = (planId: string) => {

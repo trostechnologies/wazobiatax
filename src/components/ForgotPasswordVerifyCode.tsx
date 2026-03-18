@@ -4,7 +4,7 @@ import { useState, useRef, useEffect } from 'react';
 import { forgotPasswordTranslations, type ForgotPasswordLanguageKey } from '../translations/forgotPassword';
 import { useNavigate } from 'react-router-dom';
 import Logo from '@/assets/wazobiatax-logo.png'
-import { resetPassword, verifyPasswordResetOtp } from '@/services/auth';
+import { resetPassword, verifyPasswordResetOtp, requestPasswordReset } from '@/services/auth';
 import { toast, ToastContainer } from 'react-toastify';
 
 interface ForgotPasswordVerifyCodeProps {
@@ -61,7 +61,7 @@ export function ForgotPasswordVerifyCode({ onNavigate, language }: ForgotPasswor
 
     const newCode = pastedData.split('').concat(Array(6 - pastedData.length).fill(''));
     setVerificationCode(newCode);
-    
+
     const nextEmptyIndex = Math.min(pastedData.length, 5);
     inputRefs.current[nextEmptyIndex]?.focus();
   };
@@ -69,37 +69,37 @@ export function ForgotPasswordVerifyCode({ onNavigate, language }: ForgotPasswor
   const maskEmail = (email: string) => {
     const [name, domain] = email.split('@');
     if (!name) return email;
-  
+
     const visible = name.slice(0, 3);
     const masked = '*'.repeat(Math.max(name.length - 3, 0));
-  
+
     return `${visible}${masked}@${domain}`;
   };
 
   const handleVerify = async () => {
     const code = verificationCode.join('');
     if (code.length !== 6) return;
-  
+
     setIsProcessing(true);
     setError('');
-  
+
     try {
       const email = sessionStorage.getItem('reset_email');
-  
+
       if (!email) {
         setError('Session expired. Please restart password reset.');
         navigate('/forgot-password-email');
         return;
       }
-  
+
       await verifyPasswordResetOtp({
         email,
         otp: code,
       });
-  
+
       // Mark OTP as verified
       sessionStorage.setItem('reset_otp_verified', 'true');
-  
+
       navigate('/forgot-password-reset');
     } catch (error: any) {
       console.error(error);
@@ -115,23 +115,23 @@ export function ForgotPasswordVerifyCode({ onNavigate, language }: ForgotPasswor
     try {
       setIsResending(true);
       setResendSuccess(false);
-  
+
       const email = sessionStorage.getItem('reset_email');
-  
+
       if (!email) {
         toast.error('Session expired. Please start again.');
         navigate('/forgot-password-email');
         return;
       }
-  
+
       // 🔥 call your forgot password API
-      // await resetPassword(email);
-  
+      await requestPasswordReset(email);
+
       // ✅ reset UI
       setVerificationCode(['', '', '', '', '', '']);
       inputRefs.current[0]?.focus();
       setResendSuccess(true);
-  
+
       // hide success after 3s
       setTimeout(() => {
         setResendSuccess(false);
@@ -150,13 +150,13 @@ export function ForgotPasswordVerifyCode({ onNavigate, language }: ForgotPasswor
 
   useEffect(() => {
     const storedEmail = sessionStorage.getItem('reset_email');
-  
+
     if (!storedEmail) {
       // user came here directly — send them back
       navigate('/forgot-password-email');
       return;
     }
-  
+
     setEmail(storedEmail);
   }, []);
 
@@ -169,7 +169,7 @@ export function ForgotPasswordVerifyCode({ onNavigate, language }: ForgotPasswor
 
       {/* Header */}
       <div className="bg-gradient-to-r from-emerald-500 to-emerald-600 px-6 py-4 flex items-center justify-between">
-        <button 
+        <button
           onClick={() => navigate(-1)}
           className="p-2 hover:bg-white/10 rounded-lg transition-all"
         >
@@ -210,7 +210,7 @@ export function ForgotPasswordVerifyCode({ onNavigate, language }: ForgotPasswor
                   key={index}
                   ref={(el) => {
                     inputRefs.current[index] = el;
-                  }}                  
+                  }}
                   type="text"
                   inputMode="numeric"
                   maxLength={1}
@@ -218,9 +218,8 @@ export function ForgotPasswordVerifyCode({ onNavigate, language }: ForgotPasswor
                   onChange={(e) => handleCodeChange(index, e.target.value)}
                   onKeyDown={(e) => handleKeyDown(index, e)}
                   onPaste={handlePaste}
-                  className={`w-12 h-14 text-center text-xl border-2 rounded-xl focus:ring-2 focus:ring-emerald-500 outline-none transition-all ${
-                    error ? 'border-red-300 bg-red-50' : 'border-gray-300'
-                  } ${digit ? 'border-emerald-500 bg-emerald-50' : ''}`}
+                  className={`w-12 h-14 text-center text-xl border-2 rounded-xl focus:ring-2 focus:ring-emerald-500 outline-none transition-all ${error ? 'border-red-300 bg-red-50' : 'border-gray-300'
+                    } ${digit ? 'border-emerald-500 bg-emerald-50' : ''}`}
                 />
               ))}
             </div>
@@ -278,11 +277,10 @@ export function ForgotPasswordVerifyCode({ onNavigate, language }: ForgotPasswor
           <button
             onClick={handleVerify}
             disabled={isProcessing || !isCodeComplete}
-            className={`w-full py-4 rounded-xl transition-all duration-300 flex items-center justify-center gap-2 ${
-              !isProcessing && isCodeComplete
+            className={`w-full py-4 rounded-xl transition-all duration-300 flex items-center justify-center gap-2 ${!isProcessing && isCodeComplete
                 ? 'bg-emerald-600 text-white hover:bg-emerald-700 shadow-lg'
                 : 'bg-gray-200 text-gray-400 cursor-not-allowed'
-            }`}
+              }`}
           >
             {isProcessing ? (
               <>
