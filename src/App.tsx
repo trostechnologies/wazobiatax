@@ -31,6 +31,7 @@ import { ForgotPasswordVerifyCode } from './components/ForgotPasswordVerifyCode'
 import { ForgotPasswordReset } from './components/ForgotPasswordReset';
 import { ForgotPasswordSuccess } from './components/ForgotPasswordSuccess';
 import { SubscriptionPlans } from './components/SubscriptionPlans';
+import { ReloadPrompt } from './components/ReloadPrompt';
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const isAuthenticated = !!localStorage.getItem('accessToken');
@@ -154,6 +155,8 @@ export default function App() {
             Offline Mode Active - 3 entries pending sync
           </div>
         )}
+        {/* PWA Reload Prompt */}
+        <ReloadPrompt />
       </div>
     </div>
   );

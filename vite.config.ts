@@ -1,9 +1,53 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react-swc'
 import path from 'path'
+import { VitePWA } from 'vite-plugin-pwa'
 
 export default defineConfig({
-  plugins: [react()],
+  plugins: [
+    react(),
+    VitePWA({
+      registerType: 'prompt',
+      includeAssets: ['favicon.ico', 'robots.txt', 'placeholder.svg'],
+      manifest: {
+        name: 'wazobiatax.ng - Tax Compliance Made Simple',
+        short_name: 'wazobiatax',
+        description: 'Simplify tax compliance for Nigerian small businesses',
+        theme_color: '#428E46',
+        icons: [
+          {
+            src: 'placeholder.svg',
+            sizes: '192x192',
+            type: 'image/svg+xml'
+          },
+          {
+            src: 'placeholder.svg',
+            sizes: '512x512',
+            type: 'image/svg+xml'
+          }
+        ]
+      },
+      workbox: {
+        globPatterns: ['**/*.{js,css,html,ico,png,svg,webp}'],
+        runtimeCaching: [
+          {
+            urlPattern: /^https:\/\/js\.paystack\.co\/.*/i,
+            handler: 'CacheFirst',
+            options: {
+              cacheName: 'paystack-cache',
+              expiration: {
+                maxEntries: 10,
+                maxAgeSeconds: 60 * 60 * 24 * 30 // 30 days
+              },
+              cacheableResponse: {
+                statuses: [0, 200]
+              }
+            }
+          }
+        ]
+      }
+    })
+  ],
 
   // ❌ REMOVE `base: './'`
   // This breaks asset resolution on Vercel

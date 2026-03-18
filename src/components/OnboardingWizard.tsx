@@ -92,7 +92,6 @@ export function OnboardingWizard({ onComplete, onNavigate, initialStep }: Onboar
     }
   ];
 
-  // Handler functions
   const handleLanguageSelect = (langId: LanguageKey) => {
     setSelectedLanguage(langId);
   };
