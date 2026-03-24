@@ -66,14 +66,27 @@ export const SubscriptionPlans: React.FC<SubscriptionPlansProps> = ({ language =
         fetchSubscription();
     }, []);
 
-    const filteredPlans = plans.filter(plan => {
-        const name = plan.name.toLowerCase();
-        if (billingCycle === 'yearly') {
-            return name.includes('annual') || plan.billing_interval === 'year';
-        } else {
-            return !name.includes('annual') && plan.billing_interval !== 'year';
-        }
-    });
+    const filteredPlans = plans
+        .filter(plan => {
+            const name = plan.name.toLowerCase();
+            if (billingCycle === 'yearly') {
+                return name.includes('annual') || plan.billing_interval === 'year';
+            } else {
+                return !name.includes('annual') && plan.billing_interval !== 'year';
+            }
+        })
+        .sort((a, b) => {
+            const nameA = a.name.toLowerCase();
+            const nameB = b.name.toLowerCase();
+
+            const getRank = (name: string) => {
+                if (name.includes('basic')) return 1;
+                if (name.includes('premium')) return 2;
+                return 3;
+            };
+
+            return getRank(nameA) - getRank(nameB);
+        });
 
     const getDynamicPrice = (planType: 'basic' | 'premium', defaultPrice: number) => {
         const plan = apiPlans.find(p => p.name.toLowerCase().includes(planType));

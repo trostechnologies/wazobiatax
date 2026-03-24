@@ -475,6 +475,16 @@ export function Profile({ language = 'english' }: ProfileProps) {
                       </div>
                     </div>
                   </div>
+
+                  {/* Subscription History Link */}
+                  <button
+                    onClick={() => navigate('/subscription-history')}
+                    className="mt-3 w-full py-2 text-sm text-emerald-600 hover:bg-emerald-50 rounded-lg transition-all flex items-center justify-center gap-2"
+                    aria-label={sub.viewHistory}
+                  >
+                    <FileText className="w-4 h-4" />
+                    {sub.viewHistory}
+                  </button>
                 </div>
               </motion.div>
             )}

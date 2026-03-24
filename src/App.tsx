@@ -30,6 +30,7 @@ import { ForgotPasswordEmail } from './components/ForgotPasswordEmail';
 import { ForgotPasswordVerifyCode } from './components/ForgotPasswordVerifyCode';
 import { ForgotPasswordReset } from './components/ForgotPasswordReset';
 import { ForgotPasswordSuccess } from './components/ForgotPasswordSuccess';
+import { SubscriptionHistory } from './components/SubscriptionHistory';
 import { SubscriptionPlans } from './components/SubscriptionPlans';
 import { ReloadPrompt } from './components/ReloadPrompt';
 
@@ -121,6 +122,7 @@ export default function App() {
           <Route path="/forgot-password-verify-code" element={<ForgotPasswordVerifyCode onNavigate={navigateTo} language={language as ForgotPasswordLanguageKey} />} />
           <Route path="/forgot-password-reset" element={<ForgotPasswordReset onNavigate={navigateTo} language={language as ForgotPasswordLanguageKey} />} />
           <Route path="/forgot-password-success" element={<ForgotPasswordSuccess onNavigate={navigateTo} language={language as ForgotPasswordLanguageKey} />} />
+          <Route path="/subscription-history" element={<SubscriptionHistory language={language as LanguageKey} />} />
           <Route path="/subscriptions" element={<SubscriptionPlans language={language} />} />
 
           <Route

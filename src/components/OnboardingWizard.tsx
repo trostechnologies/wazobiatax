@@ -353,14 +353,8 @@ export function OnboardingWizard({ onComplete, onNavigate, initialStep }: Onboar
 
   const handleSubscriptionSelect = (planId: string) => {
     setSelectedPlan(planId);
-    const plan = apiPlans.find(p => p.id === planId);
-
-    if (plan?.billing_interval === 'free' || parseFloat(plan?.price || '0') === 0) {
-      setCurrentStep('login');
-      toast.success("LOGIN NOW TO CONTINUE!");
-    } else {
-      setCurrentStep('payment');
-    }
+    setCurrentStep('login');
+    toast.success("LOGIN NOW TO CONTINUE!");
   };
 
   const handlePayment = async () => {
@@ -1071,6 +1065,18 @@ export function OnboardingWizard({ onComplete, onNavigate, initialStep }: Onboar
                           return !name.includes('annual') && plan.billing_interval !== 'year';
                         }
                       })
+                      .sort((a, b) => {
+                        const nameA = a.name.toLowerCase();
+                        const nameB = b.name.toLowerCase();
+
+                        const getRank = (name: string) => {
+                          if (name.includes('basic')) return 1;
+                          if (name.includes('premium')) return 2;
+                          return 3;
+                        };
+
+                        return getRank(nameA) - getRank(nameB);
+                      })
                       .map((plan, index) => {
                         const isPremium = plan.name.toLowerCase().includes('premium');
                         const features = getPlanFeatures(plan.name);
@@ -1123,7 +1129,7 @@ export function OnboardingWizard({ onComplete, onNavigate, initialStep }: Onboar
                                 : 'bg-emerald-600 text-white hover:bg-emerald-700'
                                 }`}
                             >
-                              {isPremium ? t.subscription.startPremium : t.subscription.startBasic}
+                              {t.subscription.startTrial}
                             </button>
                           </motion.div>
                         );

@@ -100,6 +100,7 @@ export const onboardingTranslations = {
       ],
       startBasic: 'Start with Basic',
       startPremium: 'Start Premium Trial',
+      startTrial: 'Start 14 Days Free Trial',
       notice: 'You can upgrade or downgrade your plan anytime from Settings'
     },
     payment: {
@@ -237,6 +238,7 @@ export const onboardingTranslations = {
       ],
       startBasic: 'Start with Basic',
       startPremium: 'Start Premium Trial',
+      startTrial: 'Start 14 Days Free Trial',
       notice: 'You fit change your plan anytime for Settings'
     },
     payment: {
@@ -374,6 +376,7 @@ export const onboardingTranslations = {
       ],
       startBasic: 'Fara da Basic',
       startPremium: 'Fara Gwajin Premium',
+      startTrial: 'Fara Gwajin Kwanaki 14 Kyauta',
       notice: 'Kuna iya canza tsarin ku kowane lokaci daga Saitunan'
     },
     payment: {
@@ -511,6 +514,7 @@ export const onboardingTranslations = {
       ],
       startBasic: 'Bẹ̀rẹ̀ pẹ̀lú Ìpìlẹ̀',
       startPremium: 'Bẹ̀rẹ̀ Ìdánwò Premium',
+      startTrial: 'Bẹ̀rẹ̀ Ìdánwò Ọ̀fẹ́ fún Ọjọ́ 14',
       notice: 'O lè ṣe àyípadà ètò rẹ nígbàkígbà láti Ààtò'
     },
     payment: {
@@ -648,6 +652,7 @@ export const onboardingTranslations = {
       ],
       startBasic: 'Malite na Isi',
       startPremium: 'Malite Nnwale Premium',
+      startTrial: 'Malite Nnwale N\'efu Maka Ụbọchị 14',
       notice: 'Ị nwere ike ịgbanwe atụmatụ gị mgbe ọ bụla site na Ntọala'
     },
     payment: {

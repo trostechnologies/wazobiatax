@@ -49,6 +49,25 @@ export interface UserSubscriptionResponse {
     };
 }
 
+export interface Transaction {
+    id: string;
+    amount: string;
+    status: string;
+    paid_at: string;
+    plan_name: string;
+    period_start: string;
+    period_end: string;
+    plan_billing_interval: string;
+    payment_provider: string;
+    payment_method: string;
+    reference: string;
+}
+
+export interface TransactionHistoryResponse {
+    message: string;
+    data: Transaction[];
+}
+
 /**
  * Fetch available subscription plans
  */
@@ -92,6 +111,25 @@ export const getUserSubscription = async (): Promise<UserSubscriptionResponse> =
     }
 
     const response = await api.get<UserSubscriptionResponse>('/api/subscribe', {
+        headers: {
+            'Authorization': `Bearer ${token}`,
+        },
+    });
+
+    return response.data;
+};
+
+/**
+ * Get user's transaction history
+ */
+export const getTransactionHistory = async (): Promise<TransactionHistoryResponse> => {
+    const token = localStorage.getItem('accessToken');
+
+    if (!token) {
+        throw new Error('No access token found. Please log in.');
+    }
+
+    const response = await api.get<TransactionHistoryResponse>('/api/transaction-history', {
         headers: {
             'Authorization': `Bearer ${token}`,
         },
