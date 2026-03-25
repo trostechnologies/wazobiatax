@@ -185,13 +185,13 @@ export function Settings({ language = 'english' }: SettingsProps) {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-xs text-gray-600 mb-1">Current Plan</p>
-              <p className="text-lg">{userSubscription?.plan?.name || 'Basic'}</p>
+              <p className="text-lg">{userSubscription?.plan?.name || 'Free Trial'}</p>
             </div>
             <div className="px-4 py-2 bg-white rounded-lg border border-gray-200 min-w-[80px] flex items-center justify-center">
               {subscriptionLoading || loading ? (
                 <div className="w-4 h-4 border-2 border-gray-200 border-t-emerald-600 rounded-full animate-spin" />
               ) : (
-                <p className="text-sm">₦{(userSubscription?.plan?.price || plans.basic.price).toLocaleString('en-NG')}</p>
+                <p className="text-sm">₦{(userSubscription?.plan?.price || 0).toLocaleString('en-NG')}</p>
               )}
             </div>
           </div>
@@ -246,14 +246,21 @@ export function Settings({ language = 'english' }: SettingsProps) {
           </div>
 
           <button
-            disabled={currentPlan === 'basic' && (userSubscription?.plan?.billing_interval === (billingCycle === 'yearly' ? 'year' : 'month') || billingCycle === 'monthly')}
+            disabled={subscriptionLoading || loading || (userSubscription?.has_subscription === true && plans.basic.price === parseFloat(userSubscription.plan?.price?.toString() || '0'))}
             onClick={() => navigate('/subscriptions')}
-            className={`w-full py-3 rounded-xl text-sm font-bold transition-all ${currentPlan === 'basic' && (userSubscription?.plan?.billing_interval === (billingCycle === 'yearly' ? 'year' : 'month') || billingCycle === 'monthly')
+            className={`w-full py-3 rounded-xl text-sm font-bold transition-all ${(userSubscription?.has_subscription === true && plans.basic.price === parseFloat(userSubscription.plan?.price?.toString() || '0'))
               ? 'bg-gray-100 text-gray-600 cursor-not-allowed'
               : 'bg-white border-2 border-emerald-600 text-emerald-600 hover:bg-emerald-50 shadow-sm'
               }`}
           >
-            {currentPlan === 'basic' && (userSubscription?.plan?.billing_interval === (billingCycle === 'yearly' ? 'year' : 'month') || billingCycle === 'monthly') ? 'Current Plan' : 'Downgrade to Basic'}
+            {(userSubscription?.has_subscription === true && plans.basic.price === parseFloat(userSubscription.plan?.price?.toString() || '0'))
+              ? 'Current Plan'
+              : (userSubscription?.has_subscription && plans.basic.price < parseFloat(userSubscription.plan?.price?.toString() || '0'))
+                ? 'Downgrade to this Plan'
+                : (userSubscription?.has_subscription === false)
+                  ? 'Get Started'
+                  : 'Upgrade to this Plan'
+            }
           </button>
         </motion.div>
 
@@ -313,14 +320,21 @@ export function Settings({ language = 'english' }: SettingsProps) {
           </div>
 
           <button
-            disabled={currentPlan === 'premium' && (userSubscription?.plan?.billing_interval === (billingCycle === 'yearly' ? 'year' : 'month'))}
+            disabled={subscriptionLoading || loading || (userSubscription?.has_subscription === true && plans.premium.price === parseFloat(userSubscription.plan?.price?.toString() || '0'))}
             onClick={() => navigate('/subscriptions')}
-            className={`w-full py-4 rounded-2xl font-bold transition-all text-sm ${currentPlan === 'premium' && (userSubscription?.plan?.billing_interval === (billingCycle === 'yearly' ? 'year' : 'month'))
+            className={`w-full py-4 rounded-2xl font-bold transition-all text-sm ${(userSubscription?.has_subscription === true && plans.premium.price === parseFloat(userSubscription.plan?.price?.toString() || '0'))
               ? 'bg-gray-100 text-gray-600 cursor-not-allowed'
               : 'bg-emerald-600 text-white shadow-lg shadow-emerald-200 hover:bg-emerald-700'
               }`}
           >
-            {currentPlan === 'premium' && (userSubscription?.plan?.billing_interval === (billingCycle === 'yearly' ? 'year' : 'month')) ? 'Current Plan' : 'Upgrade to Premium'}
+            {(userSubscription?.has_subscription === true && plans.premium.price === parseFloat(userSubscription.plan?.price?.toString() || '0'))
+              ? 'Current Plan'
+              : (userSubscription?.has_subscription && plans.premium.price > parseFloat(userSubscription.plan?.price?.toString() || '0'))
+                ? 'Upgrade to this Plan'
+                : (userSubscription?.has_subscription === false)
+                  ? 'Get Started'
+                  : 'Downgrade to this Plan'
+            }
           </button>
         </motion.div>
       </div>

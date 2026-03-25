@@ -600,7 +600,7 @@ export function Dashboard({ language = 'english' }: DashboardProps) {
                 <div>
                   <p className="text-xs text-gray-600 mb-1">{sub.currentPlan}</p>
                   <div className="flex items-center gap-2">
-                    <p className="text-lg">{userSubscription?.plan?.name || 'Basic'}</p>
+                    <p className="text-lg">{userSubscription?.plan?.name || 'Free Trial'}</p>
                     {subscription === 'trial' && (
                       <span className="px-2 py-0.5 bg-blue-100 text-blue-700 rounded-full text-xs">
                         {sub.trial}
@@ -617,7 +617,7 @@ export function Dashboard({ language = 'english' }: DashboardProps) {
                   <Calendar className="w-5 h-5 text-gray-400" />
                   <div>
                     <p className="text-xs text-gray-600">
-                      {isTrial ? sub.trialExpires : sub.nextRenewal}
+                      {!userSubscription?.billing?.next_billing_date ? sub.trialExpires : sub.nextRenewal}
                     </p>
                     <p className="text-sm mt-0.5">
                       {userSubscription?.billing?.next_billing_date
@@ -625,19 +625,19 @@ export function Dashboard({ language = 'english' }: DashboardProps) {
                           "en-US",
                           { year: "numeric", month: "long", day: "numeric" }
                         )
-                        : "March 15, 2026"}
+                        : "April 15, 2026"}
                     </p>
                   </div>
                 </div>
-                {userSubscription?.plan?.name !== 'Premium Plan' && userSubscription?.plan?.name !== 'Premium Plan (Annual)' && (
-                  <button
-                    onClick={() => navigate('/settings')}
-                    className="px-4 py-2 bg-gradient-to-r from-amber-400 to-orange-500 text-white text-sm rounded-lg hover:shadow-md transition-all flex items-center gap-1"
-                  >
-                    <Crown className="w-4 h-4" />
-                    {sub.upgrade}
-                  </button>
-                )}
+                {/* {userSubscription?.plan?.name !== 'Premium Plan' && userSubscription?.plan?.name !== 'Premium Plan (Annual)' && ( */}
+                <button
+                  onClick={() => navigate('/settings')}
+                  className="px-4 py-2 bg-gradient-to-r from-amber-400 to-orange-500 text-white text-sm rounded-lg hover:shadow-md transition-all flex items-center cursor-pointer gap-1"
+                >
+                  <Crown className="w-4 h-4" />
+                  {userSubscription?.plan?.name?.toLowerCase().includes('basic') || userSubscription?.plan?.name?.toLowerCase().includes('premium') ? sub.changePlan : sub.upgrade}
+                </button>
+                {/* )} */}
               </div>
             </div>
 

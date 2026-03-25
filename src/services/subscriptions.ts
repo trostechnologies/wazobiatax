@@ -137,3 +137,25 @@ export const getTransactionHistory = async (): Promise<TransactionHistoryRespons
 
     return response.data;
 };
+/**
+ * Upgrade or downgrade a user's subscription plan
+ */
+export const changePlan = async (planId: string): Promise<{ message: string }> => {
+    const token = localStorage.getItem('accessToken');
+
+    if (!token) {
+        throw new Error('No access token found. Please log in.');
+    }
+
+    const formData = new URLSearchParams();
+    formData.append('plan_id', planId);
+
+    const response = await api.post<{ message: string }>('/api/subscription/change-plan', formData, {
+        headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/x-www-form-urlencoded',
+        },
+    });
+
+    return response.data;
+};

@@ -171,7 +171,7 @@ export function Profile({ language = 'english' }: ProfileProps) {
 
   // Subscription data
   const subscriptionStatus = userSubscription?.plan?.name?.toLowerCase().includes('premium') ? 'premium' :
-    userSubscription?.trial?.is_trial ? 'trial' : 'basic';
+    userSubscription?.plan?.name?.toLowerCase().includes('basic') ? 'basic' : 'trial';
 
   const subscriptionLabels: Record<Subscription, string> = {
     basic: 'Basic',
@@ -418,9 +418,9 @@ export function Profile({ language = 'english' }: ProfileProps) {
                           <p className="text-lg">
                             {subscriptionStatus === 'premium'
                               ? sub.premium
-                              : subscriptionStatus === 'trial'
-                                ? sub.trial
-                                : sub.basic}
+                              : subscriptionStatus === 'basic'
+                                ? sub.basic
+                                : sub.trial}
                           </p>
                           {subscriptionStatus === 'premium' && (
                             <span className="px-2 py-0.5 bg-gradient-to-r from-amber-400 to-orange-500 text-white rounded-full text-xs">
@@ -470,7 +470,7 @@ export function Profile({ language = 'english' }: ProfileProps) {
                               "en-US",
                               { year: "numeric", month: "long", day: "numeric" }
                             )
-                            : "March 15, 2026"}
+                            : "April 15, 2026"}
                         </p>
                       </div>
                     </div>

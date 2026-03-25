@@ -10,7 +10,8 @@ import {
     Zap
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import { getPlans, subscribeUser, Plan, getUserSubscription, UserSubscriptionResponse } from '../services/subscriptions';
+import { ToastContainer, toast } from 'react-toastify';
+import { getPlans, subscribeUser, changePlan, Plan, getUserSubscription, UserSubscriptionResponse } from '../services/subscriptions';
 
 
 interface SubscriptionPlansProps {
@@ -103,16 +104,34 @@ export const SubscriptionPlans: React.FC<SubscriptionPlansProps> = ({ language =
         setSubscribing(planId);
         setError(null);
         try {
-            const res = await subscribeUser(planId);
-            if (res.authorization_url) {
-                // Redirect to Paystack
-                window.location.href = res.authorization_url;
+            if (userSubscription?.has_subscription) {
+                // Determine if it's an upgrade or downgrade
+                const currentPlan = userSubscription.plan;
+                const newPlan = plans.find(p => p.id === planId);
+
+                // Call change plan API
+                const res = await changePlan(planId);
+
+                // Show success message and refresh subscription details
+                toast.success(res.message || 'Plan updated successfully!');
+                console.log(res);
+
+                // Fetch updated subscription details
+                const updatedSub = await getUserSubscription();
+                setUserSubscription(updatedSub);
             } else {
-                setError('Subscription failed. No payment URL received.');
+                // New subscription
+                const res = await subscribeUser(planId);
+                if (res.authorization_url) {
+                    // Redirect to Paystack
+                    window.location.href = res.authorization_url;
+                } else {
+                    setError('Subscription failed. No payment URL received.');
+                }
             }
         } catch (err: any) {
             console.error('Subscription error:', err);
-            setError(err.response?.data?.error || 'Failed to initiate subscription. Please check your connection.');
+            setError(err.response?.data?.error || err.message || 'Failed to process request. Please check your connection.');
         } finally {
             setSubscribing(null);
         }
@@ -227,15 +246,24 @@ export const SubscriptionPlans: React.FC<SubscriptionPlansProps> = ({ language =
 
                                 <button
                                     onClick={() => handleSubscribe(plan.id)}
-                                    disabled={userSubscription?.has_subscription === true && userSubscription.plan?.id === plan.id}
+                                    disabled={subscribing !== null || (userSubscription?.has_subscription === true && parseFloat(plan.price) === parseFloat(userSubscription.plan?.price?.toString() || '0'))}
                                     className={`w-full py-4 rounded-2xl font-bold flex items-center justify-center gap-2 transition-all ${plan.name.toLowerCase().includes('premium')
                                         ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-200 hover:bg-emerald-700'
                                         : 'bg-gray-100 text-gray-900 hover:bg-gray-200'
-                                        } ${(userSubscription?.has_subscription === true && userSubscription.plan?.id === plan.id) ? 'opacity-70 cursor-not-allowed ' : ''}`}
+                                        } ${(userSubscription?.has_subscription === true && parseFloat(plan.price) === parseFloat(userSubscription.plan?.price?.toString() || '0')) ? 'opacity-70 cursor-not-allowed ' : ''} ${subscribing === plan.id ? 'opacity-70 cursor-wait' : ''}`}
                                 >
-                                    {(userSubscription?.has_subscription === true && userSubscription.plan?.id === plan.id) ? (
+                                    {subscribing === plan.id ? (
+                                        <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                                    ) : (userSubscription?.has_subscription === true && parseFloat(plan.price) === parseFloat(userSubscription.plan?.price?.toString() || '0')) ? (
                                         <>
-                                            <span className='text-sm font-medium'>Currently Active</span>
+                                            <span className='text-sm font-medium'>Current Plan</span>
+                                            <ArrowRight className="w-4 h-4" />
+                                        </>
+                                    ) : userSubscription?.has_subscription ? (
+                                        <>
+                                            <span className='text-sm font-medium'>
+                                                {parseFloat(plan.price) > (parseFloat(userSubscription.plan?.price?.toString() || '0')) ? 'Upgrade to this Plan' : 'Downgrade to this Plan'}
+                                            </span>
                                             <ArrowRight className="w-4 h-4" />
                                         </>
                                     ) : (
@@ -256,6 +284,8 @@ export const SubscriptionPlans: React.FC<SubscriptionPlansProps> = ({ language =
                     Secure payments powered by Paystack. Cancel anytime.
                 </p>
             </div>
+
+            <ToastContainer />
         </div>
     );
 };
