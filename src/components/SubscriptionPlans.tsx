@@ -12,10 +12,11 @@ import {
 import { useNavigate } from 'react-router-dom';
 import { ToastContainer, toast } from 'react-toastify';
 import { getPlans, subscribeUser, changePlan, Plan, getUserSubscription, UserSubscriptionResponse } from '../services/subscriptions';
+import { type LanguageKey } from '../translations/profile';
 
 
 interface SubscriptionPlansProps {
-    language?: string;
+    language?: LanguageKey;
 }
 
 export const SubscriptionPlans: React.FC<SubscriptionPlansProps> = ({ language = 'english' }) => {
@@ -121,7 +122,8 @@ export const SubscriptionPlans: React.FC<SubscriptionPlansProps> = ({ language =
                 setUserSubscription(updatedSub);
             } else {
                 // New subscription
-                const res = await subscribeUser(planId);
+                const callbackUrl = `${window.location.origin}/payment-success`;
+                const res = await subscribeUser(planId, callbackUrl);
                 if (res.authorization_url) {
                     // Redirect to Paystack
                     window.location.href = res.authorization_url;

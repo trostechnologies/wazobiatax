@@ -80,7 +80,7 @@ export const getPlans = async (): Promise<PlansResponse> => {
  * Subscribe a user to a specific plan
  * Returns a Paystack authorization URL
  */
-export const subscribeUser = async (planId: string): Promise<SubscribeResponse> => {
+export const subscribeUser = async (planId: string, callbackUrl?: string): Promise<SubscribeResponse> => {
     const token = localStorage.getItem('accessToken');
 
     if (!token) {
@@ -89,6 +89,9 @@ export const subscribeUser = async (planId: string): Promise<SubscribeResponse> 
 
     const formData = new URLSearchParams();
     formData.append('plan_id', planId);
+    if (callbackUrl) {
+        formData.append('callback_url', callbackUrl);
+    }
 
     const response = await api.post<SubscribeResponse>('/api/subscribe', formData, {
         headers: {
