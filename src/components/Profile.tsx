@@ -347,7 +347,7 @@ export function Profile({ language = 'english' }: ProfileProps) {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-xs text-gray-600 mb-1">{translations[language].taxIdentificationNumber}</p>
-              <p className="text-lg tracking-wider">{tin}</p>
+              <p className="text-lg tracking-wider">{user?.tax_identification_number || currentUser?.tax_identification_number}</p>
             </div>
             <button
               onClick={handleCopyTIN}

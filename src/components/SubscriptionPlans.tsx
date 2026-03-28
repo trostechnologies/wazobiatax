@@ -7,7 +7,9 @@ import {
     ArrowRight,
     Sparkles,
     ShieldCheck,
-    Zap
+    Zap,
+    Loader2,
+    X
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { ToastContainer, toast } from 'react-toastify';
@@ -24,6 +26,7 @@ export const SubscriptionPlans: React.FC<SubscriptionPlansProps> = ({ language =
     const [plans, setPlans] = useState<Plan[]>([]);
     const [loading, setLoading] = useState(true);
     const [subscribing, setSubscribing] = useState<string | null>(null);
+    const [isPolling, setIsPolling] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [apiPlans, setApiPlans] = useState<Plan[]>([]);
     const [selectedPlan, setSelectedPlan] = useState('basic');
@@ -124,16 +127,19 @@ export const SubscriptionPlans: React.FC<SubscriptionPlansProps> = ({ language =
                 // New subscription
                 const res = await subscribeUser(planId);
                 if (res.authorization_url) {
-                    // Open Paystack in a popup to avoid the broken backend redirect
+                    setIsPolling(true);
+
+                    // Open Paystack in a popup with specific features to avoid a new tab
                     const width = 500;
                     const height = 700;
                     const left = window.screenX + (window.outerWidth - width) / 2;
                     const top = window.screenY + (window.outerHeight - height) / 2;
 
+                    // 'popup=yes' and specifying exact dimensions often forces a window instead of a tab
                     const popup = window.open(
                         res.authorization_url,
                         'PaystackPayment',
-                        `width=${width},height=${height},left=${left},top=${top},status=0,menubar=0,toolbar=0`
+                        `width=${width},height=${height},left=${left},top=${top},status=no,menubar=no,toolbar=no,location=no`
                     );
 
                     if (popup) {
@@ -141,6 +147,7 @@ export const SubscriptionPlans: React.FC<SubscriptionPlansProps> = ({ language =
                         const pollInterval = setInterval(async () => {
                             if (popup.closed) {
                                 clearInterval(pollInterval);
+                                setIsPolling(false);
                                 return;
                             }
 
@@ -159,6 +166,7 @@ export const SubscriptionPlans: React.FC<SubscriptionPlansProps> = ({ language =
                                     if (isMatch && (now - txTime < 60000)) {
                                         clearInterval(pollInterval);
                                         popup.close();
+                                        setIsPolling(false);
                                         navigate(`/payment-success?reference=${latestTx.reference}`);
                                     }
                                 }
@@ -168,9 +176,13 @@ export const SubscriptionPlans: React.FC<SubscriptionPlansProps> = ({ language =
                         }, 3000);
 
                         // Fallback: Clear interval after 10 minutes
-                        setTimeout(() => clearInterval(pollInterval), 600000);
+                        setTimeout(() => {
+                            clearInterval(pollInterval);
+                            setIsPolling(false);
+                        }, 600000);
                     } else {
-                        // If popup is blocked, fallback to direct redirect (though it will 404 on return)
+                        // If popup is blocked, fallback to direct redirect
+                        setIsPolling(false);
                         window.location.href = res.authorization_url;
                     }
                 } else {
@@ -332,6 +344,43 @@ export const SubscriptionPlans: React.FC<SubscriptionPlansProps> = ({ language =
                     Secure payments powered by Paystack. Cancel anytime.
                 </p>
             </div>
+
+            {/* Modal-like Overlay Loader */}
+            {isPolling && (
+                <div className="fixed inset-0 z-[100] flex items-center justify-center p-6 bg-black/60 backdrop-blur-sm animate-in fade-in duration-300">
+                    <motion.div
+                        initial={{ scale: 0.9, opacity: 0 }}
+                        animate={{ scale: 1, opacity: 1 }}
+                        className="bg-white rounded-2xl p-8 max-w-sm w-full shadow-2xl text-center"
+                    >
+                        <div className="relative w-20 h-20 mx-auto mb-6">
+                            <div className="absolute inset-0 bg-emerald-100 rounded-full animate-ping opacity-25"></div>
+                            <div className="relative flex items-center justify-center w-20 h-20 bg-emerald-50 rounded-full">
+                                <Loader2 className="w-10 h-10 text-emerald-600 animate-spin" />
+                            </div>
+                        </div>
+
+                        <h3 className="text-xl font-bold text-gray-900 mb-2">Payment in Progress</h3>
+                        <p className="text-gray-600 mb-8 leading-relaxed">
+                            A secure payment window has been opened. Please complete your transaction there.
+                        </p>
+
+                        <div className="space-y-4">
+                            <div className="flex items-center gap-3 p-3 bg-blue-50 text-blue-700 rounded-xl text-sm text-left">
+                                <Zap className="w-5 h-5 flex-shrink-0" />
+                                <span>This window will automatically refresh once your payment is confirmed.</span>
+                            </div>
+
+                            <button
+                                onClick={() => setIsPolling(false)}
+                                className="w-full py-3 text-gray-500 hover:text-gray-700 font-medium transition-colors"
+                            >
+                                Cancel
+                            </button>
+                        </div>
+                    </motion.div>
+                </div>
+            )}
 
             <ToastContainer />
         </div>
