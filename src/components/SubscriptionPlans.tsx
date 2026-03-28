@@ -128,6 +128,8 @@ export const SubscriptionPlans: React.FC<SubscriptionPlansProps> = ({ language =
                 const res = await subscribeUser(planId);
                 if (res.authorization_url) {
                     setIsPolling(true);
+                    setError(null);
+                    const startTime = Date.now();
 
                     // Open Paystack in a popup with specific features to avoid a new tab
                     const width = 500;
@@ -147,6 +149,19 @@ export const SubscriptionPlans: React.FC<SubscriptionPlansProps> = ({ language =
                         const pollInterval = setInterval(async () => {
                             if (popup.closed) {
                                 clearInterval(pollInterval);
+                                // Give it one last check in case they closed it right after success
+                                try {
+                                    const history = await getTransactionHistory();
+                                    const latestTx = history.data[0];
+                                    if (latestTx && latestTx.status.toLowerCase() === 'success') {
+                                        const txTime = new Date(latestTx.paid_at).getTime();
+                                        if (txTime > startTime - 30000) {
+                                            setIsPolling(false);
+                                            navigate(`/payment-success?reference=${latestTx.reference}`);
+                                            return;
+                                        }
+                                    }
+                                } catch (e) { }
                                 setIsPolling(false);
                                 return;
                             }
@@ -157,15 +172,16 @@ export const SubscriptionPlans: React.FC<SubscriptionPlansProps> = ({ language =
                                 const latestTx = history.data[0];
 
                                 if (latestTx && latestTx.status.toLowerCase() === 'success') {
-                                    // If we have a reference match or it's just very recent
-                                    const isMatch = res.reference ? latestTx.reference === res.reference : true;
-                                    const txTime = new Date(latestTx.paid_at).getTime();
-                                    const now = new Date().getTime();
+                                    // If we have a reference match from API response
+                                    const isReferenceMatch = res.reference && latestTx.reference === res.reference;
 
-                                    // Consider it a success if it's the right reference or happened in the last 60 seconds
-                                    if (isMatch && (now - txTime < 60000)) {
+                                    // Or if the transaction time is newer than when we started (with 30s buffer for safety)
+                                    const txTime = new Date(latestTx.paid_at).getTime();
+                                    const isRecentMatch = txTime > startTime - 30000;
+
+                                    if (isReferenceMatch || isRecentMatch) {
                                         clearInterval(pollInterval);
-                                        popup.close();
+                                        if (!popup.closed) popup.close();
                                         setIsPolling(false);
                                         navigate(`/payment-success?reference=${latestTx.reference}`);
                                     }
