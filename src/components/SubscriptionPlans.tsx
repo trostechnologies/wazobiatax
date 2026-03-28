@@ -11,7 +11,7 @@ import {
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { ToastContainer, toast } from 'react-toastify';
-import { getPlans, subscribeUser, changePlan, Plan, getUserSubscription, UserSubscriptionResponse } from '../services/subscriptions';
+import { getPlans, subscribeUser, changePlan, Plan, getUserSubscription, UserSubscriptionResponse, getTransactionHistory } from '../services/subscriptions';
 import { type LanguageKey } from '../translations/profile';
 
 
@@ -122,11 +122,57 @@ export const SubscriptionPlans: React.FC<SubscriptionPlansProps> = ({ language =
                 setUserSubscription(updatedSub);
             } else {
                 // New subscription
-                const callbackUrl = `${window.location.origin}/payment-success`;
-                const res = await subscribeUser(planId, callbackUrl);
+                const res = await subscribeUser(planId);
                 if (res.authorization_url) {
-                    // Redirect to Paystack
-                    window.location.href = res.authorization_url;
+                    // Open Paystack in a popup to avoid the broken backend redirect
+                    const width = 500;
+                    const height = 700;
+                    const left = window.screenX + (window.outerWidth - width) / 2;
+                    const top = window.screenY + (window.outerHeight - height) / 2;
+
+                    const popup = window.open(
+                        res.authorization_url,
+                        'PaystackPayment',
+                        `width=${width},height=${height},left=${left},top=${top},status=0,menubar=0,toolbar=0`
+                    );
+
+                    if (popup) {
+                        // Start polling for transaction success
+                        const pollInterval = setInterval(async () => {
+                            if (popup.closed) {
+                                clearInterval(pollInterval);
+                                return;
+                            }
+
+                            try {
+                                const history = await getTransactionHistory();
+                                // Check for a recent successful transaction
+                                const latestTx = history.data[0];
+
+                                if (latestTx && latestTx.status.toLowerCase() === 'success') {
+                                    // If we have a reference match or it's just very recent
+                                    const isMatch = res.reference ? latestTx.reference === res.reference : true;
+                                    const txTime = new Date(latestTx.paid_at).getTime();
+                                    const now = new Date().getTime();
+
+                                    // Consider it a success if it's the right reference or happened in the last 60 seconds
+                                    if (isMatch && (now - txTime < 60000)) {
+                                        clearInterval(pollInterval);
+                                        popup.close();
+                                        navigate(`/payment-success?reference=${latestTx.reference}`);
+                                    }
+                                }
+                            } catch (err) {
+                                console.error('Polling error:', err);
+                            }
+                        }, 3000);
+
+                        // Fallback: Clear interval after 10 minutes
+                        setTimeout(() => clearInterval(pollInterval), 600000);
+                    } else {
+                        // If popup is blocked, fallback to direct redirect (though it will 404 on return)
+                        window.location.href = res.authorization_url;
+                    }
                 } else {
                     setError('Subscription failed. No payment URL received.');
                 }

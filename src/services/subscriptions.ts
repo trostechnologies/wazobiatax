@@ -23,6 +23,8 @@ export interface PlansResponse {
 export interface SubscribeResponse {
     message: string;
     authorization_url: string;
+    reference?: string;
+    access_code?: string;
 }
 
 export interface UserSubscriptionResponse {
@@ -87,16 +89,24 @@ export const subscribeUser = async (planId: string, callbackUrl?: string): Promi
         throw new Error('No access token found. Please log in.');
     }
 
-    const formData = new URLSearchParams();
-    formData.append('plan_id', planId);
+    const payload: any = {
+        plan_id: planId
+    };
+
     if (callbackUrl) {
-        formData.append('callback_url', callbackUrl);
+        payload.callback_url = callbackUrl;
+        payload.redirect_url = callbackUrl;
+        // Some backends expect it in metadata
+        payload.metadata = JSON.stringify({
+            callback_url: callbackUrl,
+            cancel_action: window.location.origin + '/subscription-plans'
+        });
     }
 
-    const response = await api.post<SubscribeResponse>('/api/subscribe', formData, {
+    const response = await api.post<SubscribeResponse>('/api/subscribe', payload, {
         headers: {
             'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/x-www-form-urlencoded',
+            'Content-Type': 'application/json',
         },
     });
 
