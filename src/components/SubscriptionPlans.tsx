@@ -27,6 +27,7 @@ export const SubscriptionPlans: React.FC<SubscriptionPlansProps> = ({ language =
     const [loading, setLoading] = useState(true);
     const [subscribing, setSubscribing] = useState<string | null>(null);
     const [isPolling, setIsPolling] = useState(false);
+    const [pollCount, setPollCount] = useState(0);
     const [error, setError] = useState<string | null>(null);
     const [apiPlans, setApiPlans] = useState<Plan[]>([]);
     const [selectedPlan, setSelectedPlan] = useState('basic');
@@ -125,11 +126,17 @@ export const SubscriptionPlans: React.FC<SubscriptionPlansProps> = ({ language =
                 setUserSubscription(updatedSub);
             } else {
                 // New subscription
-                const res = await subscribeUser(planId);
+                const callbackUrl = `${window.location.origin}/payment-success`;
+                const res = await subscribeUser(planId, callbackUrl);
+
                 if (res.authorization_url) {
                     setIsPolling(true);
                     setError(null);
                     const startTime = Date.now();
+
+                    // Manually append callback_url to the authorization_url as a final attempt to override defaults
+                    const separator = res.authorization_url.includes('?') ? '&' : '?';
+                    const forcedUrl = `${res.authorization_url}${separator}callback_url=${encodeURIComponent(callbackUrl)}`;
 
                     // Open Paystack in a popup with specific features to avoid a new tab
                     const width = 500;
@@ -139,14 +146,16 @@ export const SubscriptionPlans: React.FC<SubscriptionPlansProps> = ({ language =
 
                     // 'popup=yes' and specifying exact dimensions often forces a window instead of a tab
                     const popup = window.open(
-                        res.authorization_url,
+                        forcedUrl,
                         'PaystackPayment',
                         `width=${width},height=${height},left=${left},top=${top},status=no,menubar=no,toolbar=no,location=no`
                     );
 
                     if (popup) {
+                        setPollCount(0);
                         // Start polling for transaction success
                         const pollInterval = setInterval(async () => {
+                            setPollCount(prev => prev + 1);
                             if (popup.closed) {
                                 clearInterval(pollInterval);
                                 // Give it one last check in case they closed it right after success
@@ -376,9 +385,14 @@ export const SubscriptionPlans: React.FC<SubscriptionPlansProps> = ({ language =
                             </div>
                         </div>
 
-                        <h3 className="text-xl font-bold text-gray-900 mb-2">Payment in Progress</h3>
+                        <h3 className="text-xl font-bold text-gray-900 mb-2">
+                            {pollCount > 10 ? "Verifying Payment..." : "Payment in Progress"}
+                        </h3>
                         <p className="text-gray-600 mb-8 leading-relaxed">
-                            A secure payment window has been opened. Please complete your transaction there.
+                            {pollCount > 10
+                                ? "We're still waiting for the bank to confirm... Don't worry, you can close the payment window if you've already finished."
+                                : "A secure payment window has been opened. Please complete your transaction there."
+                            }
                         </p>
 
                         <div className="space-y-4">

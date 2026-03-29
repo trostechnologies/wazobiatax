@@ -103,7 +103,10 @@ export const subscribeUser = async (planId: string, callbackUrl?: string): Promi
         });
     }
 
-    const response = await api.post<SubscribeResponse>('/api/subscribe', payload, {
+    const encodedCallback = callbackUrl ? encodeURIComponent(callbackUrl) : '';
+    const url = `/api/subscribe${callbackUrl ? `?callback_url=${encodedCallback}&redirect_url=${encodedCallback}` : ''}`;
+
+    const response = await api.post<SubscribeResponse>(url, payload, {
         headers: {
             'Authorization': `Bearer ${token}`,
             'Content-Type': 'application/json',
