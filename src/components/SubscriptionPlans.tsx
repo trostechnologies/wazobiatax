@@ -134,10 +134,6 @@ export const SubscriptionPlans: React.FC<SubscriptionPlansProps> = ({ language =
                     setError(null);
                     const startTime = Date.now();
 
-                    // Manually append callback_url to the authorization_url as a final attempt to override defaults
-                    const separator = res.authorization_url.includes('?') ? '&' : '?';
-                    const forcedUrl = `${res.authorization_url}${separator}callback_url=${encodeURIComponent(callbackUrl)}`;
-
                     // Open Paystack in a popup with specific features to avoid a new tab
                     const width = 500;
                     const height = 700;
@@ -146,7 +142,7 @@ export const SubscriptionPlans: React.FC<SubscriptionPlansProps> = ({ language =
 
                     // 'popup=yes' and specifying exact dimensions often forces a window instead of a tab
                     const popup = window.open(
-                        forcedUrl,
+                        res.authorization_url,
                         'PaystackPayment',
                         `width=${width},height=${height},left=${left},top=${top},status=no,menubar=no,toolbar=no,location=no`
                     );
