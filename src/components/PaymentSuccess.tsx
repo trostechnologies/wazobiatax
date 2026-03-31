@@ -41,39 +41,58 @@ export function PaymentSuccess({
     }, []);
 
     useEffect(() => {
+        let intervalId: ReturnType<typeof setInterval>;
+
         const fetchTransactionDetails = async () => {
             if (!reference) return;
 
-            try {
-                setLoading(true);
-                const res = await getTransactionHistory();
-                const found = res.data.find(tx => tx.reference === reference);
-                if (found) {
-                    setTransaction(found);
-                } else {
-                    // If not found in history yet (might take a second for backend to sync)
-                    // We could retry or just show a message. For now, let's try one more time after a delay if not found.
-                    setTimeout(async () => {
-                        const retryRes = await getTransactionHistory();
-                        const retryFound = retryRes.data.find(tx => tx.reference === reference);
-                        if (retryFound) {
-                            setTransaction(retryFound);
-                        } else {
-                            setError('Transaction details not found. Please check your history later.');
-                        }
+            const maxRetries = 5;
+            let currentRetry = 0;
+            const retryInterval = 3000; // 3 seconds
+
+            const attemptFetch = async (): Promise<boolean> => {
+                try {
+                    const res = await getTransactionHistory();
+                    const found = res.data.find(tx => tx.reference === reference);
+                    if (found) {
+                        setTransaction(found);
                         setLoading(false);
-                    }, 2000);
-                    return;
+                        return true;
+                    }
+                    return false;
+                } catch (err) {
+                    console.error('Failed to fetch transaction:', err);
+                    return false;
                 }
-            } catch (err) {
-                console.error('Failed to fetch transaction:', err);
-                setError('Could not verify transaction details.');
-            } finally {
-                if (transaction || error) setLoading(false);
-            }
+            };
+
+            setLoading(true);
+            setError(null);
+
+            // First attempt
+            const success = await attemptFetch();
+            if (success) return;
+
+            // Retry loop
+            intervalId = setInterval(async () => {
+                currentRetry++;
+                const retrySuccess = await attemptFetch();
+
+                if (retrySuccess || currentRetry >= maxRetries) {
+                    clearInterval(intervalId);
+                    if (!retrySuccess) {
+                        setError('Transaction details not found. Please check your history later or contact support.');
+                        setLoading(false);
+                    }
+                }
+            }, retryInterval);
         };
 
         fetchTransactionDetails();
+
+        return () => {
+            if (intervalId) clearInterval(intervalId);
+        };
     }, [reference]);
 
     const features = [
