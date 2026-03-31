@@ -89,27 +89,16 @@ export const subscribeUser = async (planId: string, callbackUrl?: string): Promi
         throw new Error('No access token found. Please log in.');
     }
 
-    const payload: any = {
-        plan_id: planId
-    };
-
+    const formData = new URLSearchParams();
+    formData.append('plan_id', planId);
     if (callbackUrl) {
-        payload.callback_url = callbackUrl;
-        payload.redirect_url = callbackUrl;
-        // Some backends expect it in metadata
-        payload.metadata = JSON.stringify({
-            callback_url: callbackUrl,
-            cancel_action: window.location.origin + '/subscription-plans'
-        });
+        formData.append('callback_url', callbackUrl);
     }
 
-    const encodedCallback = callbackUrl ? encodeURIComponent(callbackUrl) : '';
-    const url = `/api/subscribe${callbackUrl ? `?callback_url=${encodedCallback}&redirect_url=${encodedCallback}` : ''}`;
-
-    const response = await api.post<SubscribeResponse>(url, payload, {
+    const response = await api.post<SubscribeResponse>('/api/subscribe', formData, {
         headers: {
             'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json',
+            'Content-Type': 'application/x-www-form-urlencoded',
         },
     });
 

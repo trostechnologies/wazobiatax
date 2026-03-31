@@ -9,7 +9,6 @@ import {
     ShieldCheck,
     Zap,
     Loader2,
-    X
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { ToastContainer, toast } from 'react-toastify';
@@ -128,84 +127,9 @@ export const SubscriptionPlans: React.FC<SubscriptionPlansProps> = ({ language =
                 // New subscription
                 const callbackUrl = `${window.location.origin}/payment-success`;
                 const res = await subscribeUser(planId, callbackUrl);
-
                 if (res.authorization_url) {
-                    setIsPolling(true);
-                    setError(null);
-                    const startTime = Date.now();
-
-                    // Open Paystack in a popup with specific features to avoid a new tab
-                    const width = 500;
-                    const height = 700;
-                    const left = window.screenX + (window.outerWidth - width) / 2;
-                    const top = window.screenY + (window.outerHeight - height) / 2;
-
-                    // 'popup=yes' and specifying exact dimensions often forces a window instead of a tab
-                    const popup = window.open(
-                        res.authorization_url,
-                        'PaystackPayment',
-                        `width=${width},height=${height},left=${left},top=${top},status=no,menubar=no,toolbar=no,location=no`
-                    );
-
-                    if (popup) {
-                        setPollCount(0);
-                        // Start polling for transaction success
-                        const pollInterval = setInterval(async () => {
-                            setPollCount(prev => prev + 1);
-                            if (popup.closed) {
-                                clearInterval(pollInterval);
-                                // Give it one last check in case they closed it right after success
-                                try {
-                                    const history = await getTransactionHistory();
-                                    const latestTx = history.data[0];
-                                    if (latestTx && latestTx.status.toLowerCase() === 'success') {
-                                        const txTime = new Date(latestTx.paid_at).getTime();
-                                        if (txTime > startTime - 30000) {
-                                            setIsPolling(false);
-                                            navigate(`/payment-success?reference=${latestTx.reference}`);
-                                            return;
-                                        }
-                                    }
-                                } catch (e) { }
-                                setIsPolling(false);
-                                return;
-                            }
-
-                            try {
-                                const history = await getTransactionHistory();
-                                // Check for a recent successful transaction
-                                const latestTx = history.data[0];
-
-                                if (latestTx && latestTx.status.toLowerCase() === 'success') {
-                                    // If we have a reference match from API response
-                                    const isReferenceMatch = res.reference && latestTx.reference === res.reference;
-
-                                    // Or if the transaction time is newer than when we started (with 30s buffer for safety)
-                                    const txTime = new Date(latestTx.paid_at).getTime();
-                                    const isRecentMatch = txTime > startTime - 30000;
-
-                                    if (isReferenceMatch || isRecentMatch) {
-                                        clearInterval(pollInterval);
-                                        if (!popup.closed) popup.close();
-                                        setIsPolling(false);
-                                        navigate(`/payment-success?reference=${latestTx.reference}`);
-                                    }
-                                }
-                            } catch (err) {
-                                console.error('Polling error:', err);
-                            }
-                        }, 3000);
-
-                        // Fallback: Clear interval after 10 minutes
-                        setTimeout(() => {
-                            clearInterval(pollInterval);
-                            setIsPolling(false);
-                        }, 600000);
-                    } else {
-                        // If popup is blocked, fallback to direct redirect
-                        setIsPolling(false);
-                        window.location.href = res.authorization_url;
-                    }
+                    // Redirect to Paystack
+                    window.location.href = res.authorization_url;
                 } else {
                     setError('Subscription failed. No payment URL received.');
                 }
