@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { useLanguage } from "@/context/LanguageContext";
 import { useNavigate } from 'react-router-dom';
 import { profileTranslations, type LanguageKey } from '../translations/profile';
+import { AIChatbot } from './AIChatbot';
 
 interface EducationModuleProps {
   language?: LanguageKey;
@@ -115,6 +116,15 @@ const translations = {
     subtitlesInfo: 'All videos include multilingual subtitles',
 
     proTips: 'Pro Tips for Tax Compliance',
+
+    chatbotTitle: 'WazobiaTax AI Assistant',
+    chatbotWelcome: 'Hi there! 👋 I\'m your WazobiaTax AI assistant. I can help you understand Nigerian tax laws, exemptions, filing requirements, and more. What would you like to know?',
+    chatbotPlaceholder: 'Ask me about taxes...',
+    chatbotSuggestion1: 'What is the NTAA 2025?',
+    chatbotSuggestion2: 'Do small businesses pay CIT?',
+    chatbotSuggestion3: 'What are the penalties for late filing?',
+    chatbotFallback: 'That\'s a great question! While I don\'t have a specific answer for that right now, I\'d recommend checking our FAQ section in the Guides tab or contacting the National Revenue Service (NRS) for detailed assistance. You can also try rephrasing your question — I\'m here to help! 😊',
+    chatbotTyping: 'Thinking...',
   },
   pidgin: {
     // FAQs
@@ -167,25 +177,25 @@ const translations = {
     howDoIPayTaxAns: 'Pay online through di app using bank cards or mobile money (like Paystack). E dey safe and you go get receipt instantly. Make you pay on time make dem no charge you extra (NTAA Section 49: Payment of tax).',
 
     whatIsATCC: 'Wetín be Tax Clearance Certificate (TCC) and why I need am?',
-whatIsATCCAns: 'TCC show say you no get any unpaid tax. You need am for contracts, loans, or big business deals. You fit request am inside di app after filing — e don be digital now (NTAA Section 72).',
+    whatIsATCCAns: 'TCC show say you no get any unpaid tax. You need am for contracts, loans, or big business deals. You fit request am inside di app after filing — e don be digital now (NTAA Section 72).',
 
-whatHappensIfIPayLate: 'Wetín go happen if I file or pay late?',
-whatHappensIfIPayLateAns: 'You fit pay penalty (like 10% of di tax + ₦25,000 for late filing) and interest (1.5% every month). Di app dey send reminders and dey calculate penalties make you fit avoid dem (NTAA Sections 65, 101).',
+    whatHappensIfIPayLate: 'Wetín go happen if I file or pay late?',
+    whatHappensIfIPayLateAns: 'You fit pay penalty (like 10% of di tax + ₦25,000 for late filing) and interest (1.5% every month). Di app dey send reminders and dey calculate penalties make you fit avoid dem (NTAA Sections 65, 101).',
 
-canIGetRefund: 'I fit get refund if I overpay tax?',
-canIGetRefundAns: 'Yes — if you pay pass wetín you suppose pay (like extra VAT input), you fit request refund. Di app dey track overpayments and help you file claims (NTAA Sections 55–56).',
+    canIGetRefund: 'I fit get refund if I overpay tax?',
+    canIGetRefundAns: 'Yes — if you pay pass wetín you suppose pay (like extra VAT input), you fit request refund. Di app dey track overpayments and help you file claims (NTAA Sections 55–56).',
 
-doIWorryAboutTax: 'I need worry about tax avoidance rules?',
-doIWorryAboutTaxAns: 'Yes — no do fake transactions just to reduce tax (artificial arrangements). Di law no allow am. Di app go warn you if anything look wrong (NTAA Sections 46–47: Prohibited tax avoidance).',
+    doIWorryAboutTax: 'I need worry about tax avoidance rules?',
+    doIWorryAboutTaxAns: 'Yes — no do fake transactions just to reduce tax (artificial arrangements). Di law no allow am. Di app go warn you if anything look wrong (NTAA Sections 46–47: Prohibited tax avoidance).',
 
-howDoesLawHelp: 'How di new law dey help informal businesses like market sellers?',
-howDoesLawHelpAns: 'E make registration easy (TaxID), give exemption for small turnover, allow simple record and filing, and use app/technology make compliance easy and cheap (NTAA main objective + digital focus).',
+    howDoesLawHelp: 'How di new law dey help informal businesses like market sellers?',
+    howDoesLawHelpAns: 'E make registration easy (TaxID), give exemption for small turnover, allow simple record and filing, and use app/technology make compliance easy and cheap (NTAA main objective + digital focus).',
 
-whatIfIMakeMistake: 'Wetín go happen if I make mistake for my return?',
-whatIfIMakeMistakeAns: 'You fit revise am if you notice error or you object. Di app allow you review before submitting and save drafts (NTAA Sections 41–42: Revision of assessment).',
+    whatIfIMakeMistake: 'Wetín go happen if I make mistake for my return?',
+    whatIfIMakeMistakeAns: 'You fit revise am if you notice error or you object. Di app allow you review before submitting and save drafts (NTAA Sections 41–42: Revision of assessment).',
 
-whereCanIGetHelp: 'Where I fit get more help about di new tax rules?',
-whereCanIGetHelpAns: 'Use di app education videos, FAQs, and guides (for English, Pidgin, Hausa, Yoruba, and Igbo). You fit also contact National Revenue Service (NRS) or your state tax office. Di app get quick links!',
+    whereCanIGetHelp: 'Where I fit get more help about di new tax rules?',
+    whereCanIGetHelpAns: 'Use di app education videos, FAQs, and guides (for English, Pidgin, Hausa, Yoruba, and Igbo). You fit also contact National Revenue Service (NRS) or your state tax office. Di app get quick links!',
 
     // Videos
     videoTaxObligations: 'Understand Your Tax Responsibilities',
@@ -224,6 +234,15 @@ whereCanIGetHelpAns: 'Use di app education videos, FAQs, and guides (for English
     subtitlesInfo: 'All the videos get subtitles for other language',
 
     proTips: 'Beta Advice for Tax Compliance',
+
+    chatbotTitle: 'WazobiaTax AI Helper',
+    chatbotWelcome: 'How far! 👋 Na be your WazobiaTax AI helper. I fit help you understand Nigerian tax laws, exemptions, how to file, and plenty more. Wetín you wan know?',
+    chatbotPlaceholder: 'Ask me about tax...',
+    chatbotSuggestion1: 'Wetín be NTAA 2025?',
+    chatbotSuggestion2: 'Small businesses dey pay CIT?',
+    chatbotSuggestion3: 'Wetín be punishment for late filing?',
+    chatbotFallback: 'Na beta question be dat! I no get specific answer now, but check di FAQ section for Guides tab or contact National Revenue Service (NRS). You fit still try ask am another way — I dey here to help! 😊',
+    chatbotTyping: 'E dey think...',
   },
   hausa: {
     ntaaWhatIs: 'Menene Dokar Haraji ta NTAA 2025?',
@@ -275,25 +294,25 @@ whereCanIGetHelpAns: 'Use di app education videos, FAQs, and guides (for English
     howDoIPayTaxAns: 'Biya ta yanar gizo ta manhaja ta amfani da katin banki ko mobile money (kamar Paystack). Yana da aminci kuma zaka samu rasit nan take. Biya akan lokaci don kauce wa karin kudade (NTAA Sashe na 49: Biyan haraji).',
 
     whatIsATCC: 'Menene Tax Clearance Certificate (TCC) kuma me yasa nake bukatarsa?',
-whatIsATCCAns: 'TCC na nuna cewa ba ka da wani harajin da bai biya ba. Ana bukatarsa don kwangila, rance, ko manyan mu’amalolin kasuwanci. Za ka iya nema ta cikin manhaja bayan ka cika rahoto — yanzu dijital ne (NTAA Sashe na 72).',
+    whatIsATCCAns: 'TCC na nuna cewa ba ka da wani harajin da bai biya ba. Ana bukatarsa don kwangila, rance, ko manyan mu’amalolin kasuwanci. Za ka iya nema ta cikin manhaja bayan ka cika rahoto — yanzu dijital ne (NTAA Sashe na 72).',
 
-whatHappensIfIPayLate: 'Me zai faru idan na cika rahoto ko na biya haraji a makare?',
-whatHappensIfIPayLateAns: 'Za ka iya biyan tara (misali kashi 10% na haraji + ₦25,000 saboda jinkirin rahoto) da ribar kashi 1.5% kowane wata. Manhajar tana tunatar da kai kuma tana lissafa tarar domin ka kauce musu (NTAA Sashe na 65, 101).',
+    whatHappensIfIPayLate: 'Me zai faru idan na cika rahoto ko na biya haraji a makare?',
+    whatHappensIfIPayLateAns: 'Za ka iya biyan tara (misali kashi 10% na haraji + ₦25,000 saboda jinkirin rahoto) da ribar kashi 1.5% kowane wata. Manhajar tana tunatar da kai kuma tana lissafa tarar domin ka kauce musu (NTAA Sashe na 65, 101).',
 
-canIGetRefund: 'Zan iya samun mayar da kudi idan na biya haraji fiye da kima?',
-canIGetRefundAns: 'Eh — idan ka biya fiye da abin da ya dace (misali karin VAT input), za ka iya neman mayar da kudin. Manhajar tana bin diddigin yawan biyan da aka yi kuma tana taimakawa wajen gabatar da bukata (NTAA Sashe na 55–56).',
+    canIGetRefund: 'Zan iya samun mayar da kudi idan na biya haraji fiye da kima?',
+    canIGetRefundAns: 'Eh — idan ka biya fiye da abin da ya dace (misali karin VAT input), za ka iya neman mayar da kudin. Manhajar tana bin diddigin yawan biyan da aka yi kuma tana taimakawa wajen gabatar da bukata (NTAA Sashe na 55–56).',
 
-doIWorryAboutTax: 'Shin ina bukatar damuwa game da dokokin kauce wa haraji?',
-doIWorryAboutTaxAns: 'Eh — kada ka yi mu’amala ta ƙarya domin rage haraji (tsare-tsaren bogi). Doka ta haramta hakan. Manhajar zata gargade ka idan wani abu bai dace ba (NTAA Sashe na 46–47: Haramcin kauce wa haraji).',
+    doIWorryAboutTax: 'Shin ina bukatar damuwa game da dokokin kauce wa haraji?',
+    doIWorryAboutTaxAns: 'Eh — kada ka yi mu’amala ta ƙarya domin rage haraji (tsare-tsaren bogi). Doka ta haramta hakan. Manhajar zata gargade ka idan wani abu bai dace ba (NTAA Sashe na 46–47: Haramcin kauce wa haraji).',
 
-howDoesLawHelp: 'Ta yaya sabon doka ke taimakawa kasuwancin gargajiya kamar masu sayarwa a kasuwa?',
-howDoesLawHelpAns: 'Yana sauƙaƙa rajista (TaxID), yana bayar da rangwame ga ƙananan kudin shiga, yana ba da damar adana bayanai da cike rahoto cikin sauƙi, sannan yana amfani da manhajoji da fasaha don sauƙaƙa bin doka da rage tsada (babban manufar NTAA + mayar da hankali kan dijital).',
+    howDoesLawHelp: 'Ta yaya sabon doka ke taimakawa kasuwancin gargajiya kamar masu sayarwa a kasuwa?',
+    howDoesLawHelpAns: 'Yana sauƙaƙa rajista (TaxID), yana bayar da rangwame ga ƙananan kudin shiga, yana ba da damar adana bayanai da cike rahoto cikin sauƙi, sannan yana amfani da manhajoji da fasaha don sauƙaƙa bin doka da rage tsada (babban manufar NTAA + mayar da hankali kan dijital).',
 
-whatIfIMakeMistake: 'Me zai faru idan na yi kuskure a rahoton harajina?',
-whatIfIMakeMistakeAns: 'Za ka iya gyara shi idan ka gano kuskure ko ka ƙi amincewa da shi. Manhajar tana ba ka damar dubawa kafin tura rahoto da adana daftarin aiki (NTAA Sashe na 41–42: Gyaran kimantawa).',
+    whatIfIMakeMistake: 'Me zai faru idan na yi kuskure a rahoton harajina?',
+    whatIfIMakeMistakeAns: 'Za ka iya gyara shi idan ka gano kuskure ko ka ƙi amincewa da shi. Manhajar tana ba ka damar dubawa kafin tura rahoto da adana daftarin aiki (NTAA Sashe na 41–42: Gyaran kimantawa).',
 
-whereCanIGetHelp: 'A ina zan iya samun karin bayani ko taimako kan sabbin dokokin haraji?',
-whereCanIGetHelpAns: 'Yi amfani da bidiyon koyarwa, FAQs, da jagororin manhaja (a Turanci, Pidgin, Hausa, Yoruba, da Igbo). Hakanan zaka iya tuntubar National Revenue Service (NRS) ko ofishin harajin jiharka. Manhajar tana da hanyoyin gaggawa!',
+    whereCanIGetHelp: 'A ina zan iya samun karin bayani ko taimako kan sabbin dokokin haraji?',
+    whereCanIGetHelpAns: 'Yi amfani da bidiyon koyarwa, FAQs, da jagororin manhaja (a Turanci, Pidgin, Hausa, Yoruba, da Igbo). Hakanan zaka iya tuntubar National Revenue Service (NRS) ko ofishin harajin jiharka. Manhajar tana da hanyoyin gaggawa!',
 
     videoTaxObligations: 'Fahimtar Nauyin Harajinka',
     videoVatReturns: 'Yadda Ake Filing VAT',
@@ -330,6 +349,15 @@ whereCanIGetHelpAns: 'Yi amfani da bidiyon koyarwa, FAQs, da jagororin manhaja (
     subtitlesInfo: 'Dukkan bidiyo suna da fassarar harsuna da dama',
 
     proTips: 'Shawarwari na Kwarai don Bin Haraji',
+
+    chatbotTitle: 'WazobiaTax AI Mataimaki',
+    chatbotWelcome: 'Sannu! 👋 Ni ne mataimakin WazobiaTax AI. Zan iya taimaka maka fahimtar dokokin harajin Najeriya, rangwame, yadda ake filing, da ƙarin bayani. Me kake so ka sani?',
+    chatbotPlaceholder: 'Tambayi ni game da haraji...',
+    chatbotSuggestion1: 'Menene NTAA 2025?',
+    chatbotSuggestion2: 'Kananan kasuwanci suna biyan CIT?',
+    chatbotSuggestion3: 'Menene hukuncin jinkirin filing?',
+    chatbotFallback: 'Kyakkyawar tambaya! Ban da amsa ta musamman a yanzu, amma duba sashin FAQ a Guides ko tuntuɓi National Revenue Service (NRS). Kuma za ka iya sake tambayar ta wata hanya — ina nan don taimako! 😊',
+    chatbotTyping: 'Yana tunani...',
   },
   yoruba: {
     ntaaWhatIs: 'Kí ni Ofin NTAA 2025?',
@@ -381,25 +409,25 @@ whereCanIGetHelpAns: 'Yi amfani da bidiyon koyarwa, FAQs, da jagororin manhaja (
     howDoIPayTaxAns: 'San online nípasẹ̀ app pẹ̀lú bank cards tàbí mobile money (gẹ́gẹ́ bí Paystack). Ó dájú, ó sì fun ọ ní receipt lẹ́sẹ̀kẹsẹ. San ní àkókò kí o má bà á jẹ́ owo míràn (NTAA Apá 49: Payment of tax).',
 
     whatIsATCC: 'Kí ni Tax Clearance Certificate (TCC) àti ìdí tí mo fi nílò rẹ?',
-whatIsATCCAns: 'TCC ń fi hàn pé o kò ní owó-ori tí kò tíì san. A máa nílò rẹ fún contract, loan, tàbí ìdílé ìṣòwò ńlá. O lè béèrè rẹ nínú app lẹ́yìn tí o bá ti file — ó ti di dijital báyìí (NTAA Apá 72).',
+    whatIsATCCAns: 'TCC ń fi hàn pé o kò ní owó-ori tí kò tíì san. A máa nílò rẹ fún contract, loan, tàbí ìdílé ìṣòwò ńlá. O lè béèrè rẹ nínú app lẹ́yìn tí o bá ti file — ó ti di dijital báyìí (NTAA Apá 72).',
 
-whatHappensIfIPayLate: 'Kí ló máa ṣẹlẹ̀ bí mo bá file tàbí san owó-ori pẹ́?',
-whatHappensIfIPayLateAns: 'O lè san penalty (bíi 10% ti owó-ori + ₦25,000 fún filing pẹ́) àti interest ti 1.5% lóṣù kọọkan. App yìí máa rántí ẹ nípa àkókò, ó sì máa ṣe ìṣírò penalty kí o lè yàgò fún un (NTAA Apá 65, 101).',
+    whatHappensIfIPayLate: 'Kí ló máa ṣẹlẹ̀ bí mo bá file tàbí san owó-ori pẹ́?',
+    whatHappensIfIPayLateAns: 'O lè san penalty (bíi 10% ti owó-ori + ₦25,000 fún filing pẹ́) àti interest ti 1.5% lóṣù kọọkan. App yìí máa rántí ẹ nípa àkókò, ó sì máa ṣe ìṣírò penalty kí o lè yàgò fún un (NTAA Apá 65, 101).',
 
-canIGetRefund: 'Ṣe mo lè gba refund bí mo bá san owó-ori ju bó ṣe yẹ lọ?',
-canIGetRefundAns: 'Bẹ́ẹ̀ni — bí o bá san owó-ori ju iye tí o yẹ lọ (gẹ́gẹ́ bí VAT input tí ó pọ̀ ju), o lè béèrè refund. App yìí ń tọ́pa overpayments, ó sì ń ràn é lọ́wọ́ láti file ìbéèrè (NTAA Apá 55–56).',
+    canIGetRefund: 'Ṣe mo lè gba refund bí mo bá san owó-ori ju bó ṣe yẹ lọ?',
+    canIGetRefundAns: 'Bẹ́ẹ̀ni — bí o bá san owó-ori ju iye tí o yẹ lọ (gẹ́gẹ́ bí VAT input tí ó pọ̀ ju), o lè béèrè refund. App yìí ń tọ́pa overpayments, ó sì ń ràn é lọ́wọ́ láti file ìbéèrè (NTAA Apá 55–56).',
 
-doIWorryAboutTax: 'Ṣe mo gbọ́dọ̀ ṣọ́ra nípa àwọn òfin tax avoidance?',
-doIWorryAboutTaxAns: 'Bẹ́ẹ̀ni — má ṣe ṣe ìṣòwò èké láti dín owó-ori kù (artificial arrangements). Òfin ti fi ẹ̀sùn kàn án. App yìí máa kilọ̀ fún ọ bí ohunkóhun bá dàbí pé kò tọ́ (NTAA Apá 46–47: Òfin ìdènà tax avoidance).',
+    doIWorryAboutTax: 'Ṣe mo gbọ́dọ̀ ṣọ́ra nípa àwọn òfin tax avoidance?',
+    doIWorryAboutTaxAns: 'Bẹ́ẹ̀ni — má ṣe ṣe ìṣòwò èké láti dín owó-ori kù (artificial arrangements). Òfin ti fi ẹ̀sùn kàn án. App yìí máa kilọ̀ fún ọ bí ohunkóhun bá dàbí pé kò tọ́ (NTAA Apá 46–47: Òfin ìdènà tax avoidance).',
 
-howDoesLawHelp: 'Báwo ni òfin tuntun ṣe ń ràn àwọn ọjà informal bíi alátàjà ọjà lọ́wọ́?',
-howDoesLawHelpAns: 'Ó ń jẹ́ kí ìforúkọsílẹ̀ rọrùn (TaxID), ń fún ní ìyọkúrò fún owó kékeré, ń jẹ́ kí ìkọ̀wé àti filing rọrùn, ó sì ń lo app àti imọ̀-ẹrọ láti jẹ́ kí ìfaradà òfin rọrùn tí kò sì gbowó (ìdí pàtàkì NTAA + ìdojukọ dijital).',
+    howDoesLawHelp: 'Báwo ni òfin tuntun ṣe ń ràn àwọn ọjà informal bíi alátàjà ọjà lọ́wọ́?',
+    howDoesLawHelpAns: 'Ó ń jẹ́ kí ìforúkọsílẹ̀ rọrùn (TaxID), ń fún ní ìyọkúrò fún owó kékeré, ń jẹ́ kí ìkọ̀wé àti filing rọrùn, ó sì ń lo app àti imọ̀-ẹrọ láti jẹ́ kí ìfaradà òfin rọrùn tí kò sì gbowó (ìdí pàtàkì NTAA + ìdojukọ dijital).',
 
-whatIfIMakeMistake: 'Kí ló máa ṣẹlẹ̀ bí mo bá ṣe aṣìṣe nínú tax return mi?',
-whatIfIMakeMistakeAns: 'O lè tún un ṣe bí o bá rí aṣìṣe tàbí o bá fẹ́ kọ́ ọ́. App yìí jẹ́ kí o tún wo ohun gbogbo kí o tó submit, ó sì jẹ́ kí o pa drafts mọ́ (NTAA Apá 41–42: Àtúnṣe assessment).',
+    whatIfIMakeMistake: 'Kí ló máa ṣẹlẹ̀ bí mo bá ṣe aṣìṣe nínú tax return mi?',
+    whatIfIMakeMistakeAns: 'O lè tún un ṣe bí o bá rí aṣìṣe tàbí o bá fẹ́ kọ́ ọ́. App yìí jẹ́ kí o tún wo ohun gbogbo kí o tó submit, ó sì jẹ́ kí o pa drafts mọ́ (NTAA Apá 41–42: Àtúnṣe assessment).',
 
-whereCanIGetHelp: 'Níbo ni mo ti lè rí ìrànlọ́wọ́ míràn nípa àwọn òfin owó-ori tuntun?',
-whereCanIGetHelpAns: 'Lo àwọn fidio ẹ̀kọ́, FAQs, àti ìtọ́sọ́nà inú app (ní Gẹ̀ẹ́sì, Pidgin, Hausa, Yoruba, àti Igbo). O tún lè kan si National Revenue Service (NRS) tàbí ọ́fíìsì owó-ori ìpínlẹ̀ rẹ. App yìí ní quick links!',
+    whereCanIGetHelp: 'Níbo ni mo ti lè rí ìrànlọ́wọ́ míràn nípa àwọn òfin owó-ori tuntun?',
+    whereCanIGetHelpAns: 'Lo àwọn fidio ẹ̀kọ́, FAQs, àti ìtọ́sọ́nà inú app (ní Gẹ̀ẹ́sì, Pidgin, Hausa, Yoruba, àti Igbo). O tún lè kan si National Revenue Service (NRS) tàbí ọ́fíìsì owó-ori ìpínlẹ̀ rẹ. App yìí ní quick links!',
 
     videoTaxObligations: 'Lílóye Ojuse Owó-ori Rẹ',
     videoVatReturns: 'Bí A Ṣe N Fọwọ́sí VAT',
@@ -436,6 +464,15 @@ whereCanIGetHelpAns: 'Lo àwọn fidio ẹ̀kọ́, FAQs, àti ìtọ́sọ́nà 
     subtitlesInfo: 'Gbogbo fidio ni awọn atunkọ ede pupọ',
 
     proTips: 'Àwọn Ìmọ̀ràn Ìsanwó Owó-ori',
+
+    chatbotTitle: 'WazobiaTax AI Olùrànlọ́wọ́',
+    chatbotWelcome: 'Báwo ni! 👋 Mo jẹ́ olùrànlọ́wọ́ AI WazobiaTax rẹ. Mo lè ràn ẹ́ lọ́wọ́ láti lóye àwọn òfin owó-ori Nàìjíríà, àyọkúrò, ìfọwọ́sí, àti púpọ̀ sí i. Kí ni o fẹ́ mọ̀?',
+    chatbotPlaceholder: 'Béèrè nípa owó-ori...',
+    chatbotSuggestion1: 'Kí ni NTAA 2025?',
+    chatbotSuggestion2: 'Ṣe àwọn ọjà kékeré ń san CIT?',
+    chatbotSuggestion3: 'Kí ni ìtanràn fún filing pẹ?',
+    chatbotFallback: 'Ìbéèrè tó dára! Mi ò ní ìdáhùn pàtó fún ìyẹn báyìí, ṣùgbọ́n ṣàyẹ̀wò apá FAQ nínú Guides tàbí kàn sí National Revenue Service (NRS). O tún lè gbìyànjú ìbéèrè rẹ ní ọ̀nà mìíràn — mo wà níbí láti ràn ẹ́ lọ́wọ́! 😊',
+    chatbotTyping: 'Ó ń ronú...',
   },
   igbo: {
     ntaaWhatIs: 'Gịnị bụ Iwu NTAA 2025?',
@@ -487,25 +524,25 @@ whereCanIGetHelpAns: 'Lo àwọn fidio ẹ̀kọ́, FAQs, àti ìtọ́sọ́nà 
     howDoIPayTaxAns: 'Kwụọ online site na ngwa ahụ jiri kaadị bank ma ọ bụ mobile money (dịka Paystack). Ọ dị nchebe, ị ga-enweta receipt ozugbo. Kwụọ n’oge iji zere ụgwọ mgbakwunye (NTAA Nkebi 49: Payment of tax).',
 
     whatIsATCC: 'Gịnị bụ Tax Clearance Certificate (TCC) ma gịnị mere m ji chọọ ya?',
-whatIsATCCAns: 'TCC na-egosi na ị nweghị ụtụ isi ọ bụla fọdụrụnụ. A na-achọ ya maka nkwekọrịta, mgbazinye ego, ma ọ bụ nnukwu azụmahịa. Ị nwere ike ịrịọ ya n’ime ngwa a mgbe ị gachara iziga tax returns — ọ bụ dijital ugbu a (NTAA Nkebi 72).',
+    whatIsATCCAns: 'TCC na-egosi na ị nweghị ụtụ isi ọ bụla fọdụrụnụ. A na-achọ ya maka nkwekọrịta, mgbazinye ego, ma ọ bụ nnukwu azụmahịa. Ị nwere ike ịrịọ ya n’ime ngwa a mgbe ị gachara iziga tax returns — ọ bụ dijital ugbu a (NTAA Nkebi 72).',
 
-whatHappensIfIPayLate: 'Gịnị ga-eme ma ọ bụrụ na m zipu ma ọ bụ kwụọ ụtụ isi n’oge gafere?',
-whatHappensIfIPayLateAns: 'Ị nwere ike ịkwụ penalty (dịka pasent 10% nke ụtụ isi + ₦25,000 maka iziga n’oge gafere) yana interest nke pasent 1.5% kwa ọnwa. Ngwa a na-echetara gị oge ma na-agbakọ penalties ka i wee zere ha (NTAA Nkebi 65, 101).',
+    whatHappensIfIPayLate: 'Gịnị ga-eme ma ọ bụrụ na m zipu ma ọ bụ kwụọ ụtụ isi n’oge gafere?',
+    whatHappensIfIPayLateAns: 'Ị nwere ike ịkwụ penalty (dịka pasent 10% nke ụtụ isi + ₦25,000 maka iziga n’oge gafere) yana interest nke pasent 1.5% kwa ọnwa. Ngwa a na-echetara gị oge ma na-agbakọ penalties ka i wee zere ha (NTAA Nkebi 65, 101).',
 
-canIGetRefund: 'Enwere m ike inweta refund ma ọ bụrụ na m kwụọ ụtụ isi karịrị akarị?',
-canIGetRefundAns: 'Ee — ọ bụrụ na ị kwụọ ihe karịrị ihe kwesịrị ekwesị (dịka VAT input karịrị akarị), ị nwere ike ịrịọ refund. Ngwa a na-enyocha overpayments ma na-enyere gị iziga arịrịọ (NTAA Nkebi 55–56).',
+    canIGetRefund: 'Enwere m ike inweta refund ma ọ bụrụ na m kwụọ ụtụ isi karịrị akarị?',
+    canIGetRefundAns: 'Ee — ọ bụrụ na ị kwụọ ihe karịrị ihe kwesịrị ekwesị (dịka VAT input karịrị akarị), ị nwere ike ịrịọ refund. Ngwa a na-enyocha overpayments ma na-enyere gị iziga arịrịọ (NTAA Nkebi 55–56).',
 
-doIWorryAboutTax: 'Ò kwesị̀rị̀ m ichegbu onwe m gbasara iwu izere ụtụ isi?',
-doIWorryAboutTaxAns: 'Ee — egbula ime azụmahịa ụgha iji belata ụtụ isi (nhazi ụgha). Iwu machibidoro ya. Ngwa a ga-adọ gị aka ná ntị ma ọ bụrụ na ihe ọ bụla yie ihe na-ezighi ezi (NTAA Nkebi 46–47: Izere ụtụ isi machibidoro).',
+    doIWorryAboutTax: 'Ò kwesị̀rị̀ m ichegbu onwe m gbasara iwu izere ụtụ isi?',
+    doIWorryAboutTaxAns: 'Ee — egbula ime azụmahịa ụgha iji belata ụtụ isi (nhazi ụgha). Iwu machibidoro ya. Ngwa a ga-adọ gị aka ná ntị ma ọ bụrụ na ihe ọ bụla yie ihe na-ezighi ezi (NTAA Nkebi 46–47: Izere ụtụ isi machibidoro).',
 
-howDoesLawHelp: 'Kedu ka iwu ọhụrụ si enyere azụmahịa informal dịka ndị na-ere n’ahịa?',
-howDoesLawHelpAns: 'Ọ na-eme ka ndebanye aha dị mfe (TaxID), na-enye nnwere onwe maka obere ego mbata, na-ekwe ka e debe ndekọ na iziga tax returns n’ụzọ dị mfe, ma na-eji ngwa na teknụzụ mee ka iso iwu dị mfe ma dịkwa ọnụ ala (ebumnuche ukwu NTAA + ilekwasị anya na dijital).',
+    howDoesLawHelp: 'Kedu ka iwu ọhụrụ si enyere azụmahịa informal dịka ndị na-ere n’ahịa?',
+    howDoesLawHelpAns: 'Ọ na-eme ka ndebanye aha dị mfe (TaxID), na-enye nnwere onwe maka obere ego mbata, na-ekwe ka e debe ndekọ na iziga tax returns n’ụzọ dị mfe, ma na-eji ngwa na teknụzụ mee ka iso iwu dị mfe ma dịkwa ọnụ ala (ebumnuche ukwu NTAA + ilekwasị anya na dijital).',
 
-whatIfIMakeMistake: 'Gịnị ga-eme ma ọ bụrụ na m mee njehie n’ime tax return m?',
-whatIfIMakeMistakeAns: 'Ị nwere ike imezigharị ya ma ọ bụrụ na i chọpụta njehie ma ọ bụ kwupụta mmegide. Ngwa a na-enye gị ohere ilele ya tupu iziga ya ma chekwaa drafts (NTAA Nkebi 41–42: Ndozigharị assessment).',
+    whatIfIMakeMistake: 'Gịnị ga-eme ma ọ bụrụ na m mee njehie n’ime tax return m?',
+    whatIfIMakeMistakeAns: 'Ị nwere ike imezigharị ya ma ọ bụrụ na i chọpụta njehie ma ọ bụ kwupụta mmegide. Ngwa a na-enye gị ohere ilele ya tupu iziga ya ma chekwaa drafts (NTAA Nkebi 41–42: Ndozigharị assessment).',
 
-whereCanIGetHelp: 'Ebee ka m nwere ike inweta enyemaka ọzọ gbasara iwu ụtụ isi ọhụrụ?',
-whereCanIGetHelpAns: 'Jiri vidiyo agụmakwụkwọ, FAQs, na nduzi nke ngwa a (n’asụsụ Bekee, Pidgin, Hausa, Yoruba, na Igbo). Ị nwekwara ike ịkpọtụrụ National Revenue Service (NRS) ma ọ bụ ofis ụtụ isi steeti gị. Ngwa a nwere quick links!',
+    whereCanIGetHelp: 'Ebee ka m nwere ike inweta enyemaka ọzọ gbasara iwu ụtụ isi ọhụrụ?',
+    whereCanIGetHelpAns: 'Jiri vidiyo agụmakwụkwọ, FAQs, na nduzi nke ngwa a (n’asụsụ Bekee, Pidgin, Hausa, Yoruba, na Igbo). Ị nwekwara ike ịkpọtụrụ National Revenue Service (NRS) ma ọ bụ ofis ụtụ isi steeti gị. Ngwa a nwere quick links!',
 
     videoTaxObligations: 'Ịghọta Ọrụ Ụtụ Isi Gị',
     videoVatReturns: 'Otu E Si Etinye VAT',
@@ -542,10 +579,19 @@ whereCanIGetHelpAns: 'Jiri vidiyo agụmakwụkwọ, FAQs, na nduzi nke ngwa a (
     subtitlesInfo: 'Vidiyo niile nwere asụsụ ntụgharị dị iche iche',
 
     proTips: 'Atụmatụ Dị Mma maka Ịrụ Ọrụ Ụtụ Isi',
+
+    chatbotTitle: 'WazobiaTax AI Onye Enyemaka',
+    chatbotWelcome: 'Kedu! 👋 Abụ m onye enyemaka AI WazobiaTax gị. M nwere ike inyere gị aka ịghọta iwu ụtụ isi Naịjirịa, mmefu, iziga, na ihe ndị ọzọ. Gịnị ka ị chọrọ ịmata?',
+    chatbotPlaceholder: 'Jụọ m gbasara ụtụ isi...',
+    chatbotSuggestion1: 'Gịnị bụ NTAA 2025?',
+    chatbotSuggestion2: 'Obere azụmahịa na-akwụ CIT?',
+    chatbotSuggestion3: 'Gịnị bụ ntaramahụhụ filing n\'oge?',
+    chatbotFallback: 'Ajụjụ dị mma! Enweghị m azịza pụrụ iche ugbu a, mana lelee akụkụ FAQ n\'ime Guides ma ọ bụ kpọtụrụ National Revenue Service (NRS). Ị nwekwara ike ịgbalị ịjụ ya n\'ụzọ ọzọ — anọ m ebe a inyere gị aka! 😊',
+    chatbotTyping: 'Ọ na-eche echiche...',
   }
 }
 
-export function EducationModule( { language = 'english' }: EducationModuleProps ) {
+export function EducationModule({ language = 'english' }: EducationModuleProps) {
   const [activeTab, setActiveTab] = useState('guides');
   const [expandedFaq, setExpandedFaq] = useState<number | null>(null);
 
@@ -943,6 +989,13 @@ export function EducationModule( { language = 'english' }: EducationModuleProps 
           </div>
         )}
       </div>
+
+      {/* AI Chatbot */}
+      <AIChatbot
+        language={language}
+        translations={t}
+        faqs={faqs}
+      />
     </div>
   );
 }
