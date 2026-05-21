@@ -6,6 +6,7 @@ import {
   Bell,
   Calculator,
   TrendingDown,
+  TrendingUp,
   FileText,
   CreditCard,
   PlusCircle,
@@ -16,11 +17,18 @@ import {
   CheckCircle2,
   AlertCircle,
   Crown,
-  Calendar
+  Calendar,
+  ShieldCheck,
+  BookOpen,
+  ClipboardList,
+  Timer,
+  GraduationCap,
+  ChevronRight
 } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { useLanguage } from "@/context/LanguageContext";
 import { getPlans, Plan, getUserSubscription, UserSubscriptionResponse } from '../services/subscriptions';
+import { getComplianceDashboard, ComplianceDashboardResponse } from '../services/compliance';
 import { profileTranslations, type LanguageKey } from '../translations/profile';
 
 interface DashboardProps {
@@ -198,8 +206,6 @@ const translations = {
 
 export function Dashboard({ language = 'english' }: DashboardProps) {
   const [notificationCount] = useState(3);
-  const complianceScore = 50;
-  const pendingTasks = 3;
   // const { language } = useLanguage();
   const t = translations[language];
   const sub = profileTranslations[language].subscription;
@@ -211,6 +217,15 @@ export function Dashboard({ language = 'english' }: DashboardProps) {
   const [selectedPlan, setSelectedPlan] = useState('basic');
   const [userSubscription, setUserSubscription] = useState<UserSubscriptionResponse | null>(null);
   const [subscriptionLoading, setSubscriptionLoading] = useState(true);
+  const [complianceData, setComplianceData] = useState<ComplianceDashboardResponse | null>(null);
+  const [complianceLoading, setComplianceLoading] = useState(true);
+
+  // Derived compliance values (fallback to defaults while loading)
+  const complianceScore = complianceData?.compliance_score ?? 0;
+  const pendingTasks = complianceData?.action_items?.length ?? 0;
+  const complianceStatus = complianceData?.compliance_status ?? 'Loading...';
+  const trendPercentage = complianceData?.trend_percentage ?? 0;
+  const needsAttention = complianceData?.needs_attention ?? false;
 
   // Subscription data
   const subscription: Subscription =
@@ -287,6 +302,21 @@ export function Dashboard({ language = 'english' }: DashboardProps) {
     fetchSubscription();
   }, []);
 
+  useEffect(() => {
+    const fetchCompliance = async () => {
+      try {
+        const data = await getComplianceDashboard();
+        setComplianceData(data);
+      } catch (err) {
+        console.error('Failed to fetch compliance dashboard:', err);
+      } finally {
+        setComplianceLoading(false);
+      }
+    };
+
+    fetchCompliance();
+  }, []);
+
   const getDynamicPrice = (planType: 'basic' | 'premium', defaultPrice: number) => {
     const plan = apiPlans.find(p => p.name.toLowerCase().includes(planType));
     return plan ? parseFloat(plan.price) : defaultPrice;
@@ -334,7 +364,7 @@ export function Dashboard({ language = 'english' }: DashboardProps) {
 
       {/* Content */}
       <div className="px-6 py-6 space-y-6">
-        {/* Compliance Score Card - Improved */}
+        {/* Compliance Score Card - Live API Data */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -344,7 +374,7 @@ export function Dashboard({ language = 'english' }: DashboardProps) {
             <div>
               <AnimatePresence mode="wait">
                 <motion.h2
-                  key={language} // re-animate on language change or step change
+                  key={language}
                   initial={{ opacity: 0, y: 4 }}
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: -4 }}
@@ -368,9 +398,20 @@ export function Dashboard({ language = 'english' }: DashboardProps) {
                 </motion.p>
               </AnimatePresence>
             </div>
-            <span className="px-3 py-1 bg-amber-100 text-amber-700 rounded-full text-xs">
-              {translations[language].needsAttention}
-            </span>
+            {complianceLoading ? (
+              <span className="px-3 py-1 bg-gray-100 text-gray-400 rounded-full text-xs animate-pulse">...</span>
+            ) : needsAttention ? (
+              <span className={`px-3 py-1 rounded-full text-xs ${complianceScore < 40 ? 'bg-red-100 text-red-700' :
+                complianceScore < 70 ? 'bg-amber-100 text-amber-700' :
+                  'bg-emerald-100 text-emerald-700'
+                }`}>
+                {complianceStatus}
+              </span>
+            ) : (
+              <span className="px-3 py-1 bg-emerald-100 text-emerald-700 rounded-full text-xs">
+                {complianceStatus}
+              </span>
+            )}
           </div>
 
           <div className="flex items-center gap-6 mb-4">
@@ -389,7 +430,11 @@ export function Dashboard({ language = 'english' }: DashboardProps) {
                   cx="48"
                   cy="48"
                   r="40"
-                  stroke="#F59E0B"
+                  stroke={
+                    complianceScore < 40 ? '#EF4444' :
+                      complianceScore < 70 ? '#F59E0B' :
+                        '#10B981'
+                  }
                   strokeWidth="8"
                   fill="none"
                   strokeDasharray={`${2 * Math.PI * 40}`}
@@ -400,26 +445,53 @@ export function Dashboard({ language = 'english' }: DashboardProps) {
                 />
               </svg>
               <div className="absolute inset-0 flex items-center justify-center">
-                <span className="text-2xl text-gray-900">{complianceScore}%</span>
+                {complianceLoading ? (
+                  <span className="text-lg text-gray-400 animate-pulse">—</span>
+                ) : (
+                  <span className="text-2xl text-gray-900">{complianceScore}%</span>
+                )}
               </div>
             </div>
 
             {/* Info */}
             <div className="flex-1">
-              <div className="flex items-center gap-2 mb-2">
-                <TrendingDown className="w-4 h-4 text-red-500" />
-                <span className="text-sm text-red-600">
-                  {translations[language].percentageThisMonth}
-                </span>
-              </div>
-              <p className="text-sm text-gray-700 mb-3">
-                {translations[language].completePendingTasks.replace("{pendingTasks}", String(pendingTasks))}
-              </p>
-              <div className="flex items-center gap-2">
-                <div className="px-2 py-1 bg-amber-50 text-amber-700 rounded text-xs">
-                  {translations[language].tasksPending.replace("{pendingTasks}", String(pendingTasks))}
+              {!complianceLoading && (
+                <>
+                  <div className="flex items-center gap-2 mb-2">
+                    {trendPercentage < 0 ? (
+                      <TrendingDown className="w-4 h-4 text-red-500" />
+                    ) : trendPercentage > 0 ? (
+                      <TrendingUp className="w-4 h-4 text-emerald-500" />
+                    ) : null}
+                    <span className={`text-sm ${trendPercentage < 0 ? 'text-red-600' :
+                      trendPercentage > 0 ? 'text-emerald-600' :
+                        'text-gray-500'
+                      }`}>
+                      {trendPercentage > 0 ? '+' : ''}{trendPercentage}% this month
+                    </span>
+                  </div>
+                  {pendingTasks > 0 && (
+                    <p className="text-sm text-gray-700 mb-3">
+                      {translations[language].completePendingTasks.replace("{pendingTasks}", String(pendingTasks))}
+                    </p>
+                  )}
+                  <div className="flex items-center gap-2">
+                    <div className={`px-2 py-1 rounded text-xs ${pendingTasks === 0 ? 'bg-emerald-50 text-emerald-700' : 'bg-amber-50 text-amber-700'
+                      }`}>
+                      {pendingTasks === 0
+                        ? '✓ All tasks complete'
+                        : translations[language].tasksPending.replace("{pendingTasks}", String(pendingTasks))}
+                    </div>
+                  </div>
+                </>
+              )}
+              {complianceLoading && (
+                <div className="space-y-2 animate-pulse">
+                  <div className="h-4 bg-gray-200 rounded w-24"></div>
+                  <div className="h-3 bg-gray-200 rounded w-36"></div>
+                  <div className="h-5 bg-gray-200 rounded w-20"></div>
                 </div>
-              </div>
+              )}
             </div>
           </div>
 
@@ -430,6 +502,111 @@ export function Dashboard({ language = 'english' }: DashboardProps) {
             {translations[language].viewActionItems}
           </button>
         </motion.div>
+
+        {/* Compliance Breakdown */}
+        {complianceData?.breakdown && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.05 }}
+            className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100"
+          >
+            <h3 className="text-base font-medium mb-4 flex items-center gap-2">
+              <ShieldCheck className="w-5 h-5 text-emerald-600" />
+              Compliance Breakdown
+            </h3>
+            <div className="space-y-3">
+              {[
+                { key: 'registration_taxid', label: 'Registration & Tax ID', icon: ClipboardList, color: 'emerald' },
+                { key: 'record_keeping', label: 'Record Keeping', icon: BookOpen, color: 'blue' },
+                { key: 'returns_filing', label: 'Returns Filing', icon: FileText, color: 'purple' },
+                { key: 'timeliness_deadlines', label: 'Timeliness & Deadlines', icon: Timer, color: 'amber' },
+                { key: 'education_awareness', label: 'Education & Awareness', icon: GraduationCap, color: 'indigo' },
+              ].map((item) => {
+                const data = complianceData.breakdown[item.key as keyof typeof complianceData.breakdown];
+                const pct = data.max_score > 0 ? (data.score / data.max_score) * 100 : 0;
+                const colorMap: Record<string, { bg: string; fill: string; text: string; iconBg: string }> = {
+                  emerald: { bg: 'bg-emerald-100', fill: 'bg-emerald-500', text: 'text-emerald-700', iconBg: 'bg-emerald-50' },
+                  blue: { bg: 'bg-blue-100', fill: 'bg-blue-500', text: 'text-blue-700', iconBg: 'bg-blue-50' },
+                  purple: { bg: 'bg-purple-100', fill: 'bg-purple-500', text: 'text-purple-700', iconBg: 'bg-purple-50' },
+                  amber: { bg: 'bg-amber-100', fill: 'bg-amber-500', text: 'text-amber-700', iconBg: 'bg-amber-50' },
+                  indigo: { bg: 'bg-indigo-100', fill: 'bg-indigo-500', text: 'text-indigo-700', iconBg: 'bg-indigo-50' },
+                };
+                const colors = colorMap[item.color];
+                return (
+                  <div key={item.key} className="flex items-center gap-3">
+                    <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${colors.iconBg} shrink-0`}>
+                      <item.icon className={`w-4 h-4 ${colors.text}`} />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center justify-between mb-1">
+                        <span className="text-xs text-gray-700 truncate">{item.label}</span>
+                        <span className={`text-xs font-medium ${colors.text}`}>
+                          {data.score}/{data.max_score}
+                        </span>
+                      </div>
+                      <div className={`w-full h-1.5 ${colors.bg} rounded-full overflow-hidden`}>
+                        <motion.div
+                          className={`h-full ${colors.fill} rounded-full`}
+                          initial={{ width: 0 }}
+                          animate={{ width: `${pct}%` }}
+                          transition={{ duration: 0.8, ease: 'easeOut', delay: 0.2 }}
+                        />
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </motion.div>
+        )}
+
+        {/* Action Items from API */}
+        {complianceData?.action_items && complianceData.action_items.length > 0 && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.08 }}
+          >
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="text-lg">Action Items</h3>
+              <span className="text-xs text-gray-500">{complianceData.action_items.length} items</span>
+            </div>
+            <div className="space-y-2">
+              {complianceData.action_items.map((item, index) => (
+                <motion.div
+                  key={index}
+                  initial={{ opacity: 0, x: -20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: 0.08 + index * 0.05 }}
+                  className={`bg-white rounded-xl p-4 border-l-4 ${item.priority === 'high' ? 'border-red-500' :
+                    item.priority === 'medium' ? 'border-amber-500' :
+                      'border-blue-500'
+                    } shadow-sm hover:shadow-md transition-all cursor-pointer`}
+                >
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <div className={`w-2 h-2 rounded-full ${item.priority === 'high' ? 'bg-red-500' :
+                        item.priority === 'medium' ? 'bg-amber-500' :
+                          'bg-blue-500'
+                        }`} />
+                      <div>
+                        <p className="text-sm">{item.title}</p>
+                        <span className={`text-xs px-2 py-0.5 rounded-full mt-1 inline-block ${item.priority === 'high' ? 'bg-red-50 text-red-600' :
+                          item.priority === 'medium' ? 'bg-amber-50 text-amber-600' :
+                            'bg-blue-50 text-blue-600'
+                          }`}>
+                          {item.priority}
+                        </span>
+                      </div>
+                    </div>
+                    <ChevronRight className="w-4 h-4 text-gray-400" />
+                  </div>
+                </motion.div>
+              ))}
+            </div>
+          </motion.div>
+        )}
 
         {/* Upcoming Deadlines */}
         <motion.div
@@ -465,7 +642,7 @@ export function Dashboard({ language = 'english' }: DashboardProps) {
                         'bg-blue-500'
                       }`} />
                     <div>
-                      <p className="text-sm">{translations[language][deadline.titleKey]}</p>
+                      <p className="text-sm">{(translations[language] as any)[deadline.titleKey]}</p>
                       <div className="flex items-center gap-1 mt-1">
                         <Clock className="w-3 h-3 text-gray-400" />
                         <p className="text-xs text-gray-500">{translations[language].daysLeft.replace('{days}', String(deadline.days))}</p>

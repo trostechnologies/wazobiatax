@@ -886,12 +886,13 @@ export function Ledger({ onNavigate, language = "english" }: LedgerProps) {
       {/* Floating Action Button */}
       <div className="fixed bottom-24 right-6 z-10">
         <motion.button
-          whileHover={{ scale: 1.1 }}
-          whileTap={{ scale: 0.9 }}
+          whileHover={{ scale: 1.05 }}
+          whileTap={{ scale: 0.95 }}
           onClick={() => setShowAddModal(true)}
-          className="w-14 h-14 bg-emerald-600 text-white rounded-full shadow-2xl flex items-center justify-center hover:bg-emerald-700 transition-all"
+          className="flex items-center gap-2 px-4 py-2 bg-emerald-600 text-white rounded-full shadow-2xl hover:bg-emerald-700 transition-all font-semibold"
         >
-          <Plus className="w-7 h-7" />
+          <Plus className="w-5 h-5" />
+          <span>{translations[language].addEntry}</span>
         </motion.button>
       </div>
 
