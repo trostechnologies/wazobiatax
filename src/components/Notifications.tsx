@@ -1,9 +1,9 @@
 import { motion } from 'motion/react';
-import { ArrowLeft, Bell, AlertCircle, CheckCircle2, Info, Settings } from 'lucide-react';
-import { useState } from 'react';
-import { useLanguage } from "@/context/LanguageContext";
+import { ArrowLeft, Bell, AlertCircle, CheckCircle2, Info, Settings, RefreshCw, Loader2 } from 'lucide-react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { profileTranslations, type LanguageKey } from '../translations/profile';
+import { type LanguageKey } from '../translations/profile';
+import { getNotifications, type Notification } from '../services/notifications';
 
 interface NotificationsProps {
   language?: LanguageKey;
@@ -11,198 +11,148 @@ interface NotificationsProps {
 
 const translations = {
   english: {
-    vatDeadlineAlert: 'Deadline Alert: VAT Return',
-    vatDeadlineAlertMsg: 'Your VAT return is due in 2 days. File now to avoid penalties.',
-  
-    paymentConfirmed: 'Payment Confirmed',
-    paymentConfirmedMsg: 'Your tax payment has been successfully processed.',
-  
-    newTaxEducation: 'New Tax Education Content',
-    newTaxEducationMsg: 'Learn about the latest NTAA 2025 compliance requirements.',
-  
-    complianceScoreUpdate: 'Compliance Score Update',
-    complianceScoreUpdateMsg: 'Your compliance score decreased by 2%. Complete pending tasks.',
-  
-    tinVerified: 'TIN Verified',
-    tinVerifiedMsg: 'Your Tax Identification Number has been verified by FIRS.',
-
     notifications: 'Notifications',
-  markAllRead: 'Mark all read',
-
-  all: 'All',
-  unread: 'Unread',
-
-  notificationPreferences: 'Notification Preferences',
-
-  pushNotifications: 'Push Notifications',
-  smsAlerts: 'SMS Alerts',
-  emailNotifications: 'Email Notifications',
+    markAllRead: 'Mark all read',
+    all: 'All',
+    unread: 'Unread',
+    notificationPreferences: 'Notification Preferences',
+    pushNotifications: 'Push Notifications',
+    smsAlerts: 'SMS Alerts',
+    emailNotifications: 'Email Notifications',
+    loading: 'Loading notifications...',
+    errorLoading: 'Failed to load notifications',
+    retry: 'Retry',
+    noNotifications: 'No notifications yet',
+    noUnread: 'No unread notifications',
   },
   pidgin: {
-    vatDeadlineAlert: 'Deadline Alert: VAT Return',
-    vatDeadlineAlertMsg: 'Your VAT return go due in 2 days. File am now make penalty no follow.',
-  
-    paymentConfirmed: 'Dem Don Confirm Payment',
-    paymentConfirmedMsg: 'Your tax payment don process successfully.',
-  
-    newTaxEducation: 'New Tax Education Content',
-    newTaxEducationMsg: 'Learn about the new NTAA 2025 compliance requirements.',
-  
-    complianceScoreUpdate: 'Update About Compliance Score',
-    complianceScoreUpdateMsg: 'Your compliance score don drop by 2%. Complete the remaining tasks.',
-  
-    tinVerified: 'TIN Verified',
-    tinVerifiedMsg: 'FIRS don verify your Tax Identification Number.',
-
     notifications: 'Notifications',
-  markAllRead: 'Mark all as read',
-
-  all: 'All',
-  unread: 'Unread',
-
-  notificationPreferences: 'Notification Preferences',
-
-  pushNotifications: 'Push Notifications',
-  smsAlerts: 'SMS Alerts',
-  emailNotifications: 'Email Notifications',
+    markAllRead: 'Mark all as read',
+    all: 'All',
+    unread: 'Unread',
+    notificationPreferences: 'Notification Preferences',
+    pushNotifications: 'Push Notifications',
+    smsAlerts: 'SMS Alerts',
+    emailNotifications: 'Email Notifications',
+    loading: 'Dey load notifications...',
+    errorLoading: 'E no fit load notifications',
+    retry: 'Try again',
+    noNotifications: 'No notification dey yet',
+    noUnread: 'No unread notification dey',
   },
   hausa: {
-    vatDeadlineAlert: 'Gargaɗin Wa’adin VAT',
-    vatDeadlineAlertMsg: 'Wa’adin rahoton VAT zai ƙare cikin kwanaki 2. Miƙa yanzu don guje wa tara.',
-  
-    paymentConfirmed: 'An Tabbatar da Biya',
-    paymentConfirmedMsg: 'An kammala biyan harajinka cikin nasara.',
-  
-    newTaxEducation: 'Sabon Ilimin Haraji',
-    newTaxEducationMsg: 'Koyi sababbin buƙatun bin doka na NTAA 2025.',
-  
-    complianceScoreUpdate: 'Sabuntawar Makin Bin Doka',
-    complianceScoreUpdateMsg: 'Makin bin dokarka ya ragu da 2%. Kammala ayyukan da suka rage.',
-  
-    tinVerified: 'An Tabbatar da TIN',
-    tinVerifiedMsg: 'Hukumar FIRS ta tabbatar da lambar TIN ɗinka.',
-
     notifications: 'Sanarwa',
-  markAllRead: 'Alama duka an karanta',
-
-  all: 'Duka',
-  unread: 'Ba a karanta ba',
-
-  notificationPreferences: 'Zaɓuɓɓukan Sanarwa',
-
-  pushNotifications: 'Sanarwar Turawa',
-  smsAlerts: 'Faɗakarwar SMS',
-  emailNotifications: 'Sanarwar Imel',
+    markAllRead: 'Alama duka an karanta',
+    all: 'Duka',
+    unread: 'Ba a karanta ba',
+    notificationPreferences: 'Zaɓuɓɓukan Sanarwa',
+    pushNotifications: 'Sanarwar Turawa',
+    smsAlerts: 'Faɗakarwar SMS',
+    emailNotifications: 'Sanarwar Imel',
+    loading: 'Ana loda sanarwa...',
+    errorLoading: 'An kasa loda sanarwa',
+    retry: 'Sake gwadawa',
+    noNotifications: 'Babu sanarwa tukuna',
+    noUnread: 'Babu sanarwa da ba a karanta ba',
   },
   yoruba: {
-    vatDeadlineAlert: 'Ìkìlọ̀ Ọjọ́-ìparí VAT',
-    vatDeadlineAlertMsg: 'Ọjọ́-ìparí VAT rẹ kù ọjọ́ 2. Fọwọ́sí nísinsin yìí láti yago fún ìtanràn.',
-  
-    paymentConfirmed: 'A Ti Jẹ́risi Ìsanwó',
-    paymentConfirmedMsg: 'A ti gba owó-ori rẹ́ ní aṣeyọrí.',
-  
-    newTaxEducation: 'Ẹ̀kọ́ Owó-ori Tuntun',
-    newTaxEducationMsg: 'Kọ́ ẹ̀kọ́ nípa àṣẹ tuntun NTAA 2025.',
-  
-    complianceScoreUpdate: 'Ìmúdájú Ìbámu',
-    complianceScoreUpdateMsg: 'Ìpele ìbámu rẹ dín kù ní 2%. Parí àwọn iṣẹ́ tó kù.',
-  
-    tinVerified: 'A Ti Jẹ́risi TIN',
-    tinVerifiedMsg: 'FIRS ti jẹ́risi Nọ́mbà TIN rẹ.',
-
     notifications: 'Ìkìlọ̀',
     markAllRead: 'Samisi gbogbo wọn gẹ́gẹ́ bí a ti ka',
-  
     all: 'Gbogbo',
     unread: 'Tí a kò tíì ka',
-  
     notificationPreferences: 'Àyànfẹ́ Ìkìlọ̀',
-  
     pushNotifications: 'Ìkìlọ̀ Fífi Ránṣẹ́',
     smsAlerts: 'Ìkìlọ̀ SMS',
     emailNotifications: 'Ìkìlọ̀ Ímẹ́lì',
+    loading: 'Ìkìlọ̀ ń gbé wọlé...',
+    errorLoading: 'Kò lè gbé ìkìlọ̀ wọlé',
+    retry: 'Gbìyànjú lẹ́ẹ̀kan sí',
+    noNotifications: 'Kò sí ìkìlọ̀ kankan',
+    noUnread: 'Kò sí ìkìlọ̀ tí a kò tíì ka',
   },
   igbo: {
-    vatDeadlineAlert: 'Ịdọ Aka ná Ntinye VAT',
-    vatDeadlineAlertMsg: 'Ụbọchị mmechi VAT fọdụrụ ụbọchị 2. Tinye ya ugbu a ka izere ntaramahụhụ.',
-  
-    paymentConfirmed: 'Ekwenyela Ịkwụ Ụtụ',
-    paymentConfirmedMsg: 'A kwadoro ịkwụ ụtụ isi gị nke ọma.',
-  
-    newTaxEducation: 'Agụmakwụkwọ Ụtụ Isi Ọhụrụ',
-    newTaxEducationMsg: 'Mụta ihe gbasara iwu NTAA 2025.',
-  
-    complianceScoreUpdate: 'Mmelite Ntụle Iwu',
-    complianceScoreUpdateMsg: 'Ntụle iwu gị belatara site na 2%. Mechaa ọrụ fọdụrụ.',
-  
-    tinVerified: 'Ekwenyela TIN',
-    tinVerifiedMsg: 'FIRS ekwenyela Nọmba TIN gị.',
-
     notifications: 'Ọkwa',
     markAllRead: 'Kaa ha niile',
-  
     all: 'Niile',
     unread: 'A gụghị',
-  
     notificationPreferences: 'Nhọrọ Ọkwa',
-  
     pushNotifications: 'Ọkwa Ntughari',
     smsAlerts: 'Ọkwa SMS',
     emailNotifications: 'Ọkwa Email',
-  }      
+    loading: 'Na-ebubata ọkwa...',
+    errorLoading: 'Enweghị ike ibubata ọkwa',
+    retry: 'Nwaa ọzọ',
+    noNotifications: 'Ọ dịghị ọkwa ọ bụla',
+    noUnread: 'Ọ dịghị ọkwa a gụghị',
+  },
+};
+
+/**
+ * Compute a human-friendly relative time string from an ISO timestamp.
+ */
+function getRelativeTime(isoDate: string): string {
+  const now = new Date();
+  const then = new Date(isoDate);
+  const diffMs = now.getTime() - then.getTime();
+  const diffSec = Math.floor(diffMs / 1000);
+  const diffMin = Math.floor(diffSec / 60);
+  const diffHour = Math.floor(diffMin / 60);
+  const diffDay = Math.floor(diffHour / 24);
+
+  if (diffMin < 1) return 'Just now';
+  if (diffMin < 60) return `${diffMin}m ago`;
+  if (diffHour < 24) return `${diffHour}h ago`;
+  if (diffDay < 30) return `${diffDay}d ago`;
+  return then.toLocaleDateString();
 }
 
-export function Notifications( { language = 'english' }: NotificationsProps ) {
-  const [notifications, setNotifications] = useState([
-    {
-      id: 1,
-      type: 'alert',
-      titleKey: 'vatDeadlineAlert',
-      messageKey: 'vatDeadlineAlertMsg',
-      time: '2h ago',
-      read: false,
-      action: '/file-returns',
-    },
-    {
-      id: 2,
-      type: 'success',
-      titleKey: 'paymentConfirmed',
-      messageKey: 'paymentConfirmedMsg',
-      time: '5h ago',
-      read: false,
-      action: '/pay-tax',
-    },
-    {
-      id: 3,
-      type: 'info',
-      titleKey: 'newTaxEducation',
-      messageKey: 'newTaxEducationMsg',
-      time: '1d ago',
-      read: true,
-      action: '/education',
-    },
-    {
-      id: 4,
-      type: 'alert',
-      titleKey: 'complianceScoreUpdate',
-      messageKey: 'complianceScoreUpdateMsg',
-      time: '2d ago',
-      read: true,
-      action: '/deadlines',
-    },
-    {
-      id: 5,
-      type: 'success',
-      titleKey: 'tinVerified',
-      messageKey: 'tinVerifiedMsg',
-      time: '3d ago',
-      read: true,
-      action: '/profile',
-    },
-  ]);  
+/**
+ * Map notification_type from the API to an icon type for styling.
+ */
+function mapNotificationType(notificationType: string): 'alert' | 'success' | 'info' | 'system' {
+  switch (notificationType) {
+    case 'subscription':
+    case 'payment':
+      return 'success';
+    case 'alert':
+    case 'deadline':
+      return 'alert';
+    case 'system':
+      return 'info';
+    default:
+      return 'info';
+  }
+}
+
+export function Notifications({ language = 'english' }: NotificationsProps) {
+  const [notifications, setNotifications] = useState<Notification[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [filter, setFilter] = useState<'all' | 'unread'>('all');
+
+  const t = translations[language];
+  const navigate = useNavigate();
+
+  const fetchNotifications = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const data = await getNotifications();
+      setNotifications(data.notifications);
+    } catch (err) {
+      console.error('Failed to fetch notifications:', err);
+      setError(t.errorLoading);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchNotifications();
+  }, []);
 
   const handleMarkAllRead = () => {
-    setNotifications(notifications.map(n => ({ ...n, read: true })));
+    setNotifications(notifications.map(n => ({ ...n, is_read: true })));
   };
 
   const getIcon = (type: string) => {
@@ -223,9 +173,9 @@ export function Notifications( { language = 'english' }: NotificationsProps ) {
     }
   };
 
-  // const { language } = useLanguage();
-  const t = translations[language];
-  const navigate = useNavigate();
+  const filteredNotifications = filter === 'unread'
+    ? notifications.filter(n => !n.is_read)
+    : notifications;
 
   return (
     <div className="min-h-screen bg-gray-50 pb-20">
@@ -238,29 +188,41 @@ export function Notifications( { language = 'english' }: NotificationsProps ) {
       <div className="bg-white px-6 py-4 border-b border-gray-200">
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-4">
-            <button 
+            <button
               onClick={() => navigate('/dashboard')}
               className="p-2 hover:bg-gray-100 rounded-lg transition-all -ml-2"
             >
               <ArrowLeft className="w-6 h-6 text-gray-700" />
             </button>
-            <h1 className="text-lg">{translations[language].notifications}</h1>
+            <h1 className="text-lg">{t.notifications}</h1>
           </div>
-          <button 
+          <button
             onClick={handleMarkAllRead}
             className="text-sm text-emerald-600 hover:underline"
           >
-            {translations[language].markAllRead}
+            {t.markAllRead}
           </button>
         </div>
 
-        {/* Quick Actions */}
+        {/* Filter Tabs */}
         <div className="flex gap-2">
-          <button className="flex-1 py-2 px-4 bg-emerald-600 text-white rounded-lg text-sm hover:bg-emerald-700 transition-all">
-          {translations[language].all}
+          <button
+            onClick={() => setFilter('all')}
+            className={`flex-1 py-2 px-4 rounded-lg text-sm transition-all ${filter === 'all'
+                ? 'bg-emerald-600 text-white hover:bg-emerald-700'
+                : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+              }`}
+          >
+            {t.all}
           </button>
-          <button className="flex-1 py-2 px-4 bg-gray-100 text-gray-600 rounded-lg text-sm hover:bg-gray-200 transition-all">
-          {translations[language].unread}
+          <button
+            onClick={() => setFilter('unread')}
+            className={`flex-1 py-2 px-4 rounded-lg text-sm transition-all ${filter === 'unread'
+                ? 'bg-emerald-600 text-white hover:bg-emerald-700'
+                : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+              }`}
+          >
+            {t.unread}
           </button>
           <button className="p-2 bg-gray-100 rounded-lg hover:bg-gray-200 transition-all">
             <Settings className="w-5 h-5 text-gray-600" />
@@ -270,22 +232,56 @@ export function Notifications( { language = 'english' }: NotificationsProps ) {
 
       {/* Notifications List */}
       <div className="p-6 space-y-3">
-        {notifications.map((notification, index) => {
-          const Icon = getIcon(notification.type);
-          const colorClass = getColor(notification.type);
-          
+        {/* Loading State */}
+        {loading && (
+          <div className="flex flex-col items-center justify-center py-12 gap-3">
+            <Loader2 className="w-8 h-8 text-emerald-600 animate-spin" />
+            <p className="text-sm text-gray-500">{t.loading}</p>
+          </div>
+        )}
+
+        {/* Error State */}
+        {!loading && error && (
+          <div className="flex flex-col items-center justify-center py-12 gap-3">
+            <AlertCircle className="w-10 h-10 text-red-400" />
+            <p className="text-sm text-gray-600">{error}</p>
+            <button
+              onClick={fetchNotifications}
+              className="flex items-center gap-2 px-4 py-2 bg-emerald-600 text-white rounded-lg text-sm hover:bg-emerald-700 transition-all"
+            >
+              <RefreshCw className="w-4 h-4" />
+              {t.retry}
+            </button>
+          </div>
+        )}
+
+        {/* Empty State */}
+        {!loading && !error && filteredNotifications.length === 0 && (
+          <div className="flex flex-col items-center justify-center py-12 gap-3">
+            <Bell className="w-10 h-10 text-gray-300" />
+            <p className="text-sm text-gray-500">
+              {filter === 'unread' ? t.noUnread : t.noNotifications}
+            </p>
+          </div>
+        )}
+
+        {/* Notification Items */}
+        {!loading && !error && filteredNotifications.map((notification, index) => {
+          const uiType = mapNotificationType(notification.notification_type);
+          const Icon = getIcon(uiType);
+          const colorClass = getColor(uiType);
+
           return (
             <motion.button
               key={notification.id}
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: index * 0.05 }}
-              onClick={() => navigate(notification.action)}
-              className={`w-full p-4 rounded-xl transition-all text-left ${
-                notification.read 
-                  ? 'bg-white border border-gray-200 hover:shadow-md' 
+              onClick={() => notification.action_url ? navigate(notification.action_url) : undefined}
+              className={`w-full p-4 rounded-xl transition-all text-left ${notification.is_read
+                  ? 'bg-white border border-gray-200 hover:shadow-md'
                   : 'bg-white border-2 border-emerald-200 shadow-md hover:shadow-lg'
-              }`}
+                }`}
             >
               <div className="flex items-start gap-3">
                 <div className={`w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0 border ${colorClass}`}>
@@ -293,17 +289,13 @@ export function Notifications( { language = 'english' }: NotificationsProps ) {
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-start justify-between gap-2 mb-1">
-                  <h3 className="text-sm pr-2">
-  {t[notification.titleKey]}
-</h3>
-                    {!notification.read && (
+                    <h3 className="text-sm pr-2">{notification.title}</h3>
+                    {!notification.is_read && (
                       <div className="w-2 h-2 bg-emerald-600 rounded-full flex-shrink-0 mt-1" />
                     )}
                   </div>
-                  <p className="text-sm text-gray-600 mb-2">
-  {t[notification.messageKey]}
-</p>
-                  <p className="text-xs text-gray-400">{notification.time}</p>
+                  <p className="text-sm text-gray-600 mb-2">{notification.message}</p>
+                  <p className="text-xs text-gray-400">{getRelativeTime(notification.created_at)}</p>
                 </div>
               </div>
             </motion.button>
@@ -316,23 +308,23 @@ export function Notifications( { language = 'english' }: NotificationsProps ) {
         <div className="bg-blue-50 border border-blue-200 rounded-xl p-4">
           <h3 className="text-sm mb-3 flex items-center gap-2">
             <Bell className="w-4 h-4 text-blue-600" />
-            {translations[language].notificationPreferences}
+            {t.notificationPreferences}
           </h3>
           <div className="space-y-3">
             <div className="flex items-center justify-between">
-              <span className="text-sm text-gray-700">{translations[language].pushNotifications}</span>
+              <span className="text-sm text-gray-700">{t.pushNotifications}</span>
               <div className="w-12 h-6 bg-emerald-600 rounded-full relative">
                 <div className="absolute top-0.5 right-0.5 w-5 h-5 bg-white rounded-full" />
               </div>
             </div>
             <div className="flex items-center justify-between">
-              <span className="text-sm text-gray-700">{translations[language].smsAlerts}</span>
+              <span className="text-sm text-gray-700">{t.smsAlerts}</span>
               <div className="w-12 h-6 bg-emerald-600 rounded-full relative">
                 <div className="absolute top-0.5 right-0.5 w-5 h-5 bg-white rounded-full" />
               </div>
             </div>
             <div className="flex items-center justify-between">
-              <span className="text-sm text-gray-700">{translations[language].emailNotifications}</span>
+              <span className="text-sm text-gray-700">{t.emailNotifications}</span>
               <div className="w-12 h-6 bg-gray-300 rounded-full relative">
                 <div className="absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full" />
               </div>

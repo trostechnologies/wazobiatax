@@ -29,6 +29,7 @@ import { useEffect, useState } from 'react';
 import { useLanguage } from "@/context/LanguageContext";
 import { getPlans, Plan, getUserSubscription, UserSubscriptionResponse } from '../services/subscriptions';
 import { getComplianceDashboard, ComplianceDashboardResponse } from '../services/compliance';
+import { getNotifications } from '../services/notifications';
 import { profileTranslations, type LanguageKey } from '../translations/profile';
 
 interface DashboardProps {
@@ -205,7 +206,7 @@ const translations = {
 };
 
 export function Dashboard({ language = 'english' }: DashboardProps) {
-  const [notificationCount] = useState(3);
+  const [notificationCount, setNotificationCount] = useState(0);
   // const { language } = useLanguage();
   const t = translations[language];
   const sub = profileTranslations[language].subscription;
@@ -315,6 +316,19 @@ export function Dashboard({ language = 'english' }: DashboardProps) {
     };
 
     fetchCompliance();
+  }, []);
+
+  useEffect(() => {
+    const fetchNotificationCount = async () => {
+      try {
+        const data = await getNotifications();
+        setNotificationCount(data.unread_count);
+      } catch (err) {
+        console.error('Failed to fetch notification count:', err);
+      }
+    };
+
+    fetchNotificationCount();
   }, []);
 
   const getDynamicPrice = (planType: 'basic' | 'premium', defaultPrice: number) => {
