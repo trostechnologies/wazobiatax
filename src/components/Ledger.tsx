@@ -892,7 +892,7 @@ export function Ledger({ onNavigate, language = "english" }: LedgerProps) {
       </div>
 
       {/* Floating Action Button */}
-      <div className="fixed bottom-24 right-6 z-10">
+      <div className="fixed bottom-24 left-6 z-10">
         <motion.button
           whileHover={{ scale: 1.05 }}
           whileTap={{ scale: 0.95 }}

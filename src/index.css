@@ -2291,3 +2291,21 @@ html {
     transform: rotate(360deg);
   }
 }
+
+/* Adjust EasyAppz Chat Widget position to avoid overlapping with bottom navigation */
+#tw-btn-wazobiatax {
+  bottom: 100px !important;
+}
+
+#tw-win-wazobiatax {
+  bottom: 175px !important;
+}
+
+@media (max-width: 420px) {
+  #tw-btn-wazobiatax {
+    bottom: 90px !important;
+  }
+  #tw-win-wazobiatax {
+    bottom: 165px !important;
+  }
+}
