@@ -989,13 +989,6 @@ export function EducationModule({ language = 'english' }: EducationModuleProps) 
           </div>
         )}
       </div>
-
-      {/* AI Chatbot */}
-      <AIChatbot
-        language={language}
-        translations={t}
-        faqs={faqs}
-      />
     </div>
   );
 }
