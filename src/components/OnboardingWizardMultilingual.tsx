@@ -56,11 +56,11 @@ const translations = {
       subtitle: 'Fill in your details to register',
       fullName: 'Full Name',
       fullNamePlaceholder: 'Chukwuma Okafor',
-      taxId: 'Tax ID from JRS',
+      taxId: 'Tax ID from JRB',
       taxIdPlaceholder: 'Enter your Tax ID',
       taxIdHelp: "Don't know your Tax ID?",
       taxIdHelpText: 'to retrieve it using your NIN or business registration number.',
-      taxIdPortal: 'JRS Tax ID Portal',
+      taxIdPortal: 'JRB Tax ID Portal',
       businessName: 'Business Name (Optional)',
       businessNamePlaceholder: 'Bukka Restaurant',
       email: 'Email Address',
@@ -190,11 +190,11 @@ const translations = {
       subtitle: 'Fill your details make we register you',
       fullName: 'Your Full Name',
       fullNamePlaceholder: 'Chukwuma Okafor',
-      taxId: 'Tax ID from JRS',
+      taxId: 'Tax ID from JRB',
       taxIdPlaceholder: 'Put your Tax ID',
       taxIdHelp: 'You no sabi your Tax ID?',
       taxIdHelpText: 'to collect am with your NIN or business registration number.',
-      taxIdPortal: 'JRS Tax ID Portal',
+      taxIdPortal: 'JRB Tax ID Portal',
       businessName: 'Business Name (No be must)',
       businessNamePlaceholder: 'Bukka Restaurant',
       email: 'Email Address',
@@ -324,11 +324,11 @@ const translations = {
       subtitle: 'Cika bayananka don yin rajista',
       fullName: 'Cikakken Suna',
       fullNamePlaceholder: 'Chukwuma Okafor',
-      taxId: 'Lambar Haraji daga JRS',
+      taxId: 'Lambar Haraji daga JRB',
       taxIdPlaceholder: 'Shigar da lambar haraji',
       taxIdHelp: 'Ba ka san lambar haraji ba?',
       taxIdHelpText: 'don karɓa ta ta amfani da NIN ko lambar rajistar kasuwanci.',
-      taxIdPortal: 'Tashar Lambar Haraji ta JRS',
+      taxIdPortal: 'Tashar Lambar Haraji ta JRB',
       businessName: 'Sunan Kasuwanci (Ba dole ba)',
       businessNamePlaceholder: 'Bukka Restaurant',
       email: 'Adireshin Imel',
@@ -458,11 +458,11 @@ const translations = {
       subtitle: 'Kún àlàyé rẹ láti forúkọ sílẹ̀',
       fullName: 'Orúkọ Kíkún',
       fullNamePlaceholder: 'Chukwuma Okafor',
-      taxId: 'Nọ́mbà Owó-orí láti JRS',
+      taxId: 'Nọ́mbà Owó-orí láti JRB',
       taxIdPlaceholder: 'Tẹ nọ́mbà owó-orí rẹ sínú',
       taxIdHelp: 'Ṣé o ò mọ nọ́mbà owó-orí rẹ?',
       taxIdHelpText: 'láti gbà á nípa lílo NIN tàbí nọ́mbà ìforúkọsílẹ̀ iṣẹ́ rẹ.',
-      taxIdPortal: 'Ẹnu-ọ̀nà Nọ́mbà Owó-orí JRS',
+      taxIdPortal: 'Ẹnu-ọ̀nà Nọ́mbà Owó-orí JRB',
       businessName: 'Orúkọ Iṣẹ́ (Kò pọn dandan)',
       businessNamePlaceholder: 'Bukka Restaurant',
       email: 'Àdírẹ́ẹ̀sì Ímeèlì',
@@ -592,11 +592,11 @@ const translations = {
       subtitle: 'Dejupụta nkọwa gị iji debanye aha',
       fullName: 'Aha Zuru Ezu',
       fullNamePlaceholder: 'Chukwuma Okafor',
-      taxId: 'Nọmba Ụtụ Isi si JRS',
+      taxId: 'Nọmba Ụtụ Isi si JRB',
       taxIdPlaceholder: 'Tinye nọmba ụtụ isi gị',
       taxIdHelp: 'Ị maghị nọmba ụtụ isi gị?',
       taxIdHelpText: 'iji nweta ya site na iji NIN gị ma ọ bụ nọmba ndebanye aha azụmahịa gị.',
-      taxIdPortal: 'Ọnụ Ụzọ Nọmba Ụtụ Isi JRS',
+      taxIdPortal: 'Ọnụ Ụzọ Nọmba Ụtụ Isi JRB',
       businessName: 'Aha Azụmahịa (Ọ dịghị mkpa)',
       businessNamePlaceholder: 'Bukka Restaurant',
       email: 'Adreesị Email',
@@ -927,8 +927,8 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
                     whileTap={{ scale: 0.98 }}
                     onClick={() => handleLanguageSelect(lang.id)}
                     className={`w-full p-4 rounded-2xl border-2 transition-all duration-300 ${selectedLanguage === lang.id
-                        ? 'border-emerald-600 bg-emerald-50 shadow-lg scale-105'
-                        : 'border-gray-200 bg-white hover:border-emerald-300 hover:shadow-md'
+                      ? 'border-emerald-600 bg-emerald-50 shadow-lg scale-105'
+                      : 'border-gray-200 bg-white hover:border-emerald-300 hover:shadow-md'
                       }`}
                   >
                     <div className="flex items-center justify-between">
@@ -957,8 +957,8 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
                 onClick={handleLanguageProceed}
                 disabled={!selectedLanguage}
                 className={`w-full py-4 rounded-xl transition-all duration-300 ${selectedLanguage
-                    ? 'bg-emerald-600 text-white shadow-lg hover:bg-emerald-700'
-                    : 'bg-gray-200 text-gray-400 cursor-not-allowed'
+                  ? 'bg-emerald-600 text-white shadow-lg hover:bg-emerald-700'
+                  : 'bg-gray-200 text-gray-400 cursor-not-allowed'
                   }`}
               >
                 {t.welcome.proceed}

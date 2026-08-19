@@ -251,7 +251,16 @@ export function PayTax( { language = 'english' }: PayTaxProps ) {
       {/* Header */}
       <div className="bg-white px-6 py-4 flex items-center gap-4 border-b border-gray-200">
         <button
-          onClick={() => navigate('/dashboard')}
+          onClick={() => {
+            if (isProcessing) return;
+            if (step === 'payment') {
+              setStep('summary');
+            } else if (step === 'success') {
+              navigate('/dashboard');
+            } else {
+              navigate(-1);
+            }
+          }}
           className="p-2 hover:bg-gray-100 rounded-lg transition-all -ml-2"
         >
           <ArrowLeft className="w-6 h-6 text-gray-700" />

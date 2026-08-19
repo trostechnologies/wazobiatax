@@ -289,7 +289,16 @@ export function TaxClearance( { language = 'english' }: TaxClearanceProps ) {
       <div className="bg-white px-6 py-4 border-b border-gray-200">
         <div className="flex items-center gap-4">
           <button
-            onClick={() => navigate('/profile')}
+            onClick={() => {
+              if (isChecking) return;
+              if (step === 'eligible' || step === 'ineligible') {
+                setStep('check');
+              } else if (step === 'certificate') {
+                navigate('/dashboard');
+              } else {
+                navigate(-1);
+              }
+            }}
             className="p-2 hover:bg-gray-100 rounded-lg transition-all -ml-2"
           >
             <ArrowLeft className="w-6 h-6 text-gray-700" />

@@ -70,8 +70,8 @@ const translations = {
     category: "Category",
     selectCategory: "Select category",
     date: "Date",
-    notesOptional: "Notes (Optional)",
-    addNotes: "Add notes...",
+    description: "Description",
+    addNotes: "Add description...",
     saveEntry: "Save Entry",
   },
 
@@ -115,8 +115,8 @@ const translations = {
     category: "Category",
     selectCategory: "Choose category",
     date: "Date",
-    notesOptional: "Notes (Optional)",
-    addNotes: "Add notes...",
+    description: "Description",
+    addNotes: "Add description...",
     saveEntry: "Save Entry",
   },
 
@@ -161,7 +161,7 @@ const translations = {
     category: "Rukuni",
     selectCategory: "Zaɓi rukuni",
     date: "Kwanan Wata",
-    notesOptional: "Bayani (Na zaɓi)",
+    description: "Bayani",
     addNotes: "Ƙara bayani...",
     saveEntry: "Ajiye Shigarwa",
   },
@@ -207,7 +207,7 @@ const translations = {
     category: "Ẹ̀ka",
     selectCategory: "Yan ẹ̀ka",
     date: "Ọjọ́",
-    notesOptional: "Àkọsílẹ̀ (Kíkọ̀ọ́)",
+    description: "Àkọsílẹ̀",
     addNotes: "Ṣàfikún àkọsílẹ̀...",
     saveEntry: "Fipamọ́ Ìforúkọsílẹ̀",
   },
@@ -253,7 +253,7 @@ const translations = {
     category: "Ngalaba",
     selectCategory: "Họrọ ngalaba",
     date: "Ụbọchị",
-    notesOptional: "Nkọwa (M'Ichọọ)",
+    description: "Nkọwa",
     addNotes: "Tinye nkọwa...",
     saveEntry: "Chekwaa Ndekọ",
   },
@@ -562,6 +562,11 @@ export function Ledger({ onNavigate, language = "english" }: LedgerProps) {
   const handleUpdateLedger = async () => {
     if (!selectedLedger) return;
 
+    if (!amount || !category || !date || !description) {
+      toast.error("Please fill all required fields (Amount, Category, Date, Description)");
+      return;
+    }
+
     try {
       setIsProcessing(true);
 
@@ -626,7 +631,10 @@ export function Ledger({ onNavigate, language = "english" }: LedgerProps) {
   }, [selectedLedger, addMode]);
 
   const handleAddLedger = async () => {
-    if (!amount || !category || !date || !description) return;
+    if (!amount || !category || !date || !description) {
+      toast.error("Please fill all required fields (Amount, Category, Date, Description)");
+      return;
+    }
 
     try {
       setIsProcessing(true);
@@ -1063,7 +1071,7 @@ export function Ledger({ onNavigate, language = "english" }: LedgerProps) {
                 <div>
                   <div className="flex justify-between items-center mb-2">
                     <label className="text-sm text-gray-700">
-                      {translations[language].vatAmount}
+                      {translations[language].vatAmount} <span className="text-gray-400 text-xs">(Optional)</span>
                     </label>
                     <button
                       onClick={handleCalculateTax}
@@ -1163,7 +1171,7 @@ export function Ledger({ onNavigate, language = "english" }: LedgerProps) {
                 {/* DESCRIPTION */}
                 <div>
                   <label className="block mb-2 text-sm text-gray-700">
-                    {translations[language].notesOptional}
+                    {translations[language].description}
                   </label>
                   <textarea
                     rows={3}
@@ -1338,7 +1346,7 @@ export function Ledger({ onNavigate, language = "english" }: LedgerProps) {
                   {/* VAT Amount */}
                   <div>
                     <div className="flex justify-between items-center mb-2">
-                      <label className="text-xs text-gray-500 uppercase tracking-wider font-semibold">VAT Amount</label>
+                      <label className="text-xs text-gray-500 uppercase tracking-wider font-semibold">VAT Amount <span className="text-gray-400 text-[10px] lowercase">(optional)</span></label>
                       <button
                         onClick={handleCalculateTax}
                         disabled={isCalculating}
@@ -1572,7 +1580,7 @@ export function Ledger({ onNavigate, language = "english" }: LedgerProps) {
                       {/* VAT AMOUNT */}
                       <div>
                         <div className="flex justify-between items-center mb-2">
-                          <label className="text-xs text-gray-500 uppercase tracking-wider font-semibold">VAT Amount</label>
+                          <label className="text-xs text-gray-500 uppercase tracking-wider font-semibold">VAT Amount <span className="text-gray-400 text-[10px] lowercase">(optional)</span></label>
                           <button
                             onClick={handleCalculateTax}
                             disabled={isCalculating}

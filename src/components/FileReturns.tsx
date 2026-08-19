@@ -202,7 +202,7 @@ const translations = {
   },
 };
 
-export function FileReturns( { language = 'english' }: FilePolicyProps ) {
+export function FileReturns({ language = 'english' }: FilePolicyProps) {
   const [step, setStep] = useState('select'); // select, form, review, success
   const [selectedType, setSelectedType] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -274,7 +274,17 @@ export function FileReturns( { language = 'english' }: FilePolicyProps ) {
       {/* Header */}
       <div className="bg-white px-6 py-4 flex items-center gap-4 border-b border-gray-200">
         <button
-          onClick={() => navigate('/dashboard')}
+          onClick={() => {
+            if (step === 'form') {
+              setStep('select');
+            } else if (step === 'review') {
+              setStep('form');
+            } else if (step === 'success') {
+              navigate('/dashboard');
+            } else {
+              navigate(-1);
+            }
+          }}
           className="p-2 hover:bg-gray-100 rounded-lg transition-all -ml-2"
         >
           <ArrowLeft className="w-6 h-6 text-gray-700" />

@@ -189,7 +189,7 @@ export function Notifications({ language = 'english' }: NotificationsProps) {
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-4">
             <button
-              onClick={() => navigate('/dashboard')}
+              onClick={() => navigate('/profile')}
               className="p-2 hover:bg-gray-100 rounded-lg transition-all -ml-2"
             >
               <ArrowLeft className="w-6 h-6 text-gray-700" />
@@ -209,8 +209,8 @@ export function Notifications({ language = 'english' }: NotificationsProps) {
           <button
             onClick={() => setFilter('all')}
             className={`flex-1 py-2 px-4 rounded-lg text-sm transition-all ${filter === 'all'
-                ? 'bg-emerald-600 text-white hover:bg-emerald-700'
-                : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+              ? 'bg-emerald-600 text-white hover:bg-emerald-700'
+              : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
               }`}
           >
             {t.all}
@@ -218,14 +218,11 @@ export function Notifications({ language = 'english' }: NotificationsProps) {
           <button
             onClick={() => setFilter('unread')}
             className={`flex-1 py-2 px-4 rounded-lg text-sm transition-all ${filter === 'unread'
-                ? 'bg-emerald-600 text-white hover:bg-emerald-700'
-                : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+              ? 'bg-emerald-600 text-white hover:bg-emerald-700'
+              : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
               }`}
           >
             {t.unread}
-          </button>
-          <button className="p-2 bg-gray-100 rounded-lg hover:bg-gray-200 transition-all">
-            <Settings className="w-5 h-5 text-gray-600" />
           </button>
         </div>
       </div>
@@ -279,8 +276,8 @@ export function Notifications({ language = 'english' }: NotificationsProps) {
               transition={{ delay: index * 0.05 }}
               onClick={() => notification.action_url ? navigate(notification.action_url) : undefined}
               className={`w-full p-4 rounded-xl transition-all text-left ${notification.is_read
-                  ? 'bg-white border border-gray-200 hover:shadow-md'
-                  : 'bg-white border-2 border-emerald-200 shadow-md hover:shadow-lg'
+                ? 'bg-white border border-gray-200 hover:shadow-md'
+                : 'bg-white border-2 border-emerald-200 shadow-md hover:shadow-lg'
                 }`}
             >
               <div className="flex items-start gap-3">
