@@ -303,12 +303,6 @@ export function Ledger({ onNavigate, language = "english" }: LedgerProps) {
   >("ready");
   const [isListening, setIsListening] = useState(false);
   const [transcription, setTranscription] = useState("");
-  const [detectedData, setDetectedData] = useState({
-    amount: "5,000",
-    type: "Expense",
-    category: "Food Supplies",
-    description: "Food supplies purchase",
-  });
 
   // const { language } = useLanguage();
   // const t = translations[language];
@@ -395,16 +389,35 @@ export function Ledger({ onNavigate, language = "english" }: LedgerProps) {
   };
 
   // Voice Entry Handlers
+  // NOTE: there is no real speech-to-text here — the browser never records
+  // audio, this simulates recognizing a fixed phrase. What was broken is that
+  // the "recognized" amount/type/description never made it into the Add Entry
+  // form fields below, so the review screen was always blank. This parses the
+  // (still simulated) transcript and populates the real, shared form state so
+  // Save Entry actually has something to save.
+  const applyVoiceTranscript = (text: string) => {
+    const amountMatch = text.match(/(\d+(?:,\d{3})*(?:\.\d+)?)/);
+    if (amountMatch) setAmount(amountMatch[1].replace(/,/g, ""));
+
+    const isIncome = /earned|received|income|sold|sale/i.test(text);
+    setEntryType(isIncome ? "income" : "expense");
+
+    setDescription(text);
+    setDate(new Date().toISOString().slice(0, 10));
+  };
+
   const handleStartListening = () => {
     setIsListening(true);
     setRecordingStep("listening");
 
     setTimeout(() => {
-      setTranscription("I spent 5000 naira on food supplies today");
+      const transcript = "I spent 5000 naira on food supplies today";
+      setTranscription(transcript);
       setIsListening(false);
       setRecordingStep("processing");
 
       setTimeout(() => {
+        applyVoiceTranscript(transcript);
         setRecordingStep("review");
       }, 1500);
     }, 3000);
@@ -415,6 +428,7 @@ export function Ledger({ onNavigate, language = "english" }: LedgerProps) {
     if (transcription) {
       setRecordingStep("processing");
       setTimeout(() => {
+        applyVoiceTranscript(transcription);
         setRecordingStep("review");
       }, 1500);
     } else {
@@ -426,15 +440,6 @@ export function Ledger({ onNavigate, language = "english" }: LedgerProps) {
   const handleTryAgain = () => {
     setTranscription("");
     setRecordingStep("ready");
-  };
-
-  const handleSaveVoice = () => {
-    toast.success(voiceT.saved);
-    setTimeout(() => {
-      setAddMode("");
-      setRecordingStep("ready");
-      setTranscription("");
-    }, 1000);
   };
 
   const handleCalculateTax = async () => {
