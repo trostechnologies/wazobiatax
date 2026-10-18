@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { type LanguageKey } from '../translations/profile';
 import { getNotifications, type Notification } from '../services/notifications';
+import { getNotificationPreferences, saveNotificationPreferences, type NotificationPreferences } from '../utils/notificationPreferences';
 
 interface NotificationsProps {
   language?: LanguageKey;
@@ -129,9 +130,18 @@ export function Notifications({ language = 'english' }: NotificationsProps) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [filter, setFilter] = useState<'all' | 'unread'>('all');
+  const [preferences, setPreferences] = useState<NotificationPreferences>(getNotificationPreferences);
 
   const t = translations[language];
   const navigate = useNavigate();
+
+  const toggleNotificationPreference = (key: keyof NotificationPreferences) => {
+    setPreferences((prev) => {
+      const next = { ...prev, [key]: !prev[key] };
+      saveNotificationPreferences(next);
+      return next;
+    });
+  };
 
   const fetchNotifications = async () => {
     setLoading(true);
@@ -308,24 +318,31 @@ export function Notifications({ language = 'english' }: NotificationsProps) {
             {t.notificationPreferences}
           </h3>
           <div className="space-y-3">
-            <div className="flex items-center justify-between">
-              <span className="text-sm text-gray-700">{t.pushNotifications}</span>
-              <div className="w-12 h-6 bg-emerald-600 rounded-full relative">
-                <div className="absolute top-0.5 right-0.5 w-5 h-5 bg-white rounded-full" />
+            {([
+              ['push', t.pushNotifications],
+              ['sms', t.smsAlerts],
+              ['email', t.emailNotifications],
+            ] as [keyof NotificationPreferences, string][]).map(([key, label]) => (
+              <div key={key} className="flex items-center justify-between">
+                <span className="text-sm text-gray-700">{label}</span>
+                <button
+                  type="button"
+                  role="switch"
+                  aria-checked={preferences[key]}
+                  aria-label={label}
+                  onClick={() => toggleNotificationPreference(key)}
+                  className={`w-12 h-6 rounded-full relative transition-colors ${
+                    preferences[key] ? 'bg-emerald-600' : 'bg-gray-300'
+                  }`}
+                >
+                  <div
+                    className={`absolute top-0.5 w-5 h-5 bg-white rounded-full transition-all ${
+                      preferences[key] ? 'right-0.5' : 'left-0.5'
+                    }`}
+                  />
+                </button>
               </div>
-            </div>
-            <div className="flex items-center justify-between">
-              <span className="text-sm text-gray-700">{t.smsAlerts}</span>
-              <div className="w-12 h-6 bg-emerald-600 rounded-full relative">
-                <div className="absolute top-0.5 right-0.5 w-5 h-5 bg-white rounded-full" />
-              </div>
-            </div>
-            <div className="flex items-center justify-between">
-              <span className="text-sm text-gray-700">{t.emailNotifications}</span>
-              <div className="w-12 h-6 bg-gray-300 rounded-full relative">
-                <div className="absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full" />
-              </div>
-            </div>
+            ))}
           </div>
         </div>
       </div>
