@@ -228,9 +228,13 @@ export function Dashboard({ language = 'english' }: DashboardProps) {
   const trendPercentage = complianceData?.trend_percentage ?? 0;
   const needsAttention = complianceData?.needs_attention ?? false;
 
-  // Subscription data
-  const subscription: Subscription =
-    currentUser?.subscription ?? 'basic'; // 'basic', 'premium', or 'trial'
+  // Subscription data — derived from the live subscription endpoint, same as Profile.tsx,
+  // instead of a non-existent `currentUser.subscription` field which always fell back to 'basic'.
+  const subscription: Subscription = userSubscription?.plan?.name?.toLowerCase().includes('premium')
+    ? 'premium'
+    : userSubscription?.plan?.name?.toLowerCase().includes('basic')
+      ? 'basic'
+      : 'trial';
 
   const subscriptionLabels: Record<Subscription, string> = {
     basic: 'Basic',

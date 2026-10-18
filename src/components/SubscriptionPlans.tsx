@@ -136,10 +136,22 @@ export const SubscriptionPlans: React.FC<SubscriptionPlansProps> = ({ language =
             }
         } catch (err: any) {
             console.error('Subscription error:', err);
-            setError(err.response?.data?.error || err.message || 'Failed to process request. Please check your connection.');
+            const rawMessage = err.response?.data?.error || err.message;
+            setError(friendlySubscriptionError(rawMessage, 'Failed to process request. Please check your connection.'));
         } finally {
             setSubscribing(null);
         }
+    };
+
+    // Some backend errors leak raw Python exception text (e.g. "'NoneType' object has
+    // no attribute 'date'"). Never show that to users — show a friendly message instead
+    // while still logging the real error for debugging.
+    const friendlySubscriptionError = (rawMessage: string | undefined, fallback: string): string => {
+        if (!rawMessage) return fallback;
+        const looksLikeRawException = /NoneType|object has no attribute|Traceback|AttributeError/i.test(rawMessage);
+        return looksLikeRawException
+            ? "We couldn't update your plan right now. Please try again in a moment or contact support if this keeps happening."
+            : rawMessage;
     };
 
     const features = [
