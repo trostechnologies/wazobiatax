@@ -25,6 +25,7 @@ import { useNavigate } from "react-router-dom";
 import { addLedgerEntry, deleteLedgerEntry, getLedgerRecords, updateLedgerEntry } from "@/services/ledger";
 import { getTaxCalculation, type TaxCalculationResponse } from "@/services/tax";
 import { downloadCsv } from "@/utils/download";
+import { extractReceiptDetails, MAX_RECEIPT_IMAGE_BYTES } from "@/utils/receiptOcr";
 import { ToastContainer, toast } from 'react-toastify';
 import { profileTranslations, type LanguageKey } from "../translations/profile";
 import { useCameraPermissions } from "@/hooks/useCameraPermissions";
@@ -260,22 +261,12 @@ const translations = {
   },
 };
 
-type ExtractedLedgerData = {
-  entryType: "expense" | "income";
-  amount: string;
-  vatAmount: string;
-  category: string;
-  date: string;
-  description: string;
-};
-
 interface LedgerProps {
   onNavigate: (screen: string) => void;
   language?: LanguageKey;
 }
 
 export function Ledger({ onNavigate, language = "english" }: LedgerProps) {
-  const scanT = profileTranslations[language].scanReceipt;
   const voiceT = profileTranslations[language].voiceEntry;
 
   const [showAddModal, setShowAddModal] = useState(false);
@@ -303,17 +294,8 @@ export function Ledger({ onNavigate, language = "english" }: LedgerProps) {
 
 
   // Scan Receipt States
-  const [scanStep, setScanStep] = useState<
-    "permission" | "camera" | "preview" | "extracted"
-  >("camera");
   const [isProcessing, setIsProcessing] = useState(false);
   const [isExtracting, setIsExtracting] = useState(false);
-  const [extractedData, setExtractedData] = useState({
-    vendor: "Fresh Foods Market",
-    date: "2026-02-02",
-    amount: "5,000",
-    category: "Food Supplies",
-  });
 
   // Voice Entry States
   const [recordingStep, setRecordingStep] = useState<
@@ -354,26 +336,26 @@ export function Ledger({ onNavigate, language = "english" }: LedgerProps) {
 
 
   // Scan Receipt Handlers
-  // const handleCapture = () => {
-  //   setIsProcessing(true);
-  //   setTimeout(() => {
-  //     setIsProcessing(false);
-  //     setScanStep('preview');
-  //   }, 1500);
-  // };
-
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const videoRef = useRef<HTMLVideoElement | null>(null);
+  const [scanError, setScanError] = useState("");
 
   const handleCapture = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setIsProcessing(true);
     const file = e.target.files?.[0];
     if (!file) return;
 
+    if (file.size > MAX_RECEIPT_IMAGE_BYTES) {
+      setScanError(`That image is too large (max ${Math.round(MAX_RECEIPT_IMAGE_BYTES / (1024 * 1024))}MB). Please choose a smaller photo.`);
+      e.target.value = "";
+      return;
+    }
+
+    setIsProcessing(true);
     const previewUrl = URL.createObjectURL(file);
 
     setCapturedImage(file);        // for OCR upload
     setCapturedPreview(previewUrl); // for UI
+    setScanError("");
     setIsProcessing(false);
     setScanState("preview");
   };
@@ -383,50 +365,33 @@ export function Ledger({ onNavigate, language = "english" }: LedgerProps) {
 
     setScanState("processing");
     setIsExtracting(true);
+    setScanError("");
 
-    // Simulate AI processing delay
-    setTimeout(() => {
-      // Pretend this came from AI
-      const extractedData: ExtractedLedgerData = {
-        entryType: "expense",
-        amount: "8500",
-        vatAmount: "850",
-        category: "food",
-        date: "2026-02-04",
-        description: "Chicken Republic",
-      };
+    try {
+      const result = await extractReceiptDetails(capturedImage);
 
-      // Populate shared ledger states
-      setEntryType(extractedData.entryType);
-      setAmount(extractedData.amount);
-      setVatAmount(extractedData.vatAmount);
-      setCategory(extractedData.category);
-      setDate(extractedData.date);
-      setDescription(extractedData.description);
+      if (!result.success) {
+        setScanError("We couldn't read the details on this receipt. Please enter them manually below, or retake the photo.");
+      }
 
+      // Prefill whatever we found — every field stays editable, and the user
+      // must still review and press Save Entry before anything is written.
+      setEntryType("expense");
+      if (result.amount) setAmount(result.amount);
+      if (result.date) setDate(result.date);
+      if (result.vendor) setDescription(result.vendor);
+    } catch (err) {
+      console.error("Receipt OCR failed:", err);
+      setScanError("We couldn't scan this receipt. Please enter the details manually below, or retake the photo.");
+    } finally {
       setIsExtracting(false);
       setScanState("confirm");
-    }, 1500);
-  };
-
-  const handleConfirmAndExtract = () => {
-    setIsExtracting(true);
-    setTimeout(() => {
-      setIsExtracting(false);
-      setScanStep("extracted");
-    }, 2000);
-  };
-
-  const handleSaveScan = () => {
-    toast.success(scanT.saved);
-    setTimeout(() => {
-      setAddMode("");
-      setScanStep("camera");
-    }, 1000);
+    }
   };
 
   const handleRetake = () => {
-    setScanStep("camera");
+    setScanError("");
+    setScanState("camera");
   };
 
   // Voice Entry Handlers
@@ -747,15 +712,7 @@ export function Ledger({ onNavigate, language = "english" }: LedgerProps) {
           accept="image/*"
           capture="environment"  // opens back camera on phones
           style={{ display: 'none' }} // hidden
-          onChange={(e) => {
-            const file = e.target.files?.[0];
-            if (!file) return;
-
-            const previewUrl = URL.createObjectURL(file);
-            setCapturedImage(file);       // for OCR upload
-            setCapturedPreview(previewUrl); // for UI display
-            setScanState('preview');      // move to preview state
-          }}
+          onChange={handleCapture}
         />
 
         {/* Search & Filter */}
@@ -1318,6 +1275,9 @@ export function Ledger({ onNavigate, language = "english" }: LedgerProps) {
                   />
 
                   <div className="p-4 space-y-3">
+                    {scanError && (
+                      <p className="text-sm text-red-600">{scanError}</p>
+                    )}
                     <button
                       onClick={handleRetake}
                       className="w-full py-3 border rounded-xl"
@@ -1367,6 +1327,22 @@ export function Ledger({ onNavigate, language = "english" }: LedgerProps) {
                   <div className="text-sm text-gray-500">
                     Review and confirm details
                   </div>
+
+                  {scanError && (
+                    <div className="bg-amber-50 border border-amber-200 rounded-xl p-4">
+                      <p className="text-sm text-amber-900 mb-2">{scanError}</p>
+                      <button
+                        onClick={() => {
+                          setAddMode("manual");
+                          setScanState("camera");
+                          setScanError("");
+                        }}
+                        className="text-sm text-emerald-700 underline"
+                      >
+                        Enter manually instead
+                      </button>
+                    </div>
+                  )}
 
                   {/* Amount */}
                   <input
