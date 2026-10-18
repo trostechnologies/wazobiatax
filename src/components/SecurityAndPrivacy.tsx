@@ -3,15 +3,61 @@ import { ArrowLeft, Shield, FileText, ChevronRight, Download, Trash2, Clock, Che
 import { useState } from 'react';
 import { profileTranslations, type LanguageKey } from '../translations/profile';
 import { useNavigate } from 'react-router-dom';
+import { getUserProfile } from '../services/auth';
+import { getLedgerRecords } from '../services/ledger';
+import { downloadJson } from '../utils/download';
+import { ToastContainer, toast } from 'react-toastify';
 
 interface SecurityAndPrivacyProps {
   language?: LanguageKey;
 }
 
+const SUPPORT_EMAIL = 'dpo@wazobiatax.ng';
+
 export function SecurityAndPrivacy({ language = 'english' }: SecurityAndPrivacyProps) {
   const t = profileTranslations[language].securityPrivacy;
   const [twoFactorEnabled, setTwoFactorEnabled] = useState(false);
+  const [isDownloadingData, setIsDownloadingData] = useState(false);
+  const [deleteModalStep, setDeleteModalStep] = useState<'closed' | 'confirm' | 'unavailable'>('closed');
+  const [deleteConfirmText, setDeleteConfirmText] = useState('');
   const navigate = useNavigate();
+
+  const handleDownloadData = async () => {
+    setIsDownloadingData(true);
+    try {
+      const [profileRes, ledgerRes] = await Promise.all([
+        getUserProfile(),
+        getLedgerRecords(),
+      ]);
+
+      downloadJson(`wazobiatax-my-data-${new Date().toISOString().slice(0, 10)}.json`, {
+        exported_at: new Date().toISOString(),
+        profile: profileRes.data,
+        ledger_entries: ledgerRes.data || [],
+      });
+      toast.success('Your data has been downloaded');
+    } catch (err) {
+      console.error('Failed to download user data:', err);
+      toast.error('Unable to download your data right now. Please try again.');
+    } finally {
+      setIsDownloadingData(false);
+    }
+  };
+
+  const handleViewLoginHistory = () => {
+    toast.info("Login history isn't available yet. We're working on bringing this to the app.");
+  };
+
+  const handleConfirmDeleteAccount = () => {
+    if (deleteConfirmText.trim().toUpperCase() !== 'DELETE') return;
+    // No backend endpoint exists yet for account deletion — never fake success here.
+    setDeleteModalStep('unavailable');
+  };
+
+  const closeDeleteModal = () => {
+    setDeleteModalStep('closed');
+    setDeleteConfirmText('');
+  };
 
   const securityOptions = [
     {
@@ -41,14 +87,18 @@ export function SecurityAndPrivacy({ language = 'english' }: SecurityAndPrivacyP
       icon: Download,
       title: t.dataDownload,
       description: t.dataDownloadDesc,
-      action: t.requestDownload
+      action: isDownloadingData ? 'Preparing download…' : t.requestDownload,
+      onClick: handleDownloadData,
+      disabled: isDownloadingData,
     },
     {
       id: 'history',
       icon: Clock,
       title: t.sessionHistory,
       description: t.sessionHistoryDesc,
-      action: t.viewHistory
+      action: t.viewHistory,
+      onClick: handleViewLoginHistory,
+      disabled: false,
     }
   ];
 
@@ -133,7 +183,9 @@ export function SecurityAndPrivacy({ language = 'english' }: SecurityAndPrivacyP
           {dataOptions.map((option, index) => (
             <button
               key={option.id}
-              className={`w-full px-6 py-5 flex items-start gap-4 hover:bg-gray-50 transition-all ${
+              onClick={option.onClick}
+              disabled={option.disabled}
+              className={`w-full px-6 py-5 flex items-start gap-4 hover:bg-gray-50 transition-all disabled:opacity-60 disabled:cursor-wait ${
                 index !== dataOptions.length - 1 ? 'border-b border-gray-100' : ''
               }`}
             >
@@ -159,7 +211,10 @@ export function SecurityAndPrivacy({ language = 'english' }: SecurityAndPrivacyP
           transition={{ delay: 0.2 }}
           className="bg-white rounded-2xl shadow-lg overflow-hidden border border-red-100"
         >
-          <button className="w-full px-6 py-5 flex items-start gap-4 hover:bg-red-50 transition-all">
+          <button
+            onClick={() => setDeleteModalStep('confirm')}
+            className="w-full px-6 py-5 flex items-start gap-4 hover:bg-red-50 transition-all"
+          >
             <div className="w-12 h-12 bg-red-50 rounded-xl flex items-center justify-center flex-shrink-0">
               <Trash2 className="w-6 h-6 text-red-600" />
             </div>
@@ -174,6 +229,75 @@ export function SecurityAndPrivacy({ language = 'english' }: SecurityAndPrivacyP
           </button>
         </motion.div>
       </div>
+
+      {/* Delete Account Modal */}
+      {deleteModalStep !== 'closed' && (
+        <div
+          className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center px-6"
+          onClick={closeDeleteModal}
+        >
+          <div
+            className="bg-white rounded-2xl p-6 w-full max-w-sm"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {deleteModalStep === 'confirm' && (
+              <>
+                <h3 className="text-lg mb-2 text-red-600">{t.deleteAccount}</h3>
+                <p className="text-sm text-gray-600 mb-4">
+                  This will permanently delete your account and all associated data. This action cannot be undone.
+                  Type <span className="font-semibold">DELETE</span> to confirm.
+                </p>
+                <input
+                  type="text"
+                  value={deleteConfirmText}
+                  onChange={(e) => setDeleteConfirmText(e.target.value)}
+                  placeholder="Type DELETE"
+                  className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-red-500 outline-none mb-4"
+                />
+                <div className="flex flex-col gap-3">
+                  <button
+                    onClick={closeDeleteModal}
+                    className="flex-1 py-3 border rounded-xl"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={handleConfirmDeleteAccount}
+                    disabled={deleteConfirmText.trim().toUpperCase() !== 'DELETE'}
+                    className="flex-1 py-3 bg-red-600 text-white rounded-xl disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    Delete my account
+                  </button>
+                </div>
+              </>
+            )}
+
+            {deleteModalStep === 'unavailable' && (
+              <>
+                <h3 className="text-lg mb-2">Account deletion isn't available yet</h3>
+                <p className="text-sm text-gray-600 mb-4">
+                  We're not able to process account deletion requests in the app just yet. Please contact our
+                  support team and we'll take care of it for you.
+                </p>
+                <a
+                  href={`mailto:${SUPPORT_EMAIL}?subject=Account%20deletion%20request`}
+                  className="block w-full py-3 text-center bg-emerald-600 text-white rounded-xl mb-3"
+                >
+                  Email {SUPPORT_EMAIL}
+                </a>
+                <button
+                  onClick={closeDeleteModal}
+                  className="w-full py-3 border rounded-xl"
+                >
+                  Close
+                </button>
+              </>
+            )}
+          </div>
+        </div>
+      )}
+
+      <ToastContainer />
     </div>
   );
 }

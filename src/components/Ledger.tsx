@@ -24,6 +24,7 @@ import { useLanguage } from "@/context/LanguageContext";
 import { useNavigate } from "react-router-dom";
 import { addLedgerEntry, deleteLedgerEntry, getLedgerRecords, updateLedgerEntry } from "@/services/ledger";
 import { getTaxCalculation, type TaxCalculationResponse } from "@/services/tax";
+import { downloadCsv } from "@/utils/download";
 import { ToastContainer, toast } from 'react-toastify';
 import { profileTranslations, type LanguageKey } from "../translations/profile";
 import { useCameraPermissions } from "@/hooks/useCameraPermissions";
@@ -699,6 +700,21 @@ export function Ledger({ onNavigate, language = "english" }: LedgerProps) {
     fetchLedgerRecords();
   }, []);
 
+  const handleDownloadCsv = () => {
+    downloadCsv(
+      `wazobiatax-ledger-${new Date().toISOString().slice(0, 10)}.csv`,
+      ['Date', 'Type', 'Category', 'Description', 'Amount', 'VAT Amount'],
+      filteredEntries.map((entry: any) => [
+        entry.date,
+        entry.ledger_type || entry.type || '',
+        entry.category || '',
+        entry.description || '',
+        entry.amount,
+        entry.vat_amount ?? '',
+      ])
+    );
+  };
+
   return (
     <div className="min-h-screen bg-gray-50 pb-20">
       {/* Status Bar */}
@@ -885,7 +901,11 @@ export function Ledger({ onNavigate, language = "english" }: LedgerProps) {
 
       {/* Export Button */}
       <div className="px-6 pb-6">
-        <button className="w-full py-3 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-all flex items-center justify-center gap-2">
+        <button
+          onClick={handleDownloadCsv}
+          disabled={entries.length === 0}
+          className="w-full py-3 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-all flex items-center justify-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed"
+        >
           <Download className="w-5 h-5" />
           {translations[language].downloadCsvReport}
         </button>
