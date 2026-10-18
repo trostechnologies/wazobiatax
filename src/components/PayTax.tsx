@@ -1,9 +1,11 @@
 import { motion, AnimatePresence } from 'motion/react';
 import { ArrowLeft, CreditCard, Building2, QrCode, CheckCircle2, Loader2, Download } from 'lucide-react';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useLanguage } from "@/context/LanguageContext";
 import { useNavigate } from 'react-router-dom';
 import { profileTranslations, type LanguageKey } from '../translations/profile';
+import { getTaxCalculation } from '../services/tax';
+import { downloadReceiptPdf } from '../utils/pdf';
 
 interface PayTaxProps {
   language?: LanguageKey;
@@ -196,13 +198,36 @@ export function PayTax( { language = 'english' }: PayTaxProps ) {
   const [selectedMethod, setSelectedMethod] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
 
-  const taxDue = 13000;
+  const [isLoadingTax, setIsLoadingTax] = useState(true);
+  const [taxDue, setTaxDue] = useState(0);
   const penalty = 0;
   const total = taxDue + penalty;
+
+  const [cardNumber, setCardNumber] = useState('');
+  const [expiryDate, setExpiryDate] = useState('');
+  const [cvv, setCvv] = useState('');
+  const [paymentError, setPaymentError] = useState('');
+
+  const [transactionId, setTransactionId] = useState('');
 
   // const { language } = useLanguage();
   const t = translations[language];
   const navigate = useNavigate();
+
+  useEffect(() => {
+    const fetchTaxDue = async () => {
+      try {
+        const res = await getTaxCalculation();
+        setTaxDue(Math.max(0, res.data.net_vat));
+      } catch (err) {
+        console.error('Failed to fetch tax due:', err);
+      } finally {
+        setIsLoadingTax(false);
+      }
+    };
+
+    fetchTaxDue();
+  }, []);
 
   const paymentMethods = [
     {
@@ -234,11 +259,41 @@ export function PayTax( { language = 'english' }: PayTaxProps ) {
   };
 
   const handlePay = () => {
+    const trimmedCardNumber = cardNumber.replace(/\s/g, '');
+
+    if (!trimmedCardNumber || !expiryDate.trim() || !cvv.trim()) {
+      setPaymentError('Please fill in your card number, expiry date, and CVV.');
+      return;
+    }
+    if (!/^\d{13,19}$/.test(trimmedCardNumber)) {
+      setPaymentError('Please enter a valid card number.');
+      return;
+    }
+    if (!/^\d{2}\/\d{2}$/.test(expiryDate.trim())) {
+      setPaymentError('Please enter the expiry date as MM/YY.');
+      return;
+    }
+    if (!/^\d{3,4}$/.test(cvv.trim())) {
+      setPaymentError('Please enter a valid CVV.');
+      return;
+    }
+
+    setPaymentError('');
     setIsProcessing(true);
     setTimeout(() => {
       setIsProcessing(false);
+      setTransactionId(`TXN-${Math.floor(Math.random() * 100000)}`);
       setStep('success');
     }, 2500);
+  };
+
+  const handleDownloadReceipt = () => {
+    downloadReceiptPdf({
+      amountPaid: `₦${total.toLocaleString()}`,
+      transactionId,
+      date: new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }),
+      paymentMethod: paymentMethods.find((m) => m.id === selectedMethod)?.nameKey,
+    });
   };
 
   return (
@@ -282,10 +337,10 @@ export function PayTax( { language = 'english' }: PayTaxProps ) {
             {/* Amount Card */}
             <div className="bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-2xl p-6 text-white shadow-2xl">
               <p className="text-emerald-100 text-sm mb-2">{translations[language].totalAmountDue}</p>
-              <p className="text-4xl mb-4">₦{total.toLocaleString()}</p>
+              <p className="text-4xl mb-4">{isLoadingTax ? '…' : `₦${total.toLocaleString()}`}</p>
               <div className="flex gap-2">
                 <span className="px-3 py-1 bg-white/20 rounded-full text-xs">
-                  {translations[language].tax} ₦{taxDue.toLocaleString()}
+                  {translations[language].tax} {isLoadingTax ? '…' : `₦${taxDue.toLocaleString()}`}
                 </span>
                 {penalty > 0 && (
                   <span className="px-3 py-1 bg-red-400/30 rounded-full text-xs">
@@ -371,6 +426,8 @@ export function PayTax( { language = 'english' }: PayTaxProps ) {
                 <input
                   type="text"
                   placeholder="1234 5678 9012 3456"
+                  value={cardNumber}
+                  onChange={(e) => setCardNumber(e.target.value)}
                   className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none"
                 />
               </div>
@@ -380,6 +437,8 @@ export function PayTax( { language = 'english' }: PayTaxProps ) {
                   <input
                     type="text"
                     placeholder="MM/YY"
+                    value={expiryDate}
+                    onChange={(e) => setExpiryDate(e.target.value)}
                     className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none"
                   />
                 </div>
@@ -388,10 +447,15 @@ export function PayTax( { language = 'english' }: PayTaxProps ) {
                   <input
                     type="text"
                     placeholder="123"
+                    value={cvv}
+                    onChange={(e) => setCvv(e.target.value)}
                     className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none"
                   />
                 </div>
               </div>
+              {paymentError && (
+                <p className="text-sm text-red-600">{paymentError}</p>
+              )}
             </div>
 
             {/* Amount Summary */}
@@ -467,16 +531,19 @@ export function PayTax( { language = 'english' }: PayTaxProps ) {
               </div>
               <div className="flex justify-between text-sm">
                 <span className="text-gray-600">{translations[language].transactionId}</span>
-                <span>TXN-{Math.floor(Math.random() * 100000)}</span>
+                <span>{transactionId}</span>
               </div>
               <div className="flex justify-between text-sm">
                 <span className="text-gray-600">{translations[language].date}</span>
-                <span>Dec 13, 2025</span>
+                <span>{new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}</span>
               </div>
             </div>
 
             <div className="space-y-3">
-              <button className="w-full py-4 bg-emerald-600 text-white rounded-xl hover:bg-emerald-700 shadow-lg transition-all flex items-center justify-center gap-2">
+              <button
+                onClick={handleDownloadReceipt}
+                className="w-full py-4 bg-emerald-600 text-white rounded-xl hover:bg-emerald-700 shadow-lg transition-all flex items-center justify-center gap-2"
+              >
                 <Download className="w-5 h-5" />
                 {translations[language].downloadReceipt}
               </button>
