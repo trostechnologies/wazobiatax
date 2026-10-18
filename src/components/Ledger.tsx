@@ -51,7 +51,7 @@ const translations = {
 
     digitalLedger: "Digital Ledger",
     searchTransactions: "Search transactions...",
-    pendingSyncInfo: "3 entries pending sync - Will sync when online",
+    pendingSyncInfo: "You're offline - changes will sync when you're back online",
 
     filterAll: "All",
     filterIncome: "Income",
@@ -96,7 +96,7 @@ const translations = {
 
     digitalLedger: "Digital Ledger",
     searchTransactions: "Search transactions...",
-    pendingSyncInfo: "3 entries never sync - E go sync when network dey",
+    pendingSyncInfo: "You dey offline - changes go sync when network come back",
 
     filterAll: "All",
     filterIncome: "Income",
@@ -142,7 +142,7 @@ const translations = {
     digitalLedger: "Littafin Dijital",
     searchTransactions: "Nemo ma'amaloli...",
     pendingSyncInfo:
-      "Akwai bayanai 3 da ba su daidaita ba – Za su daidaita idan an samu intanet",
+      "Ba ka da intanet - canje-canje za su daidaita idan an sake samun intanet",
 
     filterAll: "Duka",
     filterIncome: "Kuɗin Shiga",
@@ -188,7 +188,7 @@ const translations = {
     digitalLedger: "Ledger Ayelujara",
     searchTransactions: "Wa awọn ìṣúná...",
     pendingSyncInfo:
-      "Àwọn ìforúkọsílẹ̀ 3 ń dúró fún ìṣọ̀kan – Yóò darapọ̀ nígbà tí intanẹẹti bá wà",
+      "O ò sí lórí ayelujara - àwọn àyípadà yóò darapọ̀ nígbà tí intanẹẹti bá padà wá",
 
     filterAll: "Gbogbo",
     filterIncome: "Ìní",
@@ -234,7 +234,7 @@ const translations = {
     digitalLedger: "Ledger Dijitalụ",
     searchTransactions: "Chọọ azụmahịa...",
     pendingSyncInfo:
-      "Enwere ndekọ 3 na-echere njikọ – Ha ga-ejikọ mgbe ịntanetị dị",
+      "Ị nọghị n'ịntanetị - mgbanwe ga-ejikọ mgbe ịntanetị laghachiri",
 
     filterAll: "Niile",
     filterIncome: "Ego Mbata",
@@ -283,6 +283,7 @@ export function Ledger({ onNavigate, language = "english" }: LedgerProps) {
   const [scanState, setScanState] = useState("camera");
   const [capturedImage, setCapturedImage] = useState<File | null>(null);
   const [capturedPreview, setCapturedPreview] = useState<string | null>(null);
+  const [isOnline, setIsOnline] = useState(() => typeof navigator === "undefined" || navigator.onLine);
   const [searchQuery, setSearchQuery] = useState("");
   const [filterType, setFilterType] = useState("all");
   const [amount, setAmount] = useState("");
@@ -700,6 +701,17 @@ export function Ledger({ onNavigate, language = "english" }: LedgerProps) {
     fetchLedgerRecords();
   }, []);
 
+  useEffect(() => {
+    const handleOnline = () => setIsOnline(true);
+    const handleOffline = () => setIsOnline(false);
+    window.addEventListener("online", handleOnline);
+    window.addEventListener("offline", handleOffline);
+    return () => {
+      window.removeEventListener("online", handleOnline);
+      window.removeEventListener("offline", handleOffline);
+    };
+  }, []);
+
   const handleDownloadCsv = () => {
     downloadCsv(
       `wazobiatax-ledger-${new Date().toISOString().slice(0, 10)}.csv`,
@@ -795,11 +807,13 @@ export function Ledger({ onNavigate, language = "english" }: LedgerProps) {
         </div>
       </div>
 
-      {/* Offline Sync Banner */}
-      <div className="bg-amber-50 border-b border-amber-200 px-6 py-3 flex items-center gap-2 text-sm text-amber-900">
-        <Zap className="w-4 h-4" />
-        <span>{translations[language].pendingSyncInfo}</span>
-      </div>
+      {/* Offline Sync Banner — only shown when actually offline */}
+      {!isOnline && (
+        <div className="bg-amber-50 border-b border-amber-200 px-6 py-3 flex items-center gap-2 text-sm text-amber-900">
+          <Zap className="w-4 h-4" />
+          <span>{translations[language].pendingSyncInfo}</span>
+        </div>
+      )}
 
       {isLoadingLedger && (
         <p className="text-center text-sm text-gray-500">Loading records...</p>

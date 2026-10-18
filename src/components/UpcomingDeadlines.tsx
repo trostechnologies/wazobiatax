@@ -1,6 +1,6 @@
 import { motion } from 'motion/react';
 import { ArrowLeft, Clock, Calendar, AlertCircle, CheckCircle2, ChevronRight } from 'lucide-react';
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useLanguage } from "@/context/LanguageContext";
 import { useNavigate } from 'react-router-dom';
 import { profileTranslations, type LanguageKey } from '../translations/profile';
@@ -177,7 +177,14 @@ const translations = {
   }        
 }
 
+const DEADLINE_TYPE_SCREEN: Record<string, string> = {
+  filing: '/file-returns',
+  payment: '/pay-tax',
+  review: '/activity',
+};
+
 export function UpcomingDeadlines( { language = 'english' }: UpcomingDeadlinesProps ) {
+  const [activeFilter, setActiveFilter] = useState<'all' | 'high' | 'week'>('all');
 
   const deadlines = [
   {
@@ -220,7 +227,13 @@ export function UpcomingDeadlines( { language = 'english' }: UpcomingDeadlinesPr
     type: 'filing',
     status: 'pending',
   },
-];  
+];
+
+  const filteredDeadlines = useMemo(() => {
+    if (activeFilter === 'high') return deadlines.filter((d) => d.priority === 'high');
+    if (activeFilter === 'week') return deadlines.filter((d) => d.days <= 7);
+    return deadlines;
+  }, [activeFilter]);
 
   const getPriorityColor = (priority: string) => {
     switch (priority) {
@@ -265,13 +278,28 @@ export function UpcomingDeadlines( { language = 'english' }: UpcomingDeadlinesPr
 
         {/* Filter Pills */}
         <div className="flex gap-2 overflow-x-auto">
-          <button className="px-4 py-1.5 bg-emerald-600 text-white rounded-full text-sm whitespace-nowrap">
+          <button
+            onClick={() => setActiveFilter('all')}
+            className={`px-4 py-1.5 rounded-full text-sm whitespace-nowrap transition-all ${
+              activeFilter === 'all' ? 'bg-emerald-600 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+            }`}
+          >
             {translations[language].all}
           </button>
-          <button className="px-4 py-1.5 bg-gray-100 text-gray-600 rounded-full text-sm whitespace-nowrap hover:bg-gray-200 transition-all">
+          <button
+            onClick={() => setActiveFilter('high')}
+            className={`px-4 py-1.5 rounded-full text-sm whitespace-nowrap transition-all ${
+              activeFilter === 'high' ? 'bg-emerald-600 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+            }`}
+          >
             {translations[language].highPriority}
           </button>
-          <button className="px-4 py-1.5 bg-gray-100 text-gray-600 rounded-full text-sm whitespace-nowrap hover:bg-gray-200 transition-all">
+          <button
+            onClick={() => setActiveFilter('week')}
+            className={`px-4 py-1.5 rounded-full text-sm whitespace-nowrap transition-all ${
+              activeFilter === 'week' ? 'bg-emerald-600 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+            }`}
+          >
             {translations[language].thisWeek}
           </button>
         </div>
@@ -309,7 +337,10 @@ export function UpcomingDeadlines( { language = 'english' }: UpcomingDeadlinesPr
 
       {/* Deadlines List */}
       <div className="px-6 space-y-3 pb-6">
-        {deadlines.map((deadline, index) => (
+        {filteredDeadlines.length === 0 && (
+          <p className="text-center text-sm text-gray-500 py-10">No deadlines match this filter</p>
+        )}
+        {filteredDeadlines.map((deadline, index) => (
           <motion.div
             key={deadline.id}
             initial={{ opacity: 0, y: 20 }}
@@ -368,7 +399,10 @@ export function UpcomingDeadlines( { language = 'english' }: UpcomingDeadlinesPr
               >
                 {translations[language].completeNow}
               </button>
-              <button className="px-4 py-2 bg-gray-100 text-gray-600 rounded-lg hover:bg-gray-200 transition-all text-sm">
+              <button
+                onClick={() => navigate(DEADLINE_TYPE_SCREEN[deadline.type] || '/dashboard')}
+                className="px-4 py-2 bg-gray-100 text-gray-600 rounded-lg hover:bg-gray-200 transition-all text-sm"
+              >
                 <ChevronRight className="w-4 h-4" />
               </button>
             </div>
