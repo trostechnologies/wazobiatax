@@ -4,6 +4,8 @@ import { useState } from 'react';
 import { useLanguage } from "@/context/LanguageContext";
 import { useNavigate } from 'react-router-dom';
 import { profileTranslations, type LanguageKey } from '../translations/profile';
+import { downloadCertificatePdf } from '../utils/pdf';
+import { ToastContainer, toast } from 'react-toastify';
 
 interface TaxClearanceProps {
   language?: LanguageKey;
@@ -252,11 +254,17 @@ const translations = {
   },
 };
 
+const CERTIFICATE_NAME = 'Chukwuma Okafor';
+const CERTIFICATE_BUSINESS = 'Bukka Restaurant';
+const CERTIFICATE_ISSUE_DATE = 'Dec 13, 2025';
+const CERTIFICATE_EXPIRY_DATE = 'Dec 13, 2026';
+
 export function TaxClearance( { language = 'english' }: TaxClearanceProps ) {
   const [step, setStep] = useState('check'); // check, eligible, certificate, ineligible
   const [isChecking, setIsChecking] = useState(false);
   const [isEligible] = useState(true); // Simulate eligibility
   const outstandingAmount = 0;
+  const [certificateNumber, setCertificateNumber] = useState('');
   const navigate = useNavigate();
 
   const handleCheckEligibility = () => {
@@ -272,7 +280,38 @@ export function TaxClearance( { language = 'english' }: TaxClearanceProps ) {
   };
 
   const handleGenerateCertificate = () => {
+    setCertificateNumber(`TCC-2025-${Math.floor(Math.random() * 10000)}`);
     setStep('certificate');
+  };
+
+  const handleDownloadCertificate = () => {
+    downloadCertificatePdf({
+      name: CERTIFICATE_NAME,
+      business: CERTIFICATE_BUSINESS,
+      issueDate: CERTIFICATE_ISSUE_DATE,
+      expiryDate: CERTIFICATE_EXPIRY_DATE,
+    });
+  };
+
+  const handleShareCertificate = async () => {
+    const shareText = `${translations[language].tccTitle} — ${CERTIFICATE_NAME}, ${CERTIFICATE_BUSINESS}. Certificate No: ${certificateNumber}. Valid until ${CERTIFICATE_EXPIRY_DATE}.`;
+
+    if (navigator.share) {
+      try {
+        await navigator.share({ title: translations[language].tccTitle, text: shareText });
+      } catch (err) {
+        // User cancelled the share sheet — not an error.
+      }
+      return;
+    }
+
+    try {
+      await navigator.clipboard.writeText(shareText);
+      toast.success('Certificate details copied to clipboard');
+    } catch (err) {
+      console.error('Failed to copy certificate details:', err);
+      toast.error('Unable to share. Please download the certificate instead.');
+    }
   };
 
   // const { language } = useLanguage();
@@ -472,7 +511,7 @@ export function TaxClearance( { language = 'english' }: TaxClearanceProps ) {
               <div className="border-t border-b border-gray-200 py-4 my-4 space-y-2">
                 <div className="flex justify-between text-sm">
                   <span className="text-gray-600">{translations[language].certificateNo}</span>
-                  <span>TCC-2025-{Math.floor(Math.random() * 10000)}</span>
+                  <span>{certificateNumber}</span>
                 </div>
                 <div className="flex justify-between text-sm">
                   <span className="text-gray-600">{translations[language].tin}</span>
@@ -480,19 +519,19 @@ export function TaxClearance( { language = 'english' }: TaxClearanceProps ) {
                 </div>
                 <div className="flex justify-between text-sm">
                   <span className="text-gray-600">{translations[language].name}</span>
-                  <span>Chukwuma Okafor</span>
+                  <span>{CERTIFICATE_NAME}</span>
                 </div>
                 <div className="flex justify-between text-sm">
                   <span className="text-gray-600">{translations[language].business}</span>
-                  <span>Bukka Restaurant</span>
+                  <span>{CERTIFICATE_BUSINESS}</span>
                 </div>
                 <div className="flex justify-between text-sm">
                   <span className="text-gray-600">{translations[language].issueDate}</span>
-                  <span>Dec 13, 2025</span>
+                  <span>{CERTIFICATE_ISSUE_DATE}</span>
                 </div>
                 <div className="flex justify-between text-sm">
                   <span className="text-gray-600">{translations[language].expiryDate}</span>
-                  <span>Dec 13, 2026</span>
+                  <span>{CERTIFICATE_EXPIRY_DATE}</span>
                 </div>
               </div>
 
@@ -515,11 +554,17 @@ export function TaxClearance( { language = 'english' }: TaxClearanceProps ) {
 
             {/* Action Buttons */}
             <div className="space-y-3">
-              <button className="w-full py-4 bg-emerald-600 text-white rounded-xl hover:bg-emerald-700 shadow-lg transition-all flex items-center justify-center gap-2">
+              <button
+                onClick={handleDownloadCertificate}
+                className="w-full py-4 bg-emerald-600 text-white rounded-xl hover:bg-emerald-700 shadow-lg transition-all flex items-center justify-center gap-2"
+              >
                 <Download className="w-5 h-5" />
                 {translations[language].downloadPDF}
               </button>
-              <button className="w-full py-4 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-all flex items-center justify-center gap-2">
+              <button
+                onClick={handleShareCertificate}
+                className="w-full py-4 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-all flex items-center justify-center gap-2"
+              >
                 <Share2 className="w-5 h-5" />
                 {translations[language].shareCertificate}
               </button>
@@ -604,6 +649,7 @@ export function TaxClearance( { language = 'english' }: TaxClearanceProps ) {
           </motion.div>
         )}
       </AnimatePresence>
+      <ToastContainer />
     </div>
   );
 }

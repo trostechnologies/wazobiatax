@@ -36,6 +36,7 @@ export const addLedgerEntry = async (payload: AddLedgerPayload) => {
   const formData = new FormData();
 
   formData.append('amount', String(payload.amount));
+  formData.append('vat_amount', String(payload.vat_amount));
   formData.append('ledger_type', payload.ledger_type);
   formData.append('date', payload.date);
   formData.append('category', payload.category);

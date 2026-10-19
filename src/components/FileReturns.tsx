@@ -1,6 +1,6 @@
 import { motion, AnimatePresence } from 'motion/react';
 import { ArrowLeft, FileText, DollarSign, Users, TrendingUp, Calculator, Mic, Camera, CheckCircle2, Loader2 } from 'lucide-react';
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useLanguage } from "@/context/LanguageContext";
 import { useNavigate } from 'react-router-dom';
 import { profileTranslations, type LanguageKey } from '../translations/profile';
@@ -209,9 +209,22 @@ export function FileReturns({ language = 'english' }: FilePolicyProps) {
   const [formData, setFormData] = useState({
     income: '250000',
     expenses: '120000',
-    taxableIncome: '130000',
-    taxDue: '13000',
   });
+  const [formError, setFormError] = useState('');
+  const TAX_RATE = 0.1;
+
+  const income = Number(formData.income);
+  const expenses = Number(formData.expenses);
+  const isValidIncome = formData.income.trim() !== '' && !Number.isNaN(income) && income >= 0;
+  const isValidExpenses = formData.expenses.trim() !== '' && !Number.isNaN(expenses) && expenses >= 0;
+
+  const taxableIncome = useMemo(() => {
+    if (!isValidIncome || !isValidExpenses) return 0;
+    return Math.max(0, income - expenses);
+  }, [income, expenses, isValidIncome, isValidExpenses]);
+
+  const taxDue = useMemo(() => Math.round(taxableIncome * TAX_RATE), [taxableIncome]);
+
   // const { language } = useLanguage();
   const t = translations[language];
   const navigate = useNavigate();
@@ -253,10 +266,20 @@ export function FileReturns({ language = 'english' }: FilePolicyProps) {
   };
 
   const handleReview = () => {
+    if (!isValidIncome || !isValidExpenses) {
+      setFormError('Please enter valid, non-negative amounts for total income and total expenses.');
+      return;
+    }
+    setFormError('');
     setStep('review');
   };
 
   const handleSubmit = () => {
+    if (!isValidIncome || !isValidExpenses) {
+      setStep('form');
+      setFormError('Please enter valid, non-negative amounts for total income and total expenses.');
+      return;
+    }
     setIsSubmitting(true);
     setTimeout(() => {
       setIsSubmitting(false);
@@ -391,7 +414,7 @@ export function FileReturns({ language = 'english' }: FilePolicyProps) {
                 <div className="h-px bg-gray-200 my-2" />
                 <div className="flex justify-between text-sm">
                   <span>{translations[language].taxableIncome}</span>
-                  <span>₦{formData.taxableIncome}</span>
+                  <span>₦{taxableIncome.toLocaleString()}</span>
                 </div>
                 <div className="flex justify-between text-sm">
                   <span className="text-gray-600">{translations[language].taxRate}</span>
@@ -400,10 +423,14 @@ export function FileReturns({ language = 'english' }: FilePolicyProps) {
                 <div className="h-px bg-gray-200 my-2" />
                 <div className="flex justify-between">
                   <span>{translations[language].taxDue}</span>
-                  <span className="text-emerald-600">₦{formData.taxDue}</span>
+                  <span className="text-emerald-600">₦{taxDue.toLocaleString()}</span>
                 </div>
               </div>
             </div>
+
+            {formError && (
+              <p className="text-sm text-red-600">{formError}</p>
+            )}
 
             {/* Voice/OCR FABs */}
             <div className="flex gap-3">
@@ -437,7 +464,7 @@ export function FileReturns({ language = 'english' }: FilePolicyProps) {
           >
             <div className="bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-2xl p-6 text-white shadow-2xl">
               <p className="text-emerald-100 text-sm mb-2">{translations[language].totalTaxDue}</p>
-              <p className="text-3xl mb-4">₦{formData.taxDue}</p>
+              <p className="text-3xl mb-4">₦{taxDue.toLocaleString()}</p>
               <div className="flex gap-2">
                 <span className="px-3 py-1 bg-white/20 rounded-full text-xs">
                   {selectedType.toUpperCase()} Return
@@ -459,7 +486,7 @@ export function FileReturns({ language = 'english' }: FilePolicyProps) {
               </div>
               <div className="flex justify-between text-sm">
                 <span className="text-gray-600">{translations[language].taxableIncome}</span>
-                <span>₦{formData.taxableIncome}</span>
+                <span>₦{taxableIncome.toLocaleString()}</span>
               </div>
               <div className="flex justify-between text-sm">
                 <span className="text-gray-600">{translations[language].taxRate}</span>

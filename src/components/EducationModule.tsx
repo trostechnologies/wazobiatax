@@ -1,10 +1,11 @@
 import { motion } from 'motion/react';
-import { ArrowLeft, BookOpen, Video, Lightbulb, Search, ChevronDown, Play, CheckCircle2 } from 'lucide-react';
+import { ArrowLeft, BookOpen, Video, Lightbulb, Search, ChevronDown, Play, CheckCircle2, X } from 'lucide-react';
 import { useState } from 'react';
 import { useLanguage } from "@/context/LanguageContext";
 import { useNavigate } from 'react-router-dom';
 import { profileTranslations, type LanguageKey } from '../translations/profile';
 import { AIChatbot } from './AIChatbot';
+import { educationVideos, type EducationVideo } from '../config/educationVideos';
 
 interface EducationModuleProps {
   language?: LanguageKey;
@@ -594,6 +595,7 @@ const translations = {
 export function EducationModule({ language = 'english' }: EducationModuleProps) {
   const [activeTab, setActiveTab] = useState('guides');
   const [expandedFaq, setExpandedFaq] = useState<number | null>(null);
+  const [playingVideo, setPlayingVideo] = useState<EducationVideo | null>(null);
 
   const faqs = [
     {
@@ -736,32 +738,7 @@ export function EducationModule({ language = 'english' }: EducationModuleProps) 
     },
   ];
 
-  const videos = [
-    {
-      id: 1,
-      titleKey: 'videoTaxObligations',
-      duration: '5:30',
-      thumbnail: '📊',
-      views: '1.2K',
-      completed: false
-    },
-    {
-      id: 2,
-      titleKey: 'videoVatReturns',
-      duration: '8:45',
-      thumbnail: '📝',
-      views: '850',
-      completed: true
-    },
-    {
-      id: 3,
-      titleKey: 'videoTaxExemptions',
-      duration: '6:20',
-      thumbnail: '💡',
-      views: '2.1K',
-      completed: false
-    },
-  ];
+  const videos = educationVideos;
 
   const tips = [
     {
@@ -914,6 +891,7 @@ export function EducationModule({ language = 'english' }: EducationModuleProps) 
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: index * 0.05 }}
+                onClick={() => setPlayingVideo(video)}
                 className="bg-white rounded-xl p-4 border border-gray-200 hover:shadow-md transition-all cursor-pointer"
               >
                 <div className="flex items-center gap-4">
@@ -989,6 +967,47 @@ export function EducationModule({ language = 'english' }: EducationModuleProps) 
           </div>
         )}
       </div>
+
+      {/* Video Player Modal */}
+      {playingVideo && (
+        <div
+          className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center px-4"
+          onClick={() => setPlayingVideo(null)}
+        >
+          <div
+            className="bg-white rounded-2xl w-full max-w-[390px] overflow-hidden"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100">
+              <h3 className="text-sm">{t[playingVideo.titleKey]}</h3>
+              <button
+                onClick={() => setPlayingVideo(null)}
+                className="p-1 hover:bg-gray-100 rounded-lg transition-all"
+              >
+                <X className="w-5 h-5 text-gray-600" />
+              </button>
+            </div>
+
+            {playingVideo.youtubeId ? (
+              <div className="aspect-video bg-black">
+                <iframe
+                  className="w-full h-full"
+                  src={`https://www.youtube-nocookie.com/embed/${playingVideo.youtubeId}?autoplay=1`}
+                  title={t[playingVideo.titleKey]}
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                  allowFullScreen
+                />
+              </div>
+            ) : (
+              <div className="aspect-video bg-gray-50 flex flex-col items-center justify-center text-center px-6">
+                <Video className="w-10 h-10 text-gray-300 mb-3" />
+                <p className="text-sm text-gray-600 mb-1">This video is coming soon</p>
+                <p className="text-xs text-gray-400">We're still preparing this lesson. Please check back later.</p>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
