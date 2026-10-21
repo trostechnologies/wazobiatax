@@ -266,9 +266,9 @@ export function Dashboard({ language = 'english' }: DashboardProps) {
   ];
 
   const upcomingDeadlines = [
-    { id: 1, titleKey: 'vatReturnDue', days: 2, priority: 'high' },
-    { id: 2, titleKey: 'incomeTaxFiling', days: 15, priority: 'medium' },
-    { id: 3, titleKey: 'quarterlyReview', days: 28, priority: 'low' },
+    { id: 1, titleKey: 'vatReturnDue', days: 2, priority: 'high', screen: '/file-returns' },
+    { id: 2, titleKey: 'incomeTaxFiling', days: 15, priority: 'medium', screen: '/file-returns' },
+    { id: 3, titleKey: 'quarterlyReview', days: 28, priority: 'low', screen: '/activity' },
   ];
 
   useEffect(() => {
@@ -597,6 +597,7 @@ export function Dashboard({ language = 'english' }: DashboardProps) {
                   initial={{ opacity: 0, x: -20 }}
                   animate={{ opacity: 1, x: 0 }}
                   transition={{ delay: 0.08 + index * 0.05 }}
+                  onClick={() => navigate('/deadlines')}
                   className={`bg-white rounded-xl p-4 border-l-4 ${item.priority === 'high' ? 'border-red-500' :
                     item.priority === 'medium' ? 'border-amber-500' :
                       'border-blue-500'
@@ -648,6 +649,7 @@ export function Dashboard({ language = 'english' }: DashboardProps) {
                 initial={{ opacity: 0, x: -20 }}
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ delay: 0.1 + index * 0.05 }}
+                onClick={() => navigate(deadline.screen)}
                 className={`bg-white rounded-xl p-4 border-l-4 ${deadline.priority === 'high' ? 'border-red-500' :
                   deadline.priority === 'medium' ? 'border-amber-500' :
                     'border-blue-500'
