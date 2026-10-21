@@ -277,6 +277,7 @@ export function Ledger({ onNavigate, language = "english" }: LedgerProps) {
   const [isOnline, setIsOnline] = useState(() => typeof navigator === "undefined" || navigator.onLine);
   const [searchQuery, setSearchQuery] = useState("");
   const [filterType, setFilterType] = useState("all");
+  const [showFilterMenu, setShowFilterMenu] = useState(false);
   const [amount, setAmount] = useState("");
   const [vatAmount, setVatAmount] = useState("");
   const [category, setCategory] = useState("");
@@ -732,9 +733,38 @@ export function Ledger({ onNavigate, language = "english" }: LedgerProps) {
               className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none text-sm"
             />
           </div>
-          <button className="p-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-all">
-            <Filter className="w-5 h-5 text-gray-600" />
-          </button>
+          <div className="relative">
+            <button
+              onClick={() => setShowFilterMenu((prev) => !prev)}
+              className={`p-2 border rounded-lg transition-all ${showFilterMenu || filterType !== "all"
+                ? "border-emerald-300 bg-emerald-50"
+                : "border-gray-300 hover:bg-gray-50"
+                }`}
+            >
+              <Filter className={`w-5 h-5 ${filterType !== "all" ? "text-emerald-600" : "text-gray-600"}`} />
+            </button>
+            {showFilterMenu && (
+              <div className="absolute right-0 top-full mt-2 w-40 bg-white border border-gray-200 rounded-lg shadow-lg z-20 overflow-hidden">
+                {["all", "income", "expense"].map((type) => (
+                  <button
+                    key={type}
+                    onClick={() => {
+                      setFilterType(type);
+                      setShowFilterMenu(false);
+                    }}
+                    className={`w-full text-left px-4 py-2 text-sm transition-all ${filterType === type ? "bg-emerald-50 text-emerald-600" : "text-gray-700 hover:bg-gray-50"
+                      }`}
+                  >
+                    {
+                      translations[language][
+                      type === "all" ? "filterAll" : type === "income" ? "filterIncome" : "filterExpense"
+                      ]
+                    }
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
           <button
             onClick={() => handleAddClick("manual")}
             className="p-2 border border-emerald-200 bg-emerald-50 rounded-lg hover:bg-emerald-100 transition-all"

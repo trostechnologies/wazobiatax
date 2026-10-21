@@ -16,6 +16,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { profileTranslations, type LanguageKey } from '../translations/profile';
 import { getTransactionHistory, type Transaction } from '../services/subscriptions';
+import { downloadCsv } from '../utils/download';
 
 interface SubscriptionHistoryProps {
     language?: LanguageKey;
@@ -95,10 +96,31 @@ export function SubscriptionHistory({ language = 'english' }: SubscriptionHistor
         }
     };
 
-    const formatDate = (dateString: string) => {
+    const formatDate = (dateString: string | null | undefined) => {
+        if (!dateString) return t.pending;
+
         const date = new Date(dateString);
+        if (Number.isNaN(date.getTime())) return t.pending;
+
         const months = [t.jan, t.feb, t.mar, t.apr, t.may, t.jun, t.jul, t.aug, t.sep, t.oct, t.nov, t.dec];
         return `${months[date.getMonth()]} ${date.getDate()}, ${date.getFullYear()}`;
+    };
+
+    const handleExportHistory = () => {
+        downloadCsv(
+            `wazobiatax-subscription-history-${new Date().toISOString().slice(0, 10)}.csv`,
+            ['Date', 'Amount', 'Status', 'Plan', 'Billing', 'Payment Method', 'Provider', 'Reference'],
+            filteredTransactions.map((tx) => [
+                tx.paid_at ? formatDate(tx.paid_at) : t.pending,
+                tx.amount,
+                tx.status,
+                tx.plan_name,
+                tx.plan_billing_interval,
+                tx.payment_method || '',
+                tx.payment_provider || '',
+                tx.reference,
+            ])
+        );
     };
 
     return (
@@ -315,6 +337,7 @@ export function SubscriptionHistory({ language = 'english' }: SubscriptionHistor
                         initial={{ opacity: 0, y: 20 }}
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ delay: 0.3 }}
+                        onClick={handleExportHistory}
                         className="w-full py-4 bg-white border-2 border-emerald-600 text-emerald-600 rounded-2xl hover:bg-emerald-600 hover:text-white transition-all flex items-center justify-center gap-2 shadow-sm font-bold active:scale-[0.98]"
                         aria-label={t.exportHistory}
                     >

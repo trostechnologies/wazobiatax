@@ -4,6 +4,7 @@ import { useMemo, useState } from 'react';
 import { useLanguage } from "@/context/LanguageContext";
 import { useNavigate } from 'react-router-dom';
 import { profileTranslations, type LanguageKey } from '../translations/profile';
+import { downloadIcsFile } from '../utils/calendar';
 
 interface UpcomingDeadlinesProps {
   language?: LanguageKey;
@@ -235,6 +236,17 @@ export function UpcomingDeadlines( { language = 'english' }: UpcomingDeadlinesPr
     return deadlines;
   }, [activeFilter]);
 
+  const handleSyncToCalendar = () => {
+    downloadIcsFile(
+      'wazobiatax-deadlines.ics',
+      deadlines.map((d) => ({
+        title: t[d.titleKey],
+        description: t[d.descKey],
+        date: new Date(d.date),
+      }))
+    );
+  };
+
   const getPriorityColor = (priority: string) => {
     switch (priority) {
       case 'high': return 'border-red-500 bg-red-50';
@@ -418,7 +430,10 @@ export function UpcomingDeadlines( { language = 'english' }: UpcomingDeadlinesPr
             <p className="text-sm mb-1">{translations[language].syncToCalendar}</p>
             <p className="text-xs text-gray-600">{translations[language].addDeadlinesToCalendar}</p>
           </div>
-          <button className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm hover:bg-blue-700 transition-all">
+          <button
+            onClick={handleSyncToCalendar}
+            className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm hover:bg-blue-700 transition-all"
+          >
             {translations[language].sync}
           </button>
         </div>

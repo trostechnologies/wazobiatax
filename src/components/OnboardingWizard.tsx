@@ -400,7 +400,7 @@ export function OnboardingWizard({ onComplete, onNavigate, initialStep }: Onboar
   const getProgressPercentage = () => {
     const steps = ['language', 'authPath', authType, 'emailVerify', 'subscription', 'payment', 'success'];
     const currentIndex = steps.indexOf(currentStep);
-    return Math.round((currentIndex / (steps.length - 1)) * 100);
+    return Math.max(0, Math.round((currentIndex / (steps.length - 1)) * 100));
   };
 
   const isFormValid =
@@ -447,8 +447,8 @@ export function OnboardingWizard({ onComplete, onNavigate, initialStep }: Onboar
         <div className="w-10" />
       </div>
 
-      {/* Progress Bar */}
-      {currentStep !== 'language' && currentStep !== 'success' && (
+      {/* Progress Bar — not shown on the Login step; logging in isn't part of account setup */}
+      {currentStep !== 'language' && currentStep !== 'success' && currentStep !== 'login' && (
         <div className="px-6 py-4 bg-gray-50 border-b border-gray-200">
           <div className="flex items-center justify-between mb-2">
             <span className="text-xs text-gray-600">{t.common.progress}</span>
