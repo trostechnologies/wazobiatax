@@ -1,9 +1,9 @@
 import { motion } from 'motion/react';
-import { ArrowLeft, Shield, FileText, ChevronRight, Download, Trash2, Clock, Check, X } from 'lucide-react';
+import { ArrowLeft, Shield, FileText, ChevronRight, Download, Trash2, Clock, Check, X, Loader2 } from 'lucide-react';
 import { useState } from 'react';
 import { profileTranslations, type LanguageKey } from '../translations/profile';
 import { useNavigate } from 'react-router-dom';
-import { getUserProfile } from '../services/auth';
+import { getUserProfile, deleteAccount } from '../services/auth';
 import { getLedgerRecords } from '../services/ledger';
 import { downloadJson } from '../utils/download';
 import { ToastContainer, toast } from 'react-toastify';
@@ -18,7 +18,7 @@ export function SecurityAndPrivacy({ language = 'english' }: SecurityAndPrivacyP
   const t = profileTranslations[language].securityPrivacy;
   const [twoFactorEnabled, setTwoFactorEnabled] = useState(false);
   const [isDownloadingData, setIsDownloadingData] = useState(false);
-  const [deleteModalStep, setDeleteModalStep] = useState<'closed' | 'confirm' | 'unavailable'>('closed');
+  const [deleteModalStep, setDeleteModalStep] = useState<'closed' | 'confirm' | 'deleting' | 'success'>('closed');
   const [deleteConfirmText, setDeleteConfirmText] = useState('');
   const navigate = useNavigate();
 
@@ -45,13 +45,30 @@ export function SecurityAndPrivacy({ language = 'english' }: SecurityAndPrivacyP
   };
 
   const handleViewLoginHistory = () => {
-    toast.info("Login history isn't available yet. We're working on bringing this to the app.");
+    navigate('/login-history');
   };
 
-  const handleConfirmDeleteAccount = () => {
+  const handleConfirmDeleteAccount = async () => {
     if (deleteConfirmText.trim().toUpperCase() !== 'DELETE') return;
-    // No backend endpoint exists yet for account deletion — never fake success here.
-    setDeleteModalStep('unavailable');
+    setDeleteModalStep('deleting');
+    try {
+      await deleteAccount();
+      setDeleteModalStep('success');
+    } catch (err: any) {
+      console.error('Account deletion failed:', err);
+      const message =
+        err?.response?.data?.error ||
+        err?.response?.data?.message ||
+        'Unable to delete your account right now. Please try again.';
+      toast.error(message);
+      setDeleteModalStep('confirm');
+    }
+  };
+
+  const handlePostDeleteRedirect = () => {
+    localStorage.removeItem('accessToken');
+    localStorage.removeItem('onboardingComplete');
+    navigate('/login', { replace: true });
   };
 
   const closeDeleteModal = () => {
@@ -264,7 +281,7 @@ export function SecurityAndPrivacy({ language = 'english' }: SecurityAndPrivacyP
                   <button
                     onClick={handleConfirmDeleteAccount}
                     disabled={deleteConfirmText.trim().toUpperCase() !== 'DELETE'}
-                    className="flex-1 py-3 bg-red-600 text-white rounded-xl disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="flex-1 py-3 bg-red-600 text-white rounded-xl disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                   >
                     Delete my account
                   </button>
@@ -272,24 +289,30 @@ export function SecurityAndPrivacy({ language = 'english' }: SecurityAndPrivacyP
               </>
             )}
 
-            {deleteModalStep === 'unavailable' && (
+            {deleteModalStep === 'deleting' && (
+              <div className="flex flex-col items-center py-4">
+                <Loader2 className="w-10 h-10 text-red-500 animate-spin mb-4" />
+                <h3 className="text-lg mb-1">Deleting your account…</h3>
+                <p className="text-sm text-gray-500">Please wait while we process your request.</p>
+              </div>
+            )}
+
+            {deleteModalStep === 'success' && (
               <>
-                <h3 className="text-lg mb-2">Account deletion isn't available yet</h3>
-                <p className="text-sm text-gray-600 mb-4">
-                  We're not able to process account deletion requests in the app just yet. Please contact our
-                  support team and we'll take care of it for you.
-                </p>
-                <a
-                  href={`mailto:${SUPPORT_EMAIL}?subject=Account%20deletion%20request`}
-                  className="block w-full py-3 text-center bg-emerald-600 text-white rounded-xl mb-3"
-                >
-                  Email {SUPPORT_EMAIL}
-                </a>
+                <div className="flex flex-col items-center py-2">
+                  <div className="w-14 h-14 bg-emerald-50 rounded-full flex items-center justify-center mb-4">
+                    <Check className="w-7 h-7 text-emerald-600" />
+                  </div>
+                  <h3 className="text-lg mb-2 text-center">Account deleted</h3>
+                  <p className="text-sm text-gray-600 mb-4 text-center">
+                    Your account and associated data have been deleted. You will now be redirected to the login page.
+                  </p>
+                </div>
                 <button
-                  onClick={closeDeleteModal}
-                  className="w-full py-3 border rounded-xl"
+                  onClick={handlePostDeleteRedirect}
+                  className="w-full py-3 bg-emerald-600 text-white rounded-xl"
                 >
-                  Close
+                  OK
                 </button>
               </>
             )}
