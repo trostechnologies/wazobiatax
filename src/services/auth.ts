@@ -167,3 +167,54 @@ export const resendVerificationEmail = async (email: string) => {
 
   return response.data;
 };
+
+/* =======================
+   LOGIN HISTORY
+======================= */
+
+export interface LoginHistoryEntry {
+  id: string;
+  ip_address: string;
+  user_agent: string;
+  created_at: string;
+}
+
+export const getLoginHistory = async (): Promise<{ login_history: LoginHistoryEntry[] }> => {
+  const token = localStorage.getItem('accessToken');
+
+  if (!token) {
+    throw new Error('No access token found');
+  }
+
+  const response = await api.get<{ login_history: LoginHistoryEntry[] }>(
+    '/api/auth/login-history',
+    {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    }
+  );
+
+  return response.data;
+};
+
+/* =======================
+   DELETE ACCOUNT
+======================= */
+
+export const deleteAccount = async (): Promise<void> => {
+  const token = localStorage.getItem('accessToken');
+
+  if (!token) {
+    throw new Error('No access token found');
+  }
+
+  await api.delete('/api/auth/delete-account', {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+    data: {
+      confirmation: 'DELETE',
+    },
+  });
+};

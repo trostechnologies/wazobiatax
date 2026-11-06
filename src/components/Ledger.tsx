@@ -18,6 +18,7 @@ import {
   Square,
   CameraIcon,
   Calculator,
+  Upload,
 } from "lucide-react";
 import { useEffect, useRef, useState, useMemo } from "react";
 import { useLanguage } from "@/context/LanguageContext";
@@ -86,6 +87,7 @@ const translations = {
     exempt: "No Tax",
 
     salesRevenue: "Sales Money",
+    otherIncome: "Other Money",
     foodSupplies: "Food Stuff",
     equipment: "Equipment",
     serviceIncome: "Service Money",
@@ -131,6 +133,7 @@ const translations = {
     exempt: "Ba a Caji Haraji",
 
     salesRevenue: "Kuɗin Talla",
+    otherIncome: "Sauran Kuɗin Shiga",
     foodSupplies: "Kayan Abinci",
     equipment: "Kayan Aiki",
     serviceIncome: "Kuɗin Sabis",
@@ -177,6 +180,7 @@ const translations = {
     exempt: "Kò Ní Owó-ori",
 
     salesRevenue: "Owó Títà",
+    otherIncome: "Ìní Mìíràn",
     foodSupplies: "Ohun Èlò Oúnjẹ",
     equipment: "Ẹ̀rọ Iṣẹ́",
     serviceIncome: "Owó Iṣẹ́",
@@ -223,6 +227,7 @@ const translations = {
     exempt: "Enweghị Ụtụ",
 
     salesRevenue: "Ego Ahịa",
+    otherIncome: "Ego Mbata Ọzọ",
     foodSupplies: "Ngwa Oriri",
     equipment: "Ngwa Ọrụ",
     serviceIncome: "Ego Ọrụ",
@@ -304,6 +309,72 @@ export function Ledger({ onNavigate, language = "english" }: LedgerProps) {
   >("ready");
   const [isListening, setIsListening] = useState(false);
   const [transcription, setTranscription] = useState("");
+  const recognitionRef = useRef<any>(null);
+  const [voiceSupported, setVoiceSupported] = useState(false);
+
+  // Initialise browser SpeechRecognition once
+  useEffect(() => {
+    const SpeechRecognition =
+      (window as any).SpeechRecognition ||
+      (window as any).webkitSpeechRecognition;
+
+    if (!SpeechRecognition) {
+      setVoiceSupported(false);
+      return;
+    }
+
+    setVoiceSupported(true);
+    const recognition = new SpeechRecognition();
+    recognition.continuous = true;
+    recognition.interimResults = true;
+    recognition.lang = "en-NG"; // Nigerian English for better Naira-context accuracy
+    recognition.maxAlternatives = 1;
+
+    recognition.onresult = (event: any) => {
+      let finalTranscript = "";
+      let interimTranscript = "";
+
+      for (let i = 0; i < event.results.length; i++) {
+        const item = event.results[i];
+        if (item.isFinal) {
+          finalTranscript += item[0].transcript + " ";
+        } else {
+          interimTranscript += item[0].transcript;
+        }
+      }
+
+      const combined = (finalTranscript + interimTranscript).trim();
+      if (combined) {
+        setTranscription(combined);
+      }
+    };
+
+    recognition.onerror = (event: any) => {
+      console.error("Speech recognition error:", event.error);
+      if (event.error === "no-speech") {
+        toast.error(voiceT.noSpeech);
+      } else if (event.error === "not-allowed" || event.error === "service-not-allowed") {
+        toast.error("Microphone access denied. Please allow microphone permissions in your browser settings.");
+      } else if (event.error !== "aborted") {
+        toast.error("Voice recognition error. Please try again.");
+      }
+      setIsListening(false);
+      if (!transcription) {
+        setRecordingStep("ready");
+      }
+    };
+
+    recognition.onend = () => {
+      // When recognition ends naturally (or via stop()), move to processing if we have text
+      setIsListening(false);
+    };
+
+    recognitionRef.current = recognition;
+
+    return () => {
+      try { recognition.abort(); } catch (_) { /* ignore */ }
+    };
+  }, []);
 
   // const { language } = useLanguage();
   // const t = translations[language];
@@ -332,6 +403,7 @@ export function Ledger({ onNavigate, language = "english" }: LedgerProps) {
 
   // Scan Receipt Handlers
   const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const galleryInputRef = useRef<HTMLInputElement | null>(null);
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const [scanError, setScanError] = useState("");
 
@@ -366,18 +438,38 @@ export function Ledger({ onNavigate, language = "english" }: LedgerProps) {
       const result = await extractReceiptDetails(capturedImage);
 
       if (!result.success) {
-        setScanError("We couldn't read the details on this receipt. Please enter them manually below, or retake the photo.");
+        setScanError("We couldn't clearly read all details from this receipt. We've filled in what we could — please review or edit below.");
+      } else {
+        toast.success("Receipt details extracted successfully!");
       }
 
       // Prefill whatever we found — every field stays editable, and the user
-      // must still review and press Save Entry before anything is written.
+      // reviews and confirms before saving
       setEntryType("expense");
-      if (result.amount) setAmount(result.amount);
-      if (result.date) setDate(result.date);
-      if (result.vendor) setDescription(result.vendor);
+      if (result.amount) {
+        setAmount(result.amount);
+      }
+      setDate(result.date || new Date().toISOString().slice(0, 10));
+      setDescription(result.vendor || "Receipt Expense");
+
+      // Auto-detect category from OCR text and vendor name
+      const combined = `${result.vendor || ""} ${result.rawText || ""}`.toLowerCase();
+      if (/food|restaurant|cafe|eatery|supermarket|grocery|groceries|buka|kitchen|chops|bread|drink|provisions|snacks|canteen|market|bakery|fast\s*food/i.test(combined)) {
+        setCategory("food supplies expense");
+      } else if (/fuel|petrol|diesel|filling\s*station|transport|transportation|uber|bolt|taxi|fare|flight|airline|logistics|mechanic|car|vehicle|conoil|totalenergies|oando|nnpc/i.test(combined)) {
+        setCategory("transportation expense");
+      } else if (/computer|laptop|phone|equipment|hardware|office|electronics|gadget|printer|machinery|stationery|paper|desk|chair/i.test(combined)) {
+        setCategory("office equipment");
+      } else {
+        setCategory("food supplies expense");
+      }
     } catch (err) {
       console.error("Receipt OCR failed:", err);
-      setScanError("We couldn't scan this receipt. Please enter the details manually below, or retake the photo.");
+      setScanError("We couldn't scan this receipt photo. Please enter the details manually below, or retake the photo with better lighting.");
+      setEntryType("expense");
+      setDate(new Date().toISOString().slice(0, 10));
+      setCategory("food supplies expense");
+      setDescription("Receipt Expense");
     } finally {
       setIsExtracting(false);
       setScanState("confirm");
@@ -397,41 +489,217 @@ export function Ledger({ onNavigate, language = "english" }: LedgerProps) {
   // (still simulated) transcript and populates the real, shared form state so
   // Save Entry actually has something to save.
   const applyVoiceTranscript = (text: string) => {
-    const amountMatch = text.match(/(\d+(?:,\d{3})*(?:\.\d+)?)/);
-    if (amountMatch) setAmount(amountMatch[1].replace(/,/g, ""));
+    const lower = text.toLowerCase();
 
-    const isIncome = /earned|received|income|sold|sale/i.test(text);
-    setEntryType(isIncome ? "income" : "expense");
+    // ── 1. Extract amount ──
+    // Handles "5000", "5,000", "₦5000", "5k", "10k", "fifty thousand naira", etc.
+    let extractedAmount = "";
 
-    setDescription(text);
+    // Check for "5k", "10.5k" shorthand
+    const kMatch = lower.match(/\b(\d+(?:\.\d+)?)\s*k\b/i);
+    if (kMatch) {
+      extractedAmount = String(Math.round(parseFloat(kMatch[1]) * 1000));
+    }
+
+    if (!extractedAmount) {
+      // Try numeric patterns: ₦5,000.50, $5000, 5000 naira, amount 5000, etc.
+      const numericPatterns = [
+        /[₦$]\s*(\d{1,3}(?:[,]\d{3})*(?:\.\d+)?)/,
+        /(\d{1,3}(?:[,]\d{3})*(?:\.\d+)?)\s*(?:naira|dollars?)/i,
+        /(?:amount|spent|paid|received|earned|got|cost|is)\s+(?:[₦$])?\s*(\d{1,3}(?:[,]\d{3})*(?:\.\d+)?)/i,
+        /(\d{1,3}(?:[,]\d{3})*(?:\.\d+)?)/,
+      ];
+
+      for (const pattern of numericPatterns) {
+        const match = lower.match(pattern);
+        if (match) {
+          extractedAmount = match[1].replace(/,/g, "");
+          break;
+        }
+      }
+    }
+
+    // If no numeric match, try word-based numbers: "five thousand", "twenty thousand"
+    if (!extractedAmount) {
+      const numberWords: Record<string, number> = {
+        one: 1, two: 2, three: 3, four: 4, five: 5,
+        six: 6, seven: 7, eight: 8, nine: 9, ten: 10,
+        eleven: 11, twelve: 12, thirteen: 13, fourteen: 14, fifteen: 15,
+        sixteen: 16, seventeen: 17, eighteen: 18, nineteen: 19,
+        twenty: 20, thirty: 30, forty: 40, fifty: 50,
+        sixty: 60, seventy: 70, eighty: 80, ninety: 90,
+      };
+      const multiplierWords: Record<string, number> = {
+        hundred: 100, thousand: 1000, million: 1000000,
+      };
+
+      const words = lower.split(/[\s-]+/);
+      let total = 0;
+      let current = 0;
+      let foundNumber = false;
+
+      for (const word of words) {
+        if (numberWords[word] !== undefined) {
+          current += numberWords[word];
+          foundNumber = true;
+        } else if (multiplierWords[word] !== undefined) {
+          current = (current || 1) * multiplierWords[word];
+          foundNumber = true;
+          if (multiplierWords[word] >= 1000) {
+            total += current;
+            current = 0;
+          }
+        }
+      }
+      total += current;
+      if (foundNumber && total > 0) {
+        extractedAmount = String(total);
+      }
+    }
+
+    if (extractedAmount) setAmount(extractedAmount);
+
+    // ── 2. Determine income vs expense ──
+    const isIncome = /\b(earned|received|income|sold|sale|sales|revenue|got\s*paid|payment\s*received|credited|turnover)\b/i.test(lower);
+    const isExpense = /\b(spent|paid|bought|purchased|expense|cost|debited|used|transport|rent|bill|fee|subscription|food)\b/i.test(lower);
+
+    let resolvedType: "income" | "expense" = "expense";
+    if (isIncome && !isExpense) {
+      resolvedType = "income";
+    } else if (isExpense) {
+      resolvedType = "expense";
+    }
+    setEntryType(resolvedType);
+
+    // ── 3. Detect category from keywords ──
+    const categoryKeywords: Record<string, { type: "income" | "expense"; value: string }> = {
+      // Income
+      "sales": { type: "income", value: "sales revenue" },
+      "sale": { type: "income", value: "sales revenue" },
+      "sold": { type: "income", value: "sales revenue" },
+      "revenue": { type: "income", value: "sales revenue" },
+      "service": { type: "income", value: "service income" },
+      "services": { type: "income", value: "service income" },
+      "consulting": { type: "income", value: "service income" },
+      "contract": { type: "income", value: "service income" },
+      "freelance": { type: "income", value: "service income" },
+      "grant": { type: "income", value: "other income" },
+      "gift": { type: "income", value: "other income" },
+      "interest": { type: "income", value: "other income" },
+      "bonus": { type: "income", value: "other income" },
+
+      // Expense
+      "food": { type: "expense", value: "food supplies expense" },
+      "supplies": { type: "expense", value: "food supplies expense" },
+      "groceries": { type: "expense", value: "food supplies expense" },
+      "restaurant": { type: "expense", value: "food supplies expense" },
+      "lunch": { type: "expense", value: "food supplies expense" },
+      "dinner": { type: "expense", value: "food supplies expense" },
+      "drink": { type: "expense", value: "food supplies expense" },
+      "drinks": { type: "expense", value: "food supplies expense" },
+      "water": { type: "expense", value: "food supplies expense" },
+      "provisions": { type: "expense", value: "food supplies expense" },
+      "transport": { type: "expense", value: "transportation expense" },
+      "transportation": { type: "expense", value: "transportation expense" },
+      "uber": { type: "expense", value: "transportation expense" },
+      "bolt": { type: "expense", value: "transportation expense" },
+      "taxi": { type: "expense", value: "transportation expense" },
+      "fuel": { type: "expense", value: "transportation expense" },
+      "petrol": { type: "expense", value: "transportation expense" },
+      "diesel": { type: "expense", value: "transportation expense" },
+      "fare": { type: "expense", value: "transportation expense" },
+      "flight": { type: "expense", value: "transportation expense" },
+      "equipment": { type: "expense", value: "office equipment" },
+      "office": { type: "expense", value: "office equipment" },
+      "laptop": { type: "expense", value: "office equipment" },
+      "computer": { type: "expense", value: "office equipment" },
+      "phone": { type: "expense", value: "office equipment" },
+      "printer": { type: "expense", value: "office equipment" },
+      "generator": { type: "expense", value: "office equipment" },
+    };
+
+    let matchedCategory = "";
+    for (const [keyword, catInfo] of Object.entries(categoryKeywords)) {
+      if (new RegExp(`\\b${keyword}\\b`, "i").test(lower)) {
+        matchedCategory = catInfo.value;
+        if (!isIncome && !isExpense) {
+          resolvedType = catInfo.type;
+          setEntryType(catInfo.type);
+        }
+        break;
+      }
+    }
+
+    if (!matchedCategory) {
+      matchedCategory = resolvedType === "income" ? "sales revenue" : "food supplies expense";
+    }
+    setCategory(matchedCategory);
+
+    // ── 4. Clean up description ──
+    let cleanDesc = text
+      .replace(/[₦$]\s*\d[\d,.]*/g, "")
+      .replace(/\b\d{1,3}(?:,\d{3})*(?:\.\d+)?\s*(?:naira|dollars?|k)\b/gi, "")
+      .replace(/\b(?:amount\s+(?:is\s+)?|i\s+(?:spent|paid|received|earned|got)\s*)/gi, "")
+      .replace(/\s{2,}/g, " ")
+      .trim();
+
+    if (cleanDesc) {
+      cleanDesc = cleanDesc.charAt(0).toUpperCase() + cleanDesc.slice(1);
+    }
+
+    setDescription(cleanDesc || text);
     setDate(new Date().toISOString().slice(0, 10));
   };
 
   const handleStartListening = () => {
+    if (!voiceSupported || !recognitionRef.current) {
+      toast.error("Voice recognition is not supported in this browser. Please use Chrome or Edge.");
+      return;
+    }
+
+    setTranscription("");
     setIsListening(true);
     setRecordingStep("listening");
 
-    setTimeout(() => {
-      const transcript = "I spent 5000 naira on food supplies today";
-      setTranscription(transcript);
-      setIsListening(false);
-      setRecordingStep("processing");
-
-      setTimeout(() => {
-        applyVoiceTranscript(transcript);
-        setRecordingStep("review");
-      }, 1500);
-    }, 3000);
+    try {
+      recognitionRef.current.start();
+    } catch (err: any) {
+      // If already started, stop and restart
+      if (err.name === "InvalidStateError") {
+        recognitionRef.current.stop();
+        setTimeout(() => {
+          try {
+            recognitionRef.current.start();
+          } catch (_) {
+            toast.error("Could not start voice recognition. Please try again.");
+            setIsListening(false);
+            setRecordingStep("ready");
+          }
+        }, 200);
+      } else {
+        toast.error("Could not start voice recognition. Please try again.");
+        setIsListening(false);
+        setRecordingStep("ready");
+      }
+    }
   };
 
   const handleStopListening = () => {
     setIsListening(false);
-    if (transcription) {
+
+    if (recognitionRef.current) {
+      try {
+        recognitionRef.current.stop();
+      } catch (_) { /* ignore if not started */ }
+    }
+
+    if (transcription && transcription.trim()) {
       setRecordingStep("processing");
+      // Brief processing delay for UX, then parse
       setTimeout(() => {
-        applyVoiceTranscript(transcription);
+        applyVoiceTranscript(transcription.trim());
         setRecordingStep("review");
-      }, 1500);
+      }, 800);
     } else {
       setRecordingStep("ready");
       toast.error(voiceT.noSpeech);
@@ -475,12 +743,12 @@ export function Ledger({ onNavigate, language = "english" }: LedgerProps) {
     income: [
       { labelKey: "salesRevenue", value: "sales revenue" },
       { labelKey: "serviceIncome", value: "service income" },
+      { labelKey: "otherIncome", value: "other income" },
     ],
     expense: [
-      // { labelKey: 'foodSupplies', value: 'food supplies expense' },
-      // { labelKey: 'equipment', value: 'office equipment' },
-      { labelKey: "otherIncome", value: "other income" },
-      // { labelKey: 'transportation', value: 'transportation expense' },
+      { labelKey: "foodSupplies", value: "food supplies expense" },
+      { labelKey: "equipment", value: "office equipment" },
+      { labelKey: "transportation", value: "transportation expense" },
     ],
   };
 
@@ -720,6 +988,13 @@ export function Ledger({ onNavigate, language = "english" }: LedgerProps) {
           style={{ display: 'none' }} // hidden
           onChange={handleCapture}
         />
+        <input
+          ref={galleryInputRef}
+          type="file"
+          accept="image/*"
+          style={{ display: 'none' }}
+          onChange={handleCapture}
+        />
 
         {/* Search & Filter */}
         <div className="flex gap-2">
@@ -780,7 +1055,7 @@ export function Ledger({ onNavigate, language = "english" }: LedgerProps) {
             <button
               key={type}
               onClick={() => setFilterType(type)}
-              className={`px-4 py-1.5 rounded-full text-sm whitespace-nowrap transition-all ${filterType === type
+              className={`px-4 py-2 rounded-full text-sm whitespace-nowrap transition-all ${filterType === type
                 ? "bg-emerald-600 text-white"
                 : "bg-gray-100 text-gray-600 hover:bg-gray-200"
                 }`}
@@ -847,14 +1122,14 @@ export function Ledger({ onNavigate, language = "english" }: LedgerProps) {
                   </div>
 
                   <div>
-                    <p className="text-sm mb-0.5 capitalize">{entry.category}</p>
+                    <p className="text-sm mb-1 capitalize">{entry.category}</p>
 
                     <p className="text-xs text-gray-500">
                       {new Date(entry.date).toLocaleDateString()}
                     </p>
 
                     {entry.description && (
-                      <p className="text-xs text-gray-400 mt-0.5">
+                      <p className="text-xs text-gray-400 mt-1">
                         {entry.description}
                       </p>
                     )}
@@ -880,7 +1155,7 @@ export function Ledger({ onNavigate, language = "english" }: LedgerProps) {
                         setSelectedLedger(entry);
                         setAddMode("manual"); // reuse manual modal
                       }}
-                      className="p-1.5 rounded-lg hover:bg-gray-100"
+                      className="p-2 rounded-lg hover:bg-gray-100"
                     >
                       <Pencil className="w-4 h-4 text-gray-600" />
                     </button>
@@ -892,7 +1167,7 @@ export function Ledger({ onNavigate, language = "english" }: LedgerProps) {
                         setDeleteId(entry.id);
                         setShowDeleteConfirm(true);
                       }}
-                      className="p-1.5 rounded-lg hover:bg-red-50"
+                      className="p-2 rounded-lg hover:bg-red-50"
                     >
                       <Trash2 className="w-4 h-4 text-red-500" />
                     </button>
@@ -1270,27 +1545,45 @@ export function Ledger({ onNavigate, language = "english" }: LedgerProps) {
               </div>
 
               {scanState === "camera" && (
-                <div className="flex-1 flex flex-col justify-between bg-gradient-to-b from-gray-900 to-gray-800 relative rounded-2xl overflow-hidden">
-                  {/* Overlay gradient for subtle effect */}
-                  <div className="absolute inset-0 bg-black/20 pointer-events-none" />
+                <div className="flex-1 flex flex-col justify-between bg-gradient-to-b from-gray-900 to-gray-800 relative rounded-2xl overflow-hidden p-6">
+                  {/* Viewfinder frame guide */}
+                  <div className="flex-1 flex flex-col items-center justify-center relative">
+                    <div className="w-64 h-72 border-2 border-dashed border-emerald-400/60 rounded-2xl relative flex flex-col items-center justify-center p-4 bg-black/30">
+                      {/* Corner marks */}
+                      <div className="absolute -top-1 -left-1 w-6 h-6 border-t-4 border-l-4 border-emerald-400 rounded-tl-lg" />
+                      <div className="absolute -top-1 -right-1 w-6 h-6 border-t-4 border-r-4 border-emerald-400 rounded-tr-lg" />
+                      <div className="absolute -bottom-1 -left-1 w-6 h-6 border-b-4 border-l-4 border-emerald-400 rounded-bl-lg" />
+                      <div className="absolute -bottom-1 -right-1 w-6 h-6 border-b-4 border-r-4 border-emerald-400 rounded-br-lg" />
 
-                  {/* Camera Preview / Instruction */}
-                  <div className="flex-1 flex flex-col items-center justify-center px-6">
-                    <div className="w-20 h-20 bg-white/10 rounded-full flex items-center justify-center mb-4 animate-pulse">
-                      <Camera className="w-10 h-10 text-white/80" />
+                      <div className="w-16 h-16 bg-white/10 rounded-full flex items-center justify-center mb-3">
+                        <Camera className="w-8 h-8 text-white/90" />
+                      </div>
+                      <p className="text-center text-white text-sm font-medium">
+                        Fit receipt inside this frame
+                      </p>
+                      <p className="text-center text-gray-300 text-xs mt-1">
+                        Good lighting & flat surface give best results
+                      </p>
                     </div>
-                    <p className="text-center text-[#222] text-sm opacity-80">
-                      Point your camera at the receipt to capture details
-                    </p>
                   </div>
 
-                  {/* Capture Button */}
-                  <div className="p-6 flex justify-center">
+                  {/* Action Buttons: Take Photo & Upload */}
+
+                  <div className="flex flex-col gap-3 pt-4">
                     <button
                       onClick={() => fileInputRef.current?.click()}
-                      className="w-20 h-20 cursor-pointer rounded-full bg-emerald-600 shadow-2xl flex items-center justify-center hover:scale-105 active:scale-95 transition-transform duration-200"
+                      className="w-full py-4 bg-emerald-600 hover:bg-emerald-700 active:scale-[0.99] text-white rounded-xl shadow-lg flex items-center justify-center gap-2 font-medium transition-all"
                     >
-                      <Camera className="w-10 h-10 text-white" />
+                      <Camera className="w-5 h-5" />
+                      <span>Take Receipt Photo</span>
+                    </button>
+
+                    <button
+                      onClick={() => galleryInputRef.current?.click()}
+                      className="w-full py-3 bg-slate-700 hover:bg-slate-600 active:scale-[0.99] text-white rounded-xl shadow-md flex items-center justify-center gap-2 text-sm font-medium transition-all border border-slate-500"
+                    >
+                      <Upload className="w-4 h-4" />
+                      <span>Upload from Gallery / Files</span>
                     </button>
                   </div>
                 </div>
@@ -1350,7 +1643,7 @@ export function Ledger({ onNavigate, language = "english" }: LedgerProps) {
 
                   {/* Progress hint */}
                   <div className="mt-6 w-full max-w-xs">
-                    <div className="h-1.5 bg-gray-200 rounded-full overflow-hidden">
+                    <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
                       <div className="h-full w-1/2 bg-emerald-600 animate-pulse rounded-full" />
                     </div>
                   </div>
@@ -1534,18 +1827,38 @@ export function Ledger({ onNavigate, language = "english" }: LedgerProps) {
                             }`}
                         />
                       </div>
+                      {isListening && (
+                        <div className="absolute -inset-2 rounded-full border-2 border-emerald-400 animate-ping opacity-30" />
+                      )}
                     </div>
 
                     <h4 className="text-base font-medium text-gray-900">
                       {isListening ? "Listening…" : "Add ledger with your voice"}
                     </h4>
 
+                    {/* Live transcript preview */}
+                    {isListening && transcription && (
+                      <div className="mt-3 mx-auto max-w-xs bg-gray-50 rounded-xl p-3 border border-gray-200">
+                        <p className="text-sm text-gray-700 italic">"{transcription}"</p>
+                      </div>
+                    )}
+
                     <p className="mt-2 text-sm text-gray-500 max-w-xs mx-auto">
-                      Say something like:
-                      <br />
-                      <span className="italic text-gray-400">
-                        “I spent 5,000 naira on food”
-                      </span>
+                      {isListening ? (
+                        <span className="text-emerald-600 font-medium">Speak now — tap "Stop Listening" when done</span>
+                      ) : !voiceSupported ? (
+                        <span className="text-amber-600">
+                          Voice recognition is not supported in this browser. Please use Chrome or Edge.
+                        </span>
+                      ) : (
+                        <>
+                          Say something like:
+                          <br />
+                          <span className="italic text-gray-400">
+                            “I spent 5,000 naira on food”
+                          </span>
+                        </>
+                      )}
                     </p>
 
                     {/* Action */}
@@ -1553,8 +1866,9 @@ export function Ledger({ onNavigate, language = "english" }: LedgerProps) {
                       onClick={
                         isListening ? handleStopListening : handleStartListening
                       }
+                      disabled={!voiceSupported}
                       className={`mt-8 w-full py-4 rounded-xl text-white transition-all
-              ${isListening ? "bg-red-600" : "bg-emerald-600 hover:bg-emerald-700"}`}
+              ${isListening ? "bg-red-600" : voiceSupported ? "bg-emerald-600 hover:bg-emerald-700" : "bg-gray-400 cursor-not-allowed"}`}
                     >
                       {isListening ? "Stop Listening" : "Start Speaking"}
                     </button>

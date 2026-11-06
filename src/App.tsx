@@ -20,6 +20,7 @@ import { BottomNav } from './components/BottomNav';
 import { PersonalInformation } from './components/PersonalInformation';
 import { LanguageAndVoice } from './components/LanguageAndVoice';
 import { SecurityAndPrivacy } from './components/SecurityAndPrivacy';
+import { LoginHistory } from './components/LoginHistory';
 import { TwoFactorAuth } from './components/TwoFactorAuth';
 import { PrivacyPolicy } from './components/PrivacyPolicy';
 import { ScanReceipt } from './components/ScanReceipt';
@@ -115,6 +116,7 @@ export default function App() {
           <Route path="/personal-information" element={<ProtectedRoute><PersonalInformation language={language as LanguageKey} /></ProtectedRoute>} />
           <Route path="/language-and-voice" element={<ProtectedRoute><LanguageAndVoice language={language as LanguageKey} onLanguageChange={(lang) => setLanguage(lang)} /></ProtectedRoute>} />
           <Route path="/security-and-privacy" element={<ProtectedRoute><SecurityAndPrivacy language={language as LanguageKey} /></ProtectedRoute>} />
+          <Route path="/login-history" element={<ProtectedRoute><LoginHistory language={language as LanguageKey} /></ProtectedRoute>} />
           <Route path="/two-factor-auth" element={<ProtectedRoute><TwoFactorAuth language={language as LanguageKey} /></ProtectedRoute>} />
           <Route path="/privacy-policy" element={<ProtectedRoute><PrivacyPolicy language={language as LanguageKey} /></ProtectedRoute>} />
           <Route path="/scan" element={<ProtectedRoute><ScanReceipt language={language as LanguageKey} /></ProtectedRoute>} />
