@@ -61,8 +61,31 @@ export function LanguageAndVoice({
     toast.success(profileTranslations[langId].languageVoice.languageChanged);
   };
 
+  const VOICE_LANG_MAP: Record<LanguageKey, string> = {
+    english: 'en-NG',
+    pidgin: 'en-NG',
+    hausa: 'ha-NG',
+    yoruba: 'yo-NG',
+    igbo: 'ig-NG',
+  };
+
+  const VOICE_RATE_MAP: Record<typeof voiceSpeed, number> = {
+    slow: 0.75,
+    normal: 1,
+    fast: 1.25,
+  };
+
   const handleTestVoice = () => {
-    toast.info(t.testMessage);
+    if (!('speechSynthesis' in window)) {
+      toast.error('Voice playback is not supported on this device.');
+      return;
+    }
+    window.speechSynthesis.cancel();
+    const utterance = new SpeechSynthesisUtterance(t.testMessage);
+    utterance.lang = VOICE_LANG_MAP[selectedLanguage];
+    utterance.rate = VOICE_RATE_MAP[voiceSpeed];
+    utterance.onerror = () => toast.error('Unable to play voice preview.');
+    window.speechSynthesis.speak(utterance);
   };
 
   return (
