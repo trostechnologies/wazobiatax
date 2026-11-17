@@ -1,11 +1,11 @@
 import { motion, AnimatePresence } from 'motion/react';
-import { ArrowLeft, CreditCard, Building2, QrCode, CheckCircle2, Loader2, Download } from 'lucide-react';
+import { ArrowLeft, CreditCard, Building2 } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { useLanguage } from "@/context/LanguageContext";
 import { useNavigate } from 'react-router-dom';
 import { profileTranslations, type LanguageKey } from '../translations/profile';
 import { getTaxCalculation } from '../services/tax';
-import { downloadReceiptPdf } from '../utils/pdf';
+import { ToastContainer, toast } from 'react-toastify';
 
 interface PayTaxProps {
   language?: LanguageKey;
@@ -194,21 +194,10 @@ const translations = {
 };
 
 export function PayTax( { language = 'english' }: PayTaxProps ) {
-  const [step, setStep] = useState('summary'); // summary, payment, processing, success
-  const [selectedMethod, setSelectedMethod] = useState('');
-  const [isProcessing, setIsProcessing] = useState(false);
-
   const [isLoadingTax, setIsLoadingTax] = useState(true);
   const [taxDue, setTaxDue] = useState(0);
   const penalty = 0;
   const total = taxDue + penalty;
-
-  const [cardNumber, setCardNumber] = useState('');
-  const [expiryDate, setExpiryDate] = useState('');
-  const [cvv, setCvv] = useState('');
-  const [paymentError, setPaymentError] = useState('');
-
-  const [transactionId, setTransactionId] = useState('');
 
   // const { language } = useLanguage();
   const t = translations[language];
@@ -253,47 +242,12 @@ export function PayTax( { language = 'english' }: PayTaxProps ) {
     },
   ];
 
-  const handlePaymentSelect = (methodId: string) => {
-    setSelectedMethod(methodId);
-    setStep('payment');
-  };
-
-  const handlePay = () => {
-    const trimmedCardNumber = cardNumber.replace(/\s/g, '');
-
-    if (!trimmedCardNumber || !expiryDate.trim() || !cvv.trim()) {
-      setPaymentError('Please fill in your card number, expiry date, and CVV.');
-      return;
-    }
-    if (!/^\d{13,19}$/.test(trimmedCardNumber)) {
-      setPaymentError('Please enter a valid card number.');
-      return;
-    }
-    if (!/^\d{2}\/\d{2}$/.test(expiryDate.trim())) {
-      setPaymentError('Please enter the expiry date as MM/YY.');
-      return;
-    }
-    if (!/^\d{3,4}$/.test(cvv.trim())) {
-      setPaymentError('Please enter a valid CVV.');
-      return;
-    }
-
-    setPaymentError('');
-    setIsProcessing(true);
-    setTimeout(() => {
-      setIsProcessing(false);
-      setTransactionId(`TXN-${Math.floor(Math.random() * 100000)}`);
-      setStep('success');
-    }, 2500);
-  };
-
-  const handleDownloadReceipt = () => {
-    downloadReceiptPdf({
-      amountPaid: `₦${total.toLocaleString()}`,
-      transactionId,
-      date: new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }),
-      paymentMethod: paymentMethods.find((m) => m.id === selectedMethod)?.nameKey,
-    });
+  const handlePaymentSelect = () => {
+    // No backend endpoint exists to actually process a tax payment (only
+    // subscription-plan payments are wired to Paystack). Never fake a working
+    // checkout for this — tell the user honestly instead of pretending any of
+    // these methods can take a real payment right now.
+    toast.info('Online tax payment is coming soon. You can still track what you owe here.');
   };
 
   return (
@@ -306,16 +260,7 @@ export function PayTax( { language = 'english' }: PayTaxProps ) {
       {/* Header */}
       <div className="bg-white px-6 py-4 flex items-center gap-4 border-b border-gray-200">
         <button
-          onClick={() => {
-            if (isProcessing) return;
-            if (step === 'payment') {
-              setStep('summary');
-            } else if (step === 'success') {
-              navigate('/dashboard');
-            } else {
-              navigate(-1);
-            }
-          }}
+          onClick={() => navigate(-1)}
           className="p-2 hover:bg-gray-100 rounded-lg transition-all -ml-2"
         >
           <ArrowLeft className="w-6 h-6 text-gray-700" />
@@ -325,8 +270,6 @@ export function PayTax( { language = 'english' }: PayTaxProps ) {
 
       {/* Content */}
       <AnimatePresence mode="wait">
-        {/* Step 1: Summary */}
-        {step === 'summary' && (
           <motion.div
             key="summary"
             initial={{ opacity: 0, x: 20 }}
@@ -368,15 +311,12 @@ export function PayTax( { language = 'english' }: PayTaxProps ) {
               </div>
             </div>
 
-            {/* QR Code for Bank Transfer */}
-            <div className="bg-gray-50 rounded-xl p-6 border border-gray-200 text-center">
-              <QrCode className="w-24 h-24 mx-auto mb-3 text-gray-400" />
-              <p className="text-sm text-gray-600">{translations[language].scanQrCode}</p>
-            </div>
-
-            {/* Payment Methods */}
+            {/* Payment Methods — not wired to a real payment processor yet */}
             <div>
               <h3 className="text-sm mb-3">{translations[language].selectPaymentMethod}</h3>
+              <div className="bg-amber-50 border border-amber-200 rounded-xl p-3 mb-3">
+                <p className="text-xs text-amber-800">Online tax payment is coming soon.</p>
+              </div>
               <div className="space-y-3">
                 {paymentMethods.map((method, index) => (
                   <motion.button
@@ -384,8 +324,8 @@ export function PayTax( { language = 'english' }: PayTaxProps ) {
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: index * 0.1 }}
-                    onClick={() => handlePaymentSelect(method.id)}
-                    className={`w-full p-4 rounded-xl border-2 ${method.color} hover:shadow-lg transition-all text-left`}
+                    onClick={handlePaymentSelect}
+                    className={`w-full p-4 rounded-xl border-2 ${method.color} opacity-60 grayscale hover:shadow-none transition-all text-left cursor-not-allowed`}
                   >
                     <div className="flex items-center gap-4">
                       <div className="w-12 h-12 bg-white rounded-lg flex items-center justify-center">
@@ -402,167 +342,8 @@ export function PayTax( { language = 'english' }: PayTaxProps ) {
               </div>
             </div>
           </motion.div>
-        )}
-
-        {/* Step 2: Payment */}
-        {step === 'payment' && (
-          <motion.div
-            key="payment"
-            initial={{ opacity: 0, x: 20 }}
-            animate={{ opacity: 1, x: 0 }}
-            exit={{ opacity: 0, x: -20 }}
-            className="p-6 space-y-6"
-          >
-            <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-4">
-              <p className="text-sm text-emerald-900">
-              {translations[language].securePayment} {paymentMethods.find(m => m.id === selectedMethod)?.nameKey}
-              </p>
-            </div>
-
-            {/* Payment Form */}
-            <div className="space-y-4">
-              <div>
-                <label className="block mb-2 text-gray-700 text-sm">{translations[language].cardNumber}</label>
-                <input
-                  type="text"
-                  placeholder="1234 5678 9012 3456"
-                  value={cardNumber}
-                  onChange={(e) => setCardNumber(e.target.value)}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none"
-                />
-              </div>
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block mb-2 text-gray-700 text-sm">{translations[language].expiryDate}</label>
-                  <input
-                    type="text"
-                    placeholder="MM/YY"
-                    value={expiryDate}
-                    onChange={(e) => setExpiryDate(e.target.value)}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none"
-                  />
-                </div>
-                <div>
-                  <label className="block mb-2 text-gray-700 text-sm">{translations[language].cvv}</label>
-                  <input
-                    type="text"
-                    placeholder="123"
-                    value={cvv}
-                    onChange={(e) => setCvv(e.target.value)}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none"
-                  />
-                </div>
-              </div>
-              {paymentError && (
-                <p className="text-sm text-red-600">{paymentError}</p>
-              )}
-            </div>
-
-            {/* Amount Summary */}
-            <div className="bg-white rounded-xl p-4 border border-gray-200">
-              <div className="flex justify-between mb-2">
-                <span className="text-gray-600">{translations[language].amountToPay}</span>
-                <span className="text-lg">₦{total.toLocaleString()}</span>
-              </div>
-            </div>
-
-            <button
-              onClick={handlePay}
-              disabled={isProcessing}
-              className="w-full py-4 bg-gradient-to-r from-emerald-600 to-emerald-700 text-white rounded-xl hover:shadow-lg transition-all"
-            >
-              {translations[language].payBtn} ₦{total.toLocaleString()}
-            </button>
-          </motion.div>
-        )}
-
-        {/* Processing */}
-        {isProcessing && (
-          <motion.div
-            key="processing"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            className="flex items-center justify-center py-32"
-          >
-            <div className="text-center">
-              <Loader2 className="w-16 h-16 animate-spin mx-auto mb-4 text-emerald-600" />
-              <p className="text-gray-600">{translations[language].processingPayment}</p>
-            </div>
-          </motion.div>
-        )}
-
-        {/* Step 3: Success */}
-        {step === 'success' && (
-          <motion.div
-            key="success"
-            initial={{ opacity: 0, scale: 0.9 }}
-            animate={{ opacity: 1, scale: 1 }}
-            className="p-6 text-center py-12"
-          >
-            {/* Confetti */}
-            <div className="absolute inset-0 pointer-events-none overflow-hidden">
-              {[...Array(20)].map((_, i) => (
-                <motion.div
-                  key={i}
-                  initial={{ y: -100, x: Math.random() * 390, opacity: 1 }}
-                  animate={{ y: 900, opacity: 0 }}
-                  transition={{ duration: 2, delay: i * 0.05 }}
-                  className="absolute w-2 h-2 bg-emerald-500 rounded-full"
-                />
-              ))}
-            </div>
-
-            <motion.div
-              initial={{ scale: 0 }}
-              animate={{ scale: 1 }}
-              transition={{ type: "spring", duration: 0.5 }}
-              className="w-24 h-24 bg-emerald-100 rounded-full flex items-center justify-center mx-auto mb-6"
-            >
-              <CheckCircle2 className="w-12 h-12 text-emerald-600" />
-            </motion.div>
-
-            <h2 className="text-2xl mb-2">{translations[language].paymentSuccessful}</h2>
-            <p className="text-gray-600 mb-8">{translations[language].paymentProcessed}</p>
-
-            <div className="bg-white rounded-xl p-4 border border-gray-200 mb-6 text-left space-y-3">
-              <div className="flex justify-between text-sm">
-                <span className="text-gray-600">{translations[language].amountPaid}</span>
-                <span>₦{total.toLocaleString()}</span>
-              </div>
-              <div className="flex justify-between text-sm">
-                <span className="text-gray-600">{translations[language].transactionId}</span>
-                <span>{transactionId}</span>
-              </div>
-              <div className="flex justify-between text-sm">
-                <span className="text-gray-600">{translations[language].date}</span>
-                <span>{new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}</span>
-              </div>
-            </div>
-
-            <div className="space-y-3">
-              <button
-                onClick={handleDownloadReceipt}
-                className="w-full py-4 bg-emerald-600 text-white rounded-xl hover:bg-emerald-700 shadow-lg transition-all flex items-center justify-center gap-2"
-              >
-                <Download className="w-5 h-5" />
-                {translations[language].downloadReceipt}
-              </button>
-              <button
-                onClick={() => navigate('/dashboard')}
-                className="w-full py-4 bg-gray-100 text-gray-700 rounded-xl hover:bg-gray-200 transition-all"
-              >
-                {translations[language].backToDashboard}
-              </button>
-            </div>
-
-            <div className="mt-6 p-4 bg-blue-50 border border-blue-200 rounded-xl">
-              <p className="text-sm text-blue-900">
-                {translations[language].ledgerUpdated}
-              </p>
-            </div>
-          </motion.div>
-        )}
       </AnimatePresence>
+      <ToastContainer />
     </div>
   );
 }
