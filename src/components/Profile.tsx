@@ -169,9 +169,12 @@ export function Profile({ language = 'english' }: ProfileProps) {
 
 
 
-  // Subscription data
+  // Subscription data — `trial.is_trial` is the real signal for a trial; a missing
+  // plan name alone is not proof of one (e.g. a past_due paid plan).
+  const isTrial = userSubscription?.trial?.is_trial === true;
   const subscriptionStatus = userSubscription?.plan?.name?.toLowerCase().includes('premium') ? 'premium' :
-    userSubscription?.plan?.name?.toLowerCase().includes('basic') ? 'basic' : 'trial';
+    userSubscription?.plan?.name?.toLowerCase().includes('basic') ? 'basic' :
+      isTrial ? 'trial' : 'basic';
 
   const subscriptionLabels: Record<Subscription, string> = {
     basic: 'Basic',
@@ -180,11 +183,7 @@ export function Profile({ language = 'english' }: ProfileProps) {
   };
 
   const subscriptionType = subscriptionLabels[subscriptionStatus];
-
-  const subscriptionRenewalDate = 'March 15, 2026';
-  const subscriptionExpiryDate = 'March 10, 2026'; // For trial
-
-  const isTrial = subscriptionStatus === 'trial';
+  const isPastDue = userSubscription?.subscription?.status === 'past_due';
 
   const handleCopyTIN = () => {
     setCopied(true);
@@ -462,15 +461,22 @@ export function Profile({ language = 'english' }: ProfileProps) {
                       <Calendar className="w-4 h-4 text-gray-400" />
                       <div>
                         <p className="text-xs text-gray-600">
-                          {isTrial ? sub.trialExpires : sub.nextRenewal}
+                          {isPastDue ? 'Payment status' : isTrial ? sub.trialExpires : sub.nextRenewal}
                         </p>
                         <p className="text-sm mt-0.5">
-                          {userSubscription?.billing?.next_billing_date
-                            ? new Date(userSubscription.billing.next_billing_date || "").toLocaleDateString(
-                              "en-US",
-                              { year: "numeric", month: "long", day: "numeric" }
-                            )
-                            : "April 15, 2026"}
+                          {isPastDue
+                            ? 'Past due — please update your payment method'
+                            : isTrial && userSubscription?.trial?.trial_end
+                              ? new Date(userSubscription.trial.trial_end).toLocaleDateString(
+                                "en-US",
+                                { year: "numeric", month: "long", day: "numeric" }
+                              )
+                              : userSubscription?.billing?.next_billing_date
+                                ? new Date(userSubscription.billing.next_billing_date).toLocaleDateString(
+                                  "en-US",
+                                  { year: "numeric", month: "long", day: "numeric" }
+                                )
+                                : 'Not available'}
                         </p>
                       </div>
                     </div>
