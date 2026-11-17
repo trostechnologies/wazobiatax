@@ -130,7 +130,7 @@ export function SecurityAndPrivacy({ language = 'english' }: SecurityAndPrivacyP
       </div>
 
       {/* Header */}
-      <div className="bg-gradient-to-br from-emerald-500 to-emerald-600 px-6 pt-6 pb-8">
+      <div className="bg-gradient-to-br from-emerald-500 to-emerald-600 px-6 pt-6 pb-12">
         <div className="flex items-center justify-between mb-6">
           <button
             onClick={() => navigate('/profile')}
@@ -144,7 +144,7 @@ export function SecurityAndPrivacy({ language = 'english' }: SecurityAndPrivacyP
       </div>
 
       {/* Content */}
-      <div className="px-6 -mt-4 space-y-6">
+      <div className="px-6 -mt-4 space-y-6 pt-2">
         {/* Security Options */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -155,7 +155,7 @@ export function SecurityAndPrivacy({ language = 'english' }: SecurityAndPrivacyP
             <button
               key={option.id}
               onClick={option.onClick}
-              className={`w-full px-6 py-5 flex items-start gap-4 transition-all ${
+              className={`w-full px-6 py-6 flex items-start gap-4 transition-all ${
                 option.comingSoon ? 'opacity-60 grayscale cursor-not-allowed' : 'hover:bg-gray-50'
               } ${
                 index !== securityOptions.length - 1 ? 'border-b border-gray-100' : ''
@@ -164,10 +164,10 @@ export function SecurityAndPrivacy({ language = 'english' }: SecurityAndPrivacyP
               <div className="w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0 bg-gray-100">
                 <option.icon className="w-6 h-6 text-gray-600" />
               </div>
-              <div className="flex-1 text-left">
-                <h3 className="text-sm mb-1">{option.title}</h3>
-                <p className="text-xs text-gray-500 mb-2">{option.description}</p>
-                <div className={`flex items-center gap-1 text-sm ${option.comingSoon ? 'text-gray-500' : 'text-emerald-600'}`}>
+              <div className="flex-1 text-left space-y-1.5">
+                <h3 className="text-sm">{option.title}</h3>
+                <p className="text-xs text-gray-500 leading-relaxed">{option.description}</p>
+                <div className={`flex items-center gap-1 text-sm pt-0.5 ${option.comingSoon ? 'text-gray-500' : 'text-emerald-600'}`}>
                   <span>{option.action}</span>
                   <ChevronRight className="w-4 h-4" />
                 </div>
@@ -191,17 +191,17 @@ export function SecurityAndPrivacy({ language = 'english' }: SecurityAndPrivacyP
               key={option.id}
               onClick={option.onClick}
               disabled={option.disabled}
-              className={`w-full px-6 py-5 flex items-start gap-4 hover:bg-gray-50 transition-all disabled:opacity-60 disabled:cursor-wait ${
+              className={`w-full px-6 py-6 flex items-start gap-4 hover:bg-gray-50 transition-all disabled:opacity-60 disabled:cursor-wait ${
                 index !== dataOptions.length - 1 ? 'border-b border-gray-100' : ''
               }`}
             >
               <div className="w-12 h-12 bg-gray-100 rounded-xl flex items-center justify-center flex-shrink-0">
                 <option.icon className="w-6 h-6 text-gray-600" />
               </div>
-              <div className="flex-1 text-left">
-                <h3 className="text-sm mb-1">{option.title}</h3>
-                <p className="text-xs text-gray-500 mb-2">{option.description}</p>
-                <div className="flex items-center gap-1 text-emerald-600 text-sm">
+              <div className="flex-1 text-left space-y-1.5">
+                <h3 className="text-sm">{option.title}</h3>
+                <p className="text-xs text-gray-500 leading-relaxed">{option.description}</p>
+                <div className="flex items-center gap-1 text-emerald-600 text-sm pt-0.5">
                   <span>{option.action}</span>
                   <ChevronRight className="w-4 h-4" />
                 </div>
@@ -219,15 +219,15 @@ export function SecurityAndPrivacy({ language = 'english' }: SecurityAndPrivacyP
         >
           <button
             onClick={() => setDeleteModalStep('confirm')}
-            className="w-full px-6 py-5 flex items-start gap-4 hover:bg-red-50 transition-all"
+            className="w-full px-6 py-6 flex items-start gap-4 hover:bg-red-50 transition-all"
           >
             <div className="w-12 h-12 bg-red-50 rounded-xl flex items-center justify-center flex-shrink-0">
               <Trash2 className="w-6 h-6 text-red-600" />
             </div>
-            <div className="flex-1 text-left">
-              <h3 className="text-sm text-red-600 mb-1">{t.deleteAccount}</h3>
-              <p className="text-xs text-gray-500 mb-2">{t.deleteAccountDesc}</p>
-              <div className="flex items-center gap-1 text-red-600 text-sm">
+            <div className="flex-1 text-left space-y-1.5">
+              <h3 className="text-sm text-red-600">{t.deleteAccount}</h3>
+              <p className="text-xs text-gray-500 leading-relaxed">{t.deleteAccountDesc}</p>
+              <div className="flex items-center gap-1 text-red-600 text-sm pt-0.5">
                 <span>{t.deleteButton}</span>
                 <ChevronRight className="w-4 h-4" />
               </div>
