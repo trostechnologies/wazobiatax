@@ -832,7 +832,15 @@ export function Ledger({ onNavigate, language = "english" }: LedgerProps) {
       setDate("");
     } catch (error: any) {
       console.error(error);
-      toast.error(error?.response?.data?.message || "Update failed");
+      const updateData = error?.response?.data;
+      const updateMessage =
+        updateData?.message ||
+        updateData?.error ||
+        (Array.isArray(updateData?.errors)
+          ? updateData.errors.map((e: any) => e?.msg || e?.message || e).join(', ')
+          : null) ||
+        "Update failed";
+      toast.error(updateMessage);
     } finally {
       setIsProcessing(false);
     }
@@ -908,8 +916,14 @@ export function Ledger({ onNavigate, language = "english" }: LedgerProps) {
     } catch (error: any) {
       console.error(error);
 
+      const data = error?.response?.data;
       const message =
-        error?.response?.data?.message || "Failed to add ledger entry";
+        data?.message ||
+        data?.error ||
+        (Array.isArray(data?.errors)
+          ? data.errors.map((e: any) => e?.msg || e?.message || e).join(', ')
+          : null) ||
+        "Failed to add ledger entry";
 
       toast.error(message);
     } finally {
