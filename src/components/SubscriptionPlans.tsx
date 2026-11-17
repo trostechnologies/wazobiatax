@@ -137,7 +137,17 @@ export const SubscriptionPlans: React.FC<SubscriptionPlansProps> = ({ language =
         } catch (err: any) {
             console.error('Subscription error:', err);
             const rawMessage = err.response?.data?.error || err.message;
-            setError(friendlySubscriptionError(rawMessage, 'Failed to process request. Please check your connection.'));
+
+            // The backend can reject a plan change on a past_due subscription with
+            // "No active subscription found", which contradicts what Home/Settings show
+            // for the same account (has_subscription: true, status: past_due). Give the
+            // user the real, non-contradictory explanation instead of the confusing
+            // backend wording.
+            if (userSubscription?.subscription?.status === 'past_due' && /no active subscription/i.test(rawMessage || '')) {
+                setError('Your subscription payment is past due. Please update your payment method before changing plans.');
+            } else {
+                setError(friendlySubscriptionError(rawMessage, 'Failed to process request. Please check your connection.'));
+            }
         } finally {
             setSubscribing(null);
         }
