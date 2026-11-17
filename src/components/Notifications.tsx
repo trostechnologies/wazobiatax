@@ -5,6 +5,7 @@ import { useNavigate } from 'react-router-dom';
 import { type LanguageKey } from '../translations/profile';
 import { getNotifications, type Notification } from '../services/notifications';
 import { getNotificationPreferences, saveNotificationPreferences, type NotificationPreferences } from '../utils/notificationPreferences';
+import { applyLocalReadState, markLocallyRead } from '../utils/notificationReadState';
 
 interface NotificationsProps {
   language?: LanguageKey;
@@ -148,7 +149,7 @@ export function Notifications({ language = 'english' }: NotificationsProps) {
     setError(null);
     try {
       const data = await getNotifications();
-      setNotifications(data.notifications);
+      setNotifications(applyLocalReadState(data.notifications));
     } catch (err) {
       console.error('Failed to fetch notifications:', err);
       setError(t.errorLoading);
@@ -162,7 +163,20 @@ export function Notifications({ language = 'english' }: NotificationsProps) {
   }, []);
 
   const handleMarkAllRead = () => {
+    markLocallyRead(notifications.map((n) => n.id));
     setNotifications(notifications.map(n => ({ ...n, is_read: true })));
+  };
+
+  const handleOpenNotification = (notification: Notification) => {
+    if (!notification.is_read) {
+      markLocallyRead([notification.id]);
+      setNotifications((prev) =>
+        prev.map((n) => (n.id === notification.id ? { ...n, is_read: true } : n))
+      );
+    }
+    if (notification.action_url) {
+      navigate(notification.action_url);
+    }
   };
 
   const getIcon = (type: string) => {
@@ -284,7 +298,7 @@ export function Notifications({ language = 'english' }: NotificationsProps) {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: index * 0.05 }}
-              onClick={() => notification.action_url ? navigate(notification.action_url) : undefined}
+              onClick={() => handleOpenNotification(notification)}
               className={`w-full p-4 rounded-xl transition-all text-left ${notification.is_read
                 ? 'bg-white border border-gray-200 hover:shadow-md'
                 : 'bg-white border-2 border-emerald-200 shadow-md hover:shadow-lg'

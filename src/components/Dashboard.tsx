@@ -30,6 +30,7 @@ import { useLanguage } from "@/context/LanguageContext";
 import { getPlans, Plan, getUserSubscription, UserSubscriptionResponse } from '../services/subscriptions';
 import { getComplianceDashboard, ComplianceDashboardResponse } from '../services/compliance';
 import { getNotifications } from '../services/notifications';
+import { applyLocalReadState } from '../utils/notificationReadState';
 import { getLedgerRecords } from '../services/ledger';
 import { profileTranslations, type LanguageKey } from '../translations/profile';
 
@@ -328,7 +329,8 @@ export function Dashboard({ language = 'english' }: DashboardProps) {
     const fetchNotificationCount = async () => {
       try {
         const data = await getNotifications();
-        setNotificationCount(data.unread_count);
+        const withLocalReadState = applyLocalReadState(data.notifications);
+        setNotificationCount(withLocalReadState.filter((n) => !n.is_read).length);
       } catch (err) {
         console.error('Failed to fetch notification count:', err);
       }
