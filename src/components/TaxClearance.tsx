@@ -6,6 +6,10 @@ import { useNavigate } from 'react-router-dom';
 import { profileTranslations, type LanguageKey } from '../translations/profile';
 import { downloadCertificatePdf } from '../utils/pdf';
 import { ToastContainer, toast } from 'react-toastify';
+import { getTaxCalculation } from '../services/tax';
+import { getComplianceDashboard } from '../services/compliance';
+import { getUserProfile } from '../services/auth';
+import { generateQrDataUrl } from '../utils/qrcode';
 
 interface TaxClearanceProps {
   language?: LanguageKey;
@@ -254,33 +258,72 @@ const translations = {
   },
 };
 
-const CERTIFICATE_NAME = 'Chukwuma Okafor';
-const CERTIFICATE_BUSINESS = 'Bukka Restaurant';
-const CERTIFICATE_ISSUE_DATE = 'Dec 13, 2025';
-const CERTIFICATE_EXPIRY_DATE = 'Dec 13, 2026';
-
 export function TaxClearance( { language = 'english' }: TaxClearanceProps ) {
   const [step, setStep] = useState('check'); // check, eligible, certificate, ineligible
   const [isChecking, setIsChecking] = useState(false);
-  const [isEligible] = useState(true); // Simulate eligibility
-  const outstandingAmount = 0;
+  const [outstandingAmount, setOutstandingAmount] = useState(0);
+  const [returnsFiling, setReturnsFiling] = useState<{ score: number; max_score: number } | null>(null);
+  const [needsAttention, setNeedsAttention] = useState(false);
   const [certificateNumber, setCertificateNumber] = useState('');
+  const [certificateQr, setCertificateQr] = useState('');
+  const [profile, setProfile] = useState<{ name: string; business: string; tin: string } | null>(null);
+  const [issueDate, setIssueDate] = useState('');
+  const [expiryDate, setExpiryDate] = useState('');
   const navigate = useNavigate();
 
-  const handleCheckEligibility = () => {
+  const isEligible = outstandingAmount <= 0 && !needsAttention;
+  const CERTIFICATE_NAME = profile?.name || '';
+  const CERTIFICATE_BUSINESS = profile?.business || '—';
+  const CERTIFICATE_ISSUE_DATE = issueDate;
+  const CERTIFICATE_EXPIRY_DATE = expiryDate;
+
+  const handleCheckEligibility = async () => {
     setIsChecking(true);
-    setTimeout(() => {
+    try {
+      const [taxRes, complianceRes, profileRes] = await Promise.all([
+        getTaxCalculation(),
+        getComplianceDashboard(),
+        getUserProfile(),
+      ]);
+
+      setOutstandingAmount(Math.max(0, taxRes.data.net_vat));
+      setReturnsFiling(complianceRes.breakdown.returns_filing);
+      setNeedsAttention(complianceRes.needs_attention);
+      setProfile({
+        name: `${profileRes.data.first_name || ''} ${profileRes.data.last_name || ''}`.trim(),
+        business: profileRes.data.business_name || '—',
+        tin: profileRes.data.tax_identification_number || '—',
+      });
+
+      const outstanding = Math.max(0, taxRes.data.net_vat);
+      setStep(outstanding <= 0 && !complianceRes.needs_attention ? 'eligible' : 'ineligible');
+    } catch (err) {
+      console.error('Failed to check tax clearance eligibility:', err);
+      toast.error('Unable to check your eligibility right now. Please try again.');
+    } finally {
       setIsChecking(false);
-      if (isEligible) {
-        setStep('eligible');
-      } else {
-        setStep('ineligible');
-      }
-    }, 2000);
+    }
   };
 
-  const handleGenerateCertificate = () => {
-    setCertificateNumber(`TCC-2025-${Math.floor(Math.random() * 10000)}`);
+  const handleGenerateCertificate = async () => {
+    const certNumber = `TCC-${new Date().getFullYear()}-${Math.floor(Math.random() * 10000)}`;
+    const issued = new Date();
+    const expires = new Date(issued);
+    expires.setMonth(expires.getMonth() + 12);
+
+    setCertificateNumber(certNumber);
+    setIssueDate(issued.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }));
+    setExpiryDate(expires.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }));
+
+    try {
+      const qr = await generateQrDataUrl(
+        `WazobiaTax Tax Clearance Certificate\nCertificate No: ${certNumber}\nTIN: ${profile?.tin}\nName: ${profile?.name}`
+      );
+      setCertificateQr(qr);
+    } catch (err) {
+      console.error('Failed to generate verification QR code:', err);
+    }
+
     setStep('certificate');
   };
 
@@ -446,11 +489,13 @@ export function TaxClearance( { language = 'english' }: TaxClearanceProps ) {
               <div className="space-y-2">
                 <div className="flex justify-between text-sm">
                   <span className="text-gray-700">{translations[language].outstandingTax}</span>
-                  <span className="text-emerald-600">₦0</span>
+                  <span className="text-emerald-600">₦{outstandingAmount.toLocaleString()}</span>
                 </div>
                 <div className="flex justify-between text-sm">
                   <span className="text-gray-700">{translations[language].pendingReturns}</span>
-                  <span className="text-emerald-600">0</span>
+                  <span className="text-emerald-600">
+                    {returnsFiling ? `${returnsFiling.score}/${returnsFiling.max_score}` : '—'}
+                  </span>
                 </div>
                 <div className="flex justify-between text-sm">
                   <span className="text-gray-700">{translations[language].complianceScore}</span>
@@ -515,7 +560,7 @@ export function TaxClearance( { language = 'english' }: TaxClearanceProps ) {
                 </div>
                 <div className="flex justify-between text-sm">
                   <span className="text-gray-600">{translations[language].tin}</span>
-                  <span>123456789-0001</span>
+                  <span>{profile?.tin || '—'}</span>
                 </div>
                 <div className="flex justify-between text-sm">
                   <span className="text-gray-600">{translations[language].name}</span>
@@ -535,11 +580,15 @@ export function TaxClearance( { language = 'english' }: TaxClearanceProps ) {
                 </div>
               </div>
 
-              {/* QR Code Placeholder */}
+              {/* Verification QR Code */}
               <div className="flex justify-center">
-                <div className="w-32 h-32 bg-gray-100 rounded-lg flex items-center justify-center">
-                  <div className="text-4xl">📱</div>
-                </div>
+                {certificateQr ? (
+                  <img src={certificateQr} alt="Verification QR code" className="w-32 h-32 rounded-lg" />
+                ) : (
+                  <div className="w-32 h-32 bg-gray-100 rounded-lg flex items-center justify-center">
+                    <Loader2 className="w-6 h-6 text-gray-400 animate-spin" />
+                  </div>
+                )}
               </div>
               <p className="text-xs text-center text-gray-600 mt-2">
                 {translations[language].scanVerify}
@@ -609,7 +658,9 @@ export function TaxClearance( { language = 'english' }: TaxClearanceProps ) {
                 </div>
                 <div className="flex justify-between text-sm">
                   <span className="text-gray-700">{translations[language].pendingReturns}</span>
-                  <span className="text-red-600">2</span>
+                  <span className="text-red-600">
+                    {returnsFiling ? `${returnsFiling.score}/${returnsFiling.max_score}` : '—'}
+                  </span>
                 </div>
               </div>
             </div>

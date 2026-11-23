@@ -52,11 +52,9 @@ export function PersonalInformation({ language = 'english' }: PersonalInformatio
           phone: data?.phone_number || "",
           taxId: data?.tax_identification_number || "",
           businessName: data?.business_name || '—',
-          accountCreated: new Date().toLocaleDateString('en-NG', {
-            year: 'numeric',
-            month: 'long',
-            day: 'numeric',
-          }), // until backend sends created_at
+          // The user profile API does not return a creation date, so we show an
+          // honest "not available" state instead of fabricating one.
+          accountCreated: '',
         });
 
         console.log('user data', data);
@@ -145,7 +143,7 @@ export function PersonalInformation({ language = 'english' }: PersonalInformatio
     {
       icon: Calendar,
       label: t.accountCreated,
-      value: userData.accountCreated,
+      value: userData.accountCreated || t.notProvided,
       field: 'accountCreated',
       editable: false
     }

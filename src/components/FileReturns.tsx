@@ -1,9 +1,11 @@
 import { motion, AnimatePresence } from 'motion/react';
-import { ArrowLeft, FileText, DollarSign, Users, TrendingUp, Calculator, Mic, Camera, CheckCircle2, Loader2 } from 'lucide-react';
-import { useMemo, useState } from 'react';
+import { ArrowLeft, FileText, DollarSign, Users, TrendingUp, Calculator, Mic, Camera } from 'lucide-react';
+import { useEffect, useMemo, useState } from 'react';
 import { useLanguage } from "@/context/LanguageContext";
 import { useNavigate } from 'react-router-dom';
 import { profileTranslations, type LanguageKey } from '../translations/profile';
+import { getLedgerRecords } from '../services/ledger';
+import { ToastContainer, toast } from 'react-toastify';
 
 interface FilePolicyProps {
   language?: LanguageKey;
@@ -203,15 +205,41 @@ const translations = {
 };
 
 export function FileReturns({ language = 'english' }: FilePolicyProps) {
-  const [step, setStep] = useState('select'); // select, form, review, success
+  const [step, setStep] = useState('select'); // select, form, review
+  const currentYear = new Date().getFullYear();
   const [selectedType, setSelectedType] = useState('');
-  const [isSubmitting, setIsSubmitting] = useState(false);
   const [formData, setFormData] = useState({
-    income: '250000',
-    expenses: '120000',
+    income: '',
+    expenses: '',
   });
+  const [isLoadingLedger, setIsLoadingLedger] = useState(true);
   const [formError, setFormError] = useState('');
   const TAX_RATE = 0.1;
+
+  useEffect(() => {
+    const fetchLedgerTotals = async () => {
+      try {
+        const res = await getLedgerRecords();
+        const records = (res.data || []) as any[];
+        let totalIncome = 0;
+        let totalExpenses = 0;
+        for (const entry of records) {
+          const type = (entry.ledger_type || entry.type || '').toLowerCase();
+          const amount = Number(entry.amount) || 0;
+          if (type === 'income') totalIncome += amount;
+          else if (type === 'expense') totalExpenses += amount;
+        }
+        setFormData({ income: String(totalIncome), expenses: String(totalExpenses) });
+      } catch (err) {
+        console.error('Failed to load ledger totals:', err);
+        setFormData({ income: '0', expenses: '0' });
+      } finally {
+        setIsLoadingLedger(false);
+      }
+    };
+
+    fetchLedgerTotals();
+  }, []);
 
   const income = Number(formData.income);
   const expenses = Number(formData.expenses);
@@ -275,16 +303,7 @@ export function FileReturns({ language = 'english' }: FilePolicyProps) {
   };
 
   const handleSubmit = () => {
-    if (!isValidIncome || !isValidExpenses) {
-      setStep('form');
-      setFormError('Please enter valid, non-negative amounts for total income and total expenses.');
-      return;
-    }
-    setIsSubmitting(true);
-    setTimeout(() => {
-      setIsSubmitting(false);
-      setStep('success');
-    }, 2000);
+    toast.info('Submitting returns to FIRS is coming soon. Your tax calculation above is accurate and based on your real ledger data.');
   };
 
   return (
@@ -302,8 +321,6 @@ export function FileReturns({ language = 'english' }: FilePolicyProps) {
               setStep('select');
             } else if (step === 'review') {
               setStep('form');
-            } else if (step === 'success') {
-              navigate('/dashboard');
             } else {
               navigate(-1);
             }
@@ -367,7 +384,7 @@ export function FileReturns({ language = 'english' }: FilePolicyProps) {
           >
             <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-4">
               <p className="text-sm text-emerald-900">
-                {translations[language].ledgerAutoFillHint}
+                {isLoadingLedger ? 'Loading your ledger totals…' : translations[language].ledgerAutoFillHint}
               </p>
             </div>
 
@@ -380,7 +397,8 @@ export function FileReturns({ language = 'english' }: FilePolicyProps) {
                   type="text"
                   value={formData.income}
                   onChange={(e) => setFormData({ ...formData, income: e.target.value })}
-                  className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none"
+                  disabled={isLoadingLedger}
+                  className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none disabled:bg-gray-50 disabled:text-gray-400"
                 />
               </div>
             </div>
@@ -394,7 +412,8 @@ export function FileReturns({ language = 'english' }: FilePolicyProps) {
                   type="text"
                   value={formData.expenses}
                   onChange={(e) => setFormData({ ...formData, expenses: e.target.value })}
-                  className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none"
+                  disabled={isLoadingLedger}
+                  className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none disabled:bg-gray-50 disabled:text-gray-400"
                 />
               </div>
             </div>
@@ -470,7 +489,7 @@ export function FileReturns({ language = 'english' }: FilePolicyProps) {
                   {selectedType.toUpperCase()} Return
                 </span>
                 <span className="px-3 py-1 bg-white/20 rounded-full text-xs">
-                  {translations[language].dueDate.replace("{date}", "Dec 31, 2025")}
+                  {translations[language].dueDate.replace("{date}", `Dec 31, ${currentYear}`)}
                 </span>
               </div>
             </div>
@@ -482,7 +501,7 @@ export function FileReturns({ language = 'english' }: FilePolicyProps) {
               </div>
               <div className="flex justify-between text-sm">
                 <span className="text-gray-600">{translations[language].period}</span>
-                <span>Jan - Dec 2025</span>
+                <span>Jan - Dec {currentYear}</span>
               </div>
               <div className="flex justify-between text-sm">
                 <span className="text-gray-600">{translations[language].taxableIncome}</span>
@@ -503,67 +522,18 @@ export function FileReturns({ language = 'english' }: FilePolicyProps) {
               </button>
               <button
                 onClick={handleSubmit}
-                disabled={isSubmitting}
-                className={`flex-1 py-4 rounded-xl transition-all flex items-center justify-center gap-2 ${!isSubmitting
-                  ? 'bg-emerald-600 text-white hover:bg-emerald-700 shadow-lg'
-                  : 'bg-gray-200 text-gray-400 cursor-not-allowed'
-                  }`}
+                className="flex-1 py-4 rounded-xl transition-all flex items-center justify-center gap-2 bg-gray-200 text-gray-400 opacity-60 grayscale cursor-not-allowed"
               >
-                {isSubmitting ? (
-                  <>
-                    <Loader2 className="w-5 h-5 animate-spin" />
-                    {translations[language].submittingToFIRS}
-                  </>
-                ) : (
-                  translations[language].submitToFIRS
-                )}
+                {translations[language].submitToFIRS}
               </button>
             </div>
-          </motion.div>
-        )}
-
-        {/* Step 4: Success */}
-        {step === 'success' && (
-          <motion.div
-            key="success"
-            initial={{ opacity: 0, scale: 0.9 }}
-            animate={{ opacity: 1, scale: 1 }}
-            className="p-6 text-center py-12"
-          >
-            <motion.div
-              initial={{ scale: 0 }}
-              animate={{ scale: 1 }}
-              transition={{ type: "spring", duration: 0.5 }}
-              className="w-24 h-24 bg-emerald-100 rounded-full flex items-center justify-center mx-auto mb-6"
-            >
-              <CheckCircle2 className="w-12 h-12 text-emerald-600" />
-            </motion.div>
-
-            <h2 className="text-2xl mb-2">{translations[language].returnFiled}</h2>
-            <p className="text-gray-600 mb-8">{translations[language].returnSubmitted}</p>
-
-            <div className="bg-white rounded-xl p-4 border border-gray-200 mb-6 text-left">
-              <p className="text-sm text-gray-600 mb-2">{translations[language].referenceNumber}</p>
-              <p className="text-lg">TXR-2025-{Math.floor(Math.random() * 10000)}</p>
-            </div>
-
-            <div className="space-y-3">
-              <button
-                onClick={() => navigate('/pay-tax')}
-                className="w-full py-4 bg-emerald-600 text-white rounded-xl hover:bg-emerald-700 shadow-lg transition-all"
-              >
-                {translations[language].payTaxNow}
-              </button>
-              <button
-                onClick={() => navigate('/dashboard')}
-                className="w-full py-4 bg-gray-100 text-gray-700 rounded-xl hover:bg-gray-200 transition-all"
-              >
-                {translations[language].backToDashboard}
-              </button>
-            </div>
+            <p className="text-xs text-gray-500 text-center">
+              Submitting returns directly to FIRS is coming soon.
+            </p>
           </motion.div>
         )}
       </AnimatePresence>
+      <ToastContainer />
     </div>
   );
 }

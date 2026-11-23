@@ -1,5 +1,5 @@
 import { motion } from 'motion/react';
-import { ArrowLeft, Shield, FileText, ChevronRight, Download, Trash2, Clock, Check, X, Loader2 } from 'lucide-react';
+import { ArrowLeft, Shield, FileText, ChevronRight, Download, Trash2, Clock, Check, Loader2 } from 'lucide-react';
 import { useState } from 'react';
 import { profileTranslations, type LanguageKey } from '../translations/profile';
 import { useNavigate } from 'react-router-dom';
@@ -16,7 +16,6 @@ const SUPPORT_EMAIL = 'dpo@wazobiatax.ng';
 
 export function SecurityAndPrivacy({ language = 'english' }: SecurityAndPrivacyProps) {
   const t = profileTranslations[language].securityPrivacy;
-  const [twoFactorEnabled, setTwoFactorEnabled] = useState(false);
   const [isDownloadingData, setIsDownloadingData] = useState(false);
   const [deleteModalStep, setDeleteModalStep] = useState<'closed' | 'confirm' | 'deleting' | 'success'>('closed');
   const [deleteConfirmText, setDeleteConfirmText] = useState('');
@@ -46,6 +45,10 @@ export function SecurityAndPrivacy({ language = 'english' }: SecurityAndPrivacyP
 
   const handleViewLoginHistory = () => {
     navigate('/login-history');
+  };
+
+  const handleTwoFactorClick = () => {
+    toast.info('Two-factor authentication is coming soon.');
   };
 
   const handleConfirmDeleteAccount = async () => {
@@ -82,11 +85,11 @@ export function SecurityAndPrivacy({ language = 'english' }: SecurityAndPrivacyP
       icon: Shield,
       title: t.twoFactorAuth,
       description: t.twoFactorDesc,
-      action: twoFactorEnabled ? t.manage : t.enable,
-      status: twoFactorEnabled ? t.enabled : t.disabled,
-      statusColor: twoFactorEnabled ? 'text-emerald-600' : 'text-gray-500',
-      screen: '/two-factor-auth',
-      highlighted: !twoFactorEnabled
+      action: 'Coming soon',
+      status: undefined,
+      statusColor: 'text-gray-500',
+      onClick: handleTwoFactorClick,
+      comingSoon: true,
     },
     {
       id: 'privacy',
@@ -94,7 +97,7 @@ export function SecurityAndPrivacy({ language = 'english' }: SecurityAndPrivacyP
       title: t.privacyPolicy,
       description: t.privacyPolicyDesc,
       action: t.viewPolicy,
-      screen: '/privacy-policy'
+      onClick: () => navigate('/privacy-policy'),
     }
   ];
 
@@ -127,7 +130,7 @@ export function SecurityAndPrivacy({ language = 'english' }: SecurityAndPrivacyP
       </div>
 
       {/* Header */}
-      <div className="bg-gradient-to-br from-emerald-500 to-emerald-600 px-6 pt-6 pb-8">
+      <div className="bg-gradient-to-br from-emerald-500 to-emerald-600 px-6 pt-6 pb-12">
         <div className="flex items-center justify-between mb-6">
           <button
             onClick={() => navigate('/profile')}
@@ -141,7 +144,7 @@ export function SecurityAndPrivacy({ language = 'english' }: SecurityAndPrivacyP
       </div>
 
       {/* Content */}
-      <div className="px-6 -mt-4 space-y-6">
+      <div className="px-6 -mt-4 space-y-6 pt-2">
         {/* Security Options */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -151,34 +154,20 @@ export function SecurityAndPrivacy({ language = 'english' }: SecurityAndPrivacyP
           {securityOptions.map((option, index) => (
             <button
               key={option.id}
-              onClick={() => option.screen && navigate(option.screen)}
-              className={`w-full px-6 py-5 flex items-start gap-4 hover:bg-gray-50 transition-all ${
+              onClick={option.onClick}
+              className={`w-full px-6 py-6 flex items-start gap-4 transition-all ${
+                option.comingSoon ? 'opacity-60 grayscale cursor-not-allowed' : 'hover:bg-gray-50'
+              } ${
                 index !== securityOptions.length - 1 ? 'border-b border-gray-100' : ''
-              } ${option.highlighted ? 'bg-emerald-50/50' : ''}`}
+              }`}
             >
-              <div className={`w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0 ${
-                option.highlighted ? 'bg-emerald-600' : 'bg-gray-100'
-              }`}>
-                <option.icon className={`w-6 h-6 ${
-                  option.highlighted ? 'text-white' : 'text-gray-600'
-                }`} />
+              <div className="w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0 bg-gray-100">
+                <option.icon className="w-6 h-6 text-gray-600" />
               </div>
-              <div className="flex-1 text-left">
-                <div className="flex items-center justify-between mb-1">
-                  <h3 className="text-sm">{option.title}</h3>
-                  {option.status && (
-                    <div className="flex items-center gap-1">
-                      {twoFactorEnabled ? (
-                        <Check className="w-4 h-4 text-emerald-600" />
-                      ) : (
-                        <X className="w-4 h-4 text-gray-400" />
-                      )}
-                      <span className={`text-xs ${option.statusColor}`}>{option.status}</span>
-                    </div>
-                  )}
-                </div>
-                <p className="text-xs text-gray-500 mb-2">{option.description}</p>
-                <div className="flex items-center gap-1 text-emerald-600 text-sm">
+              <div className="flex-1 text-left space-y-1.5">
+                <h3 className="text-sm">{option.title}</h3>
+                <p className="text-xs text-gray-500 leading-relaxed">{option.description}</p>
+                <div className={`flex items-center gap-1 text-sm pt-0.5 ${option.comingSoon ? 'text-gray-500' : 'text-emerald-600'}`}>
                   <span>{option.action}</span>
                   <ChevronRight className="w-4 h-4" />
                 </div>
@@ -202,17 +191,17 @@ export function SecurityAndPrivacy({ language = 'english' }: SecurityAndPrivacyP
               key={option.id}
               onClick={option.onClick}
               disabled={option.disabled}
-              className={`w-full px-6 py-5 flex items-start gap-4 hover:bg-gray-50 transition-all disabled:opacity-60 disabled:cursor-wait ${
+              className={`w-full px-6 py-6 flex items-start gap-4 hover:bg-gray-50 transition-all disabled:opacity-60 disabled:cursor-wait ${
                 index !== dataOptions.length - 1 ? 'border-b border-gray-100' : ''
               }`}
             >
               <div className="w-12 h-12 bg-gray-100 rounded-xl flex items-center justify-center flex-shrink-0">
                 <option.icon className="w-6 h-6 text-gray-600" />
               </div>
-              <div className="flex-1 text-left">
-                <h3 className="text-sm mb-1">{option.title}</h3>
-                <p className="text-xs text-gray-500 mb-2">{option.description}</p>
-                <div className="flex items-center gap-1 text-emerald-600 text-sm">
+              <div className="flex-1 text-left space-y-1.5">
+                <h3 className="text-sm">{option.title}</h3>
+                <p className="text-xs text-gray-500 leading-relaxed">{option.description}</p>
+                <div className="flex items-center gap-1 text-emerald-600 text-sm pt-0.5">
                   <span>{option.action}</span>
                   <ChevronRight className="w-4 h-4" />
                 </div>
@@ -230,15 +219,15 @@ export function SecurityAndPrivacy({ language = 'english' }: SecurityAndPrivacyP
         >
           <button
             onClick={() => setDeleteModalStep('confirm')}
-            className="w-full px-6 py-5 flex items-start gap-4 hover:bg-red-50 transition-all"
+            className="w-full px-6 py-6 flex items-start gap-4 hover:bg-red-50 transition-all"
           >
             <div className="w-12 h-12 bg-red-50 rounded-xl flex items-center justify-center flex-shrink-0">
               <Trash2 className="w-6 h-6 text-red-600" />
             </div>
-            <div className="flex-1 text-left">
-              <h3 className="text-sm text-red-600 mb-1">{t.deleteAccount}</h3>
-              <p className="text-xs text-gray-500 mb-2">{t.deleteAccountDesc}</p>
-              <div className="flex items-center gap-1 text-red-600 text-sm">
+            <div className="flex-1 text-left space-y-1.5">
+              <h3 className="text-sm text-red-600">{t.deleteAccount}</h3>
+              <p className="text-xs text-gray-500 leading-relaxed">{t.deleteAccountDesc}</p>
+              <div className="flex items-center gap-1 text-red-600 text-sm pt-0.5">
                 <span>{t.deleteButton}</span>
                 <ChevronRight className="w-4 h-4" />
               </div>

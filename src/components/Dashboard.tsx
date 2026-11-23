@@ -30,6 +30,8 @@ import { useLanguage } from "@/context/LanguageContext";
 import { getPlans, Plan, getUserSubscription, UserSubscriptionResponse } from '../services/subscriptions';
 import { getComplianceDashboard, ComplianceDashboardResponse } from '../services/compliance';
 import { getNotifications } from '../services/notifications';
+import { applyLocalReadState } from '../utils/notificationReadState';
+import { getLedgerRecords } from '../services/ledger';
 import { profileTranslations, type LanguageKey } from '../translations/profile';
 
 interface DashboardProps {
@@ -230,11 +232,17 @@ export function Dashboard({ language = 'english' }: DashboardProps) {
 
   // Subscription data — derived from the live subscription endpoint, same as Profile.tsx,
   // instead of a non-existent `currentUser.subscription` field which always fell back to 'basic'.
+  // `trial.is_trial` is the real signal for a trial — a missing plan name is not proof of one
+  // (a past_due paid plan can also have no plan name resolved yet), which previously caused
+  // Home to show a paid plan's name alongside a fabricated "Trial Expires" date.
+  const isTrial = userSubscription?.trial?.is_trial === true;
   const subscription: Subscription = userSubscription?.plan?.name?.toLowerCase().includes('premium')
     ? 'premium'
     : userSubscription?.plan?.name?.toLowerCase().includes('basic')
       ? 'basic'
-      : 'trial';
+      : isTrial
+        ? 'trial'
+        : 'basic';
 
   const subscriptionLabels: Record<Subscription, string> = {
     basic: 'Basic',
@@ -243,11 +251,8 @@ export function Dashboard({ language = 'english' }: DashboardProps) {
   };
 
   const subscriptionType = subscriptionLabels[subscription];
-
-  const subscriptionRenewalDate = 'March 15, 2026';
-  const subscriptionExpiryDate = 'March 10, 2026'; // For trial
-
-  const isTrial = subscription === 'trial';
+  const subscriptionStatus = userSubscription?.subscription?.status ?? null;
+  const isPastDue = subscriptionStatus === 'past_due';
 
 
   const quickActions = [
@@ -259,11 +264,9 @@ export function Dashboard({ language = 'english' }: DashboardProps) {
     { id: 'reports', labelKey: 'viewReports', icon: BarChart3, color: 'bg-amber-50 text-amber-600', screen: '/activity' },
   ];
 
-  const recentActivity = [
-    { id: 1, type: 'expense', amount: '₦5,000', descKey: 'foodSupplies', status: 'complete', time: { value: 2, unit: 'hours' } },
-    { id: 2, type: 'income', amount: '₦25,000', descKey: 'salesRevenue', status: 'complete', time: { value: 5, unit: 'hours' } },
-    { id: 3, type: 'payment', amount: '₦10,000', descKey: 'vatPayment', status: 'pending', time: { value: 1, unit: 'days' } },
-  ];
+  const [recentActivity, setRecentActivity] = useState<any[]>([]);
+  const [recentActivityLoading, setRecentActivityLoading] = useState(true);
+  const [recentActivityError, setRecentActivityError] = useState('');
 
   const upcomingDeadlines = [
     { id: 1, titleKey: 'vatReturnDue', days: 2, priority: 'high', screen: '/file-returns' },
@@ -326,13 +329,50 @@ export function Dashboard({ language = 'english' }: DashboardProps) {
     const fetchNotificationCount = async () => {
       try {
         const data = await getNotifications();
-        setNotificationCount(data.unread_count);
+        const withLocalReadState = applyLocalReadState(data.notifications);
+        setNotificationCount(withLocalReadState.filter((n) => !n.is_read).length);
       } catch (err) {
         console.error('Failed to fetch notification count:', err);
       }
     };
 
     fetchNotificationCount();
+  }, []);
+
+  useEffect(() => {
+    const fetchRecentActivity = async () => {
+      try {
+        setRecentActivityLoading(true);
+        setRecentActivityError('');
+        const res = await getLedgerRecords();
+        const records = (res.data || []) as any[];
+
+        const sorted = [...records].sort(
+          (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
+        );
+
+        setRecentActivity(
+          sorted.slice(0, 3).map((entry) => {
+            const type = (entry.ledger_type || entry.type || 'income').toLowerCase() === 'expense' ? 'expense' : 'income';
+            const daysAgo = Math.max(0, Math.floor((Date.now() - new Date(entry.date).getTime()) / 86400000));
+            return {
+              id: entry.id,
+              type,
+              amount: `${type === 'income' ? '+' : '-'}₦${Number(entry.amount).toLocaleString()}`,
+              label: entry.category || entry.description || 'Ledger entry',
+              daysAgo,
+            };
+          })
+        );
+      } catch (err: any) {
+        console.error('Failed to fetch recent activity:', err);
+        setRecentActivityError(err.message || 'Failed to load recent activity');
+      } finally {
+        setRecentActivityLoading(false);
+      }
+    };
+
+    fetchRecentActivity();
   }, []);
 
   const getDynamicPrice = (planType: 'basic' | 'premium', defaultPrice: number) => {
@@ -726,7 +766,22 @@ export function Dashboard({ language = 'english' }: DashboardProps) {
             </button>
           </div>
           <div className="space-y-2">
-            {recentActivity.map((activity, index) => (
+            {recentActivityLoading && (
+              <div className="bg-white rounded-xl p-4 shadow-sm text-center text-sm text-gray-400">
+                Loading...
+              </div>
+            )}
+            {!recentActivityLoading && recentActivityError && (
+              <div className="bg-white rounded-xl p-4 shadow-sm text-center text-sm text-red-500">
+                {recentActivityError}
+              </div>
+            )}
+            {!recentActivityLoading && !recentActivityError && recentActivity.length === 0 && (
+              <div className="bg-white rounded-xl p-4 shadow-sm text-center text-sm text-gray-400">
+                No activity yet
+              </div>
+            )}
+            {!recentActivityLoading && !recentActivityError && recentActivity.map((activity, index) => (
               <motion.div
                 key={activity.id}
                 initial={{ opacity: 0, x: -20 }}
@@ -736,24 +791,19 @@ export function Dashboard({ language = 'english' }: DashboardProps) {
               >
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
-                    <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${activity.type === 'expense' ? 'bg-red-50' :
-                      activity.type === 'income' ? 'bg-emerald-50' :
-                        'bg-blue-50'
+                    <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${activity.type === 'expense' ? 'bg-red-50' : 'bg-emerald-50'
                       }`}>
-                      {activity.status === 'complete' ? (
-                        <CheckCircle2 className={`w-5 h-5 ${activity.type === 'expense' ? 'text-red-600' :
-                          activity.type === 'income' ? 'text-emerald-600' :
-                            'text-blue-600'
-                          }`} />
+                      {activity.type === 'expense' ? (
+                        <TrendingDown className="w-5 h-5 text-red-600" />
                       ) : (
-                        <Clock className="w-5 h-5 text-amber-600" />
+                        <TrendingUp className="w-5 h-5 text-emerald-600" />
                       )}
                     </div>
                     <div>
-                      <p className="text-sm">{translations[language][activity.descKey]}</p>
-                      <p className="text-xs text-gray-500">{translations[language][
-                        activity.time.unit === 'hours' ? 'hoursAgo' : 'daysAgo'
-                      ].replace('{time}', String(activity.time.value))}</p>
+                      <p className="text-sm capitalize">{activity.label}</p>
+                      <p className="text-xs text-gray-500">
+                        {activity.daysAgo === 0 ? 'Today' : translations[language].daysAgo.replace('{time}', String(activity.daysAgo))}
+                      </p>
                     </div>
                   </div>
                   <div className="text-right">
@@ -761,9 +811,6 @@ export function Dashboard({ language = 'english' }: DashboardProps) {
                       }`}>
                       {activity.amount}
                     </p>
-                    {activity.status === 'complete' && (
-                      <span className="text-xs text-emerald-600">✓</span>
-                    )}
                   </div>
                 </div>
               </motion.div>
@@ -797,10 +844,17 @@ export function Dashboard({ language = 'english' }: DashboardProps) {
                 <div>
                   <p className="text-xs text-gray-600 mb-1">{sub.currentPlan}</p>
                   <div className="flex items-center gap-2">
-                    <p className="text-lg">{userSubscription?.plan?.name || 'Free Trial'}</p>
-                    {subscription === 'trial' && (
+                    <p className="text-lg">
+                      {userSubscription?.plan?.name || (isTrial ? 'Free Trial' : 'No active plan')}
+                    </p>
+                    {isTrial && (
                       <span className="px-2 py-0.5 bg-blue-100 text-blue-700 rounded-full text-xs">
                         {sub.trial}
+                      </span>
+                    )}
+                    {isPastDue && (
+                      <span className="px-2 py-0.5 bg-red-100 text-red-700 rounded-full text-xs">
+                        Past due
                       </span>
                     )}
                   </div>
@@ -814,15 +868,22 @@ export function Dashboard({ language = 'english' }: DashboardProps) {
                   <Calendar className="w-5 h-5 text-gray-400" />
                   <div>
                     <p className="text-xs text-gray-600">
-                      {!userSubscription?.billing?.next_billing_date ? sub.trialExpires : sub.nextRenewal}
+                      {isPastDue ? 'Payment status' : isTrial ? sub.trialExpires : sub.nextRenewal}
                     </p>
                     <p className="text-sm mt-0.5">
-                      {userSubscription?.billing?.next_billing_date
-                        ? new Date(userSubscription.billing.next_billing_date || "").toLocaleDateString(
-                          "en-US",
-                          { year: "numeric", month: "long", day: "numeric" }
-                        )
-                        : "April 15, 2026"}
+                      {isPastDue
+                        ? 'Past due — please update your payment method'
+                        : isTrial && userSubscription?.trial?.trial_end
+                          ? new Date(userSubscription.trial.trial_end).toLocaleDateString(
+                            "en-US",
+                            { year: "numeric", month: "long", day: "numeric" }
+                          )
+                          : userSubscription?.billing?.next_billing_date
+                            ? new Date(userSubscription.billing.next_billing_date).toLocaleDateString(
+                              "en-US",
+                              { year: "numeric", month: "long", day: "numeric" }
+                            )
+                            : 'Not available'}
                     </p>
                   </div>
                 </div>
@@ -838,7 +899,7 @@ export function Dashboard({ language = 'english' }: DashboardProps) {
               </div>
             </div>
 
-            {subscription === 'trial' && (
+            {isTrial && (
               <motion.div
                 initial={{ opacity: 0, y: -5 }}
                 animate={{ opacity: 1, y: 0 }}
