@@ -31,6 +31,29 @@ import { ToastContainer, toast } from 'react-toastify';
 import { profileTranslations, type LanguageKey } from "../translations/profile";
 import { useCameraPermissions } from "@/hooks/useCameraPermissions";
 
+/**
+ * Backend validation errors come back in more than one shape (a top-level
+ * .message/.error string, an .errors array, or Django-REST-style
+ * {field: [messages]} objects like {"category": ["... is not a valid choice."]}).
+ * This checks all of them before falling back, so the real rejection reason
+ * reaches the user instead of a generic message.
+ */
+function extractApiErrorMessage(data: any, fallback: string): string {
+  if (!data) return fallback;
+  if (typeof data.message === 'string') return data.message;
+  if (typeof data.error === 'string') return data.error;
+  if (Array.isArray(data.errors)) {
+    return data.errors.map((e: any) => e?.msg || e?.message || e).join(', ');
+  }
+  if (typeof data === 'object') {
+    const fieldMessages = Object.entries(data)
+      .filter(([, value]) => Array.isArray(value))
+      .map(([field, value]) => `${field}: ${(value as any[]).join(', ')}`);
+    if (fieldMessages.length > 0) return fieldMessages.join(' | ');
+  }
+  return fallback;
+}
+
 const translations = {
   english: {
     income: "Income",
@@ -42,6 +65,7 @@ const translations = {
 
     salesRevenue: "Sales Revenue",
     otherIncome: "Other Income",
+    otherExpense: "Other Expense",
     foodSupplies: "Food Supplies",
     equipment: "Equipment",
     serviceIncome: "Service Income",
@@ -88,6 +112,7 @@ const translations = {
 
     salesRevenue: "Sales Money",
     otherIncome: "Other Money",
+    otherExpense: "Other Spending",
     foodSupplies: "Food Stuff",
     equipment: "Equipment",
     serviceIncome: "Service Money",
@@ -134,6 +159,7 @@ const translations = {
 
     salesRevenue: "Kuɗin Talla",
     otherIncome: "Sauran Kuɗin Shiga",
+    otherExpense: "Wasu Kuɗin Fita",
     foodSupplies: "Kayan Abinci",
     equipment: "Kayan Aiki",
     serviceIncome: "Kuɗin Sabis",
@@ -181,6 +207,7 @@ const translations = {
 
     salesRevenue: "Owó Títà",
     otherIncome: "Ìní Mìíràn",
+    otherExpense: "Ìnáwọ́ Mìíràn",
     foodSupplies: "Ohun Èlò Oúnjẹ",
     equipment: "Ẹ̀rọ Iṣẹ́",
     serviceIncome: "Owó Iṣẹ́",
@@ -228,6 +255,7 @@ const translations = {
 
     salesRevenue: "Ego Ahịa",
     otherIncome: "Ego Mbata Ọzọ",
+    otherExpense: "Mmefu Ego Ọzọ",
     foodSupplies: "Ngwa Oriri",
     equipment: "Ngwa Ọrụ",
     serviceIncome: "Ego Ọrụ",
@@ -450,25 +478,29 @@ export function Ledger({ onNavigate, language = "english" }: LedgerProps) {
         setAmount(result.amount);
       }
       setDate(result.date || new Date().toISOString().slice(0, 10));
-      setDescription(result.vendor || "Receipt Expense");
 
-      // Auto-detect category from OCR text and vendor name
+      // Detect a human-readable subcategory from OCR text and vendor name to
+      // include in the description. The backend only accepts a small set of
+      // category values for expenses ("other income" is the one that works —
+      // confirmed live, see DEF-07), so the detected subcategory is surfaced
+      // in the description rather than sent as the category itself.
       const combined = `${result.vendor || ""} ${result.rawText || ""}`.toLowerCase();
+      let subcategory = "Other";
       if (/food|restaurant|cafe|eatery|supermarket|grocery|groceries|buka|kitchen|chops|bread|drink|provisions|snacks|canteen|market|bakery|fast\s*food/i.test(combined)) {
-        setCategory("food supplies expense");
+        subcategory = "Food Supplies";
       } else if (/fuel|petrol|diesel|filling\s*station|transport|transportation|uber|bolt|taxi|fare|flight|airline|logistics|mechanic|car|vehicle|conoil|totalenergies|oando|nnpc/i.test(combined)) {
-        setCategory("transportation expense");
+        subcategory = "Transportation";
       } else if (/computer|laptop|phone|equipment|hardware|office|electronics|gadget|printer|machinery|stationery|paper|desk|chair/i.test(combined)) {
-        setCategory("office equipment");
-      } else {
-        setCategory("food supplies expense");
+        subcategory = "Office Equipment";
       }
+      setCategory("other income");
+      setDescription(result.vendor ? `${subcategory}: ${result.vendor}` : `${subcategory} expense`);
     } catch (err) {
       console.error("Receipt OCR failed:", err);
       setScanError("We couldn't scan this receipt photo. Please enter the details manually below, or retake the photo with better lighting.");
       setEntryType("expense");
       setDate(new Date().toISOString().slice(0, 10));
-      setCategory("food supplies expense");
+      setCategory("other income");
       setDescription("Receipt Expense");
     } finally {
       setIsExtracting(false);
@@ -481,13 +513,8 @@ export function Ledger({ onNavigate, language = "english" }: LedgerProps) {
     setScanState("camera");
   };
 
-  // Voice Entry Handlers
-  // NOTE: there is no real speech-to-text here — the browser never records
-  // audio, this simulates recognizing a fixed phrase. What was broken is that
-  // the "recognized" amount/type/description never made it into the Add Entry
-  // form fields below, so the review screen was always blank. This parses the
-  // (still simulated) transcript and populates the real, shared form state so
-  // Save Entry actually has something to save.
+  // Parses the real SpeechRecognition transcript (see handleStopListening)
+  // and populates the shared Add Entry form state.
   const applyVoiceTranscript = (text: string) => {
     const lower = text.toLowerCase();
 
@@ -588,34 +615,38 @@ export function Ledger({ onNavigate, language = "english" }: LedgerProps) {
       "interest": { type: "income", value: "other income" },
       "bonus": { type: "income", value: "other income" },
 
-      // Expense
-      "food": { type: "expense", value: "food supplies expense" },
-      "supplies": { type: "expense", value: "food supplies expense" },
-      "groceries": { type: "expense", value: "food supplies expense" },
-      "restaurant": { type: "expense", value: "food supplies expense" },
-      "lunch": { type: "expense", value: "food supplies expense" },
-      "dinner": { type: "expense", value: "food supplies expense" },
-      "drink": { type: "expense", value: "food supplies expense" },
-      "drinks": { type: "expense", value: "food supplies expense" },
-      "water": { type: "expense", value: "food supplies expense" },
-      "provisions": { type: "expense", value: "food supplies expense" },
-      "transport": { type: "expense", value: "transportation expense" },
-      "transportation": { type: "expense", value: "transportation expense" },
-      "uber": { type: "expense", value: "transportation expense" },
-      "bolt": { type: "expense", value: "transportation expense" },
-      "taxi": { type: "expense", value: "transportation expense" },
-      "fuel": { type: "expense", value: "transportation expense" },
-      "petrol": { type: "expense", value: "transportation expense" },
-      "diesel": { type: "expense", value: "transportation expense" },
-      "fare": { type: "expense", value: "transportation expense" },
-      "flight": { type: "expense", value: "transportation expense" },
-      "equipment": { type: "expense", value: "office equipment" },
-      "office": { type: "expense", value: "office equipment" },
-      "laptop": { type: "expense", value: "office equipment" },
-      "computer": { type: "expense", value: "office equipment" },
-      "phone": { type: "expense", value: "office equipment" },
-      "printer": { type: "expense", value: "office equipment" },
-      "generator": { type: "expense", value: "office equipment" },
+      // Expense — the backend only accepts "other income" as a category value
+      // for expense entries (confirmed live; "food supplies expense",
+      // "transportation expense" and "office equipment" are all rejected as
+      // invalid choices — see DEF-07), so every expense keyword below maps to
+      // that one value. The keyword still determines entryType correctly.
+      "food": { type: "expense", value: "other income" },
+      "supplies": { type: "expense", value: "other income" },
+      "groceries": { type: "expense", value: "other income" },
+      "restaurant": { type: "expense", value: "other income" },
+      "lunch": { type: "expense", value: "other income" },
+      "dinner": { type: "expense", value: "other income" },
+      "drink": { type: "expense", value: "other income" },
+      "drinks": { type: "expense", value: "other income" },
+      "water": { type: "expense", value: "other income" },
+      "provisions": { type: "expense", value: "other income" },
+      "transport": { type: "expense", value: "other income" },
+      "transportation": { type: "expense", value: "other income" },
+      "uber": { type: "expense", value: "other income" },
+      "bolt": { type: "expense", value: "other income" },
+      "taxi": { type: "expense", value: "other income" },
+      "fuel": { type: "expense", value: "other income" },
+      "petrol": { type: "expense", value: "other income" },
+      "diesel": { type: "expense", value: "other income" },
+      "fare": { type: "expense", value: "other income" },
+      "flight": { type: "expense", value: "other income" },
+      "equipment": { type: "expense", value: "other income" },
+      "office": { type: "expense", value: "other income" },
+      "laptop": { type: "expense", value: "other income" },
+      "computer": { type: "expense", value: "other income" },
+      "phone": { type: "expense", value: "other income" },
+      "printer": { type: "expense", value: "other income" },
+      "generator": { type: "expense", value: "other income" },
     };
 
     let matchedCategory = "";
@@ -631,7 +662,7 @@ export function Ledger({ onNavigate, language = "english" }: LedgerProps) {
     }
 
     if (!matchedCategory) {
-      matchedCategory = resolvedType === "income" ? "sales revenue" : "food supplies expense";
+      matchedCategory = resolvedType === "income" ? "sales revenue" : "other income";
     }
     setCategory(matchedCategory);
 
@@ -746,9 +777,13 @@ export function Ledger({ onNavigate, language = "english" }: LedgerProps) {
       { labelKey: "otherIncome", value: "other income" },
     ],
     expense: [
-      { labelKey: "foodSupplies", value: "food supplies expense" },
-      { labelKey: "equipment", value: "office equipment" },
-      { labelKey: "transportation", value: "transportation expense" },
+      // Disabled: the backend rejects these with "... is not a valid choice."
+      // (confirmed live against api.wazobiatax.ng — DEF-07). Re-enable once the
+      // backend accepts them as real category values.
+      // { labelKey: "foodSupplies", value: "food supplies expense" },
+      // { labelKey: "equipment", value: "office equipment" },
+      // { labelKey: "transportation", value: "transportation expense" },
+      { labelKey: "otherExpense", value: "other income" },
     ],
   };
 
@@ -832,14 +867,7 @@ export function Ledger({ onNavigate, language = "english" }: LedgerProps) {
       setDate("");
     } catch (error: any) {
       console.error(error);
-      const updateData = error?.response?.data;
-      const updateMessage =
-        updateData?.message ||
-        updateData?.error ||
-        (Array.isArray(updateData?.errors)
-          ? updateData.errors.map((e: any) => e?.msg || e?.message || e).join(', ')
-          : null) ||
-        "Update failed";
+      const updateMessage = extractApiErrorMessage(error?.response?.data, "Update failed");
       toast.error(updateMessage);
     } finally {
       setIsProcessing(false);
@@ -916,14 +944,7 @@ export function Ledger({ onNavigate, language = "english" }: LedgerProps) {
     } catch (error: any) {
       console.error(error);
 
-      const data = error?.response?.data;
-      const message =
-        data?.message ||
-        data?.error ||
-        (Array.isArray(data?.errors)
-          ? data.errors.map((e: any) => e?.msg || e?.message || e).join(', ')
-          : null) ||
-        "Failed to add ledger entry";
+      const message = extractApiErrorMessage(error?.response?.data, "Failed to add ledger entry");
 
       toast.error(message);
     } finally {
